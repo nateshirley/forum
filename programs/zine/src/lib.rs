@@ -1,16 +1,39 @@
 use anchor_lang::{
-    prelude::*,
-    solana_program::{program_option::COption},
+    prelude::{*},
+    solana_program::{system_instruction, program_option::COption},
 };
 use anchor_spl::token;
-
-
+use arrayvec::ArrayVec;
 declare_id!("GwMnqrRGaxWHJzu1vqzdssLjJfkM6jbLxAG8WekGwUjY");
+
+//add running total for votes received all time
+//should i put time in the post?
+
+/*
+leaderboard implementation
+
+i need to update the leaderboard each time there is a vote. need to know
+- lowest scoring item in leaderboard
+- tie goes to earlier post?
+
+can i get the accounts from within here or no? they have to be passed in
+every account that u are reading has to be passed in. that's why there is; writable? signer?
+ 
+i have to do something that keeps track of them for each vote. that's the only way it will work
+can sort them after tho. 
+
+i need to keep track of
+- minimum score to make
+- index of minimum score
+- or i can just sort it every time
+
+*/
 
 const MEMBER_SEED: &[u8] = b"member";
 const MEMBER_ATTRIBUTION_SEED: &[u8] = b"memberattribution";
 const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
+const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 
 //can add a name to this to make infinite forums
 
@@ -21,11 +44,56 @@ actions
 
 all accounts derived from mintkey except member attribution
 everything else is stable from that
+
+
 */
 
 #[program]
 pub mod zine {
     use super::*;
+
+    pub fn create_leaderboard(ctx: Context<CreateLeaderboard>) -> ProgramResult {
+        let (_leaderboard, _bump) = Pubkey::find_program_address(&[LEADERBOARD_SEED], ctx.program_id);
+        let seeds = &[&LEADERBOARD_SEED[..], &[_bump]];
+
+        let __anchor_rent = Rent::get()?;
+        let space: usize = 1353;
+        let lamports = __anchor_rent.minimum_balance(1353);
+
+        anchor_lang::solana_program::program::invoke_signed(
+            &system_instruction::create_account(
+                &ctx.accounts.initializer.key(), 
+                &_leaderboard, 
+                lamports, 
+                1353, 
+                ctx.program_id
+            ),
+            &[
+                ctx.accounts.initializer.to_account_info(),
+                ctx.accounts.leaderboard.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+            &[&seeds[..]],
+        )?;
+        Ok(())
+    }
+    pub fn load_leaderboard(ctx: Context<LoadLeaderboard>) -> ProgramResult {
+        //can fill security holes here
+        let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
+        leaderboard.min_score = 3;
+        leaderboard.min_index = 0;
+        leaderboard.posts = [LeaderboardPost::default(); 5];
+        Ok(())
+    }
+
+    /*
+    after that dumbass detour, i need to figure out how to keep track of the top posts
+
+    my idea right now is to
+    -- make it into vec, 
+    move, 
+    */
+
     pub fn initialize_forum(ctx: Context<InitializeForum>, forum_bump: u8, forum_authority_bump: u8) -> ProgramResult {
         ctx.accounts.forum.bump = forum_bump;
         ctx.accounts.forum.epoch = 0;
@@ -97,22 +165,82 @@ pub mod zine {
             post.link = new_link(link);
             post.score = 0;
             post.epoch = current_epoch + 1;
+            Ok(())
+        } else {
+            Err(ErrorCode::SinglePostPerEpoch.into())
         }
-        Ok(())
     }
 
     pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
         verify_vote_account(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
         let current_epoch = ctx.accounts.forum.epoch;
-        if ctx.accounts.vote.epoch <= current_epoch {
-            let mut post = ctx.accounts.post.load_mut()?;
-            post.score += 1;
-            ctx.accounts.vote.epoch = current_epoch + 1;
-            ctx.accounts.vote.voted_for_card_mint = post.card_mint.key();
-        }
-        Ok(())
-    }
+        let voter = &mut ctx.accounts.vote;
+        if voter.epoch <= current_epoch {
+            let mut voted_post = ctx.accounts.post.load_mut()?;
+            voted_post.score += 1;
+            voter.epoch = current_epoch + 1;
+            voter.voted_for_card_mint = voted_post.card_mint.key();
 
+            let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
+            let mut leading_posts = leaderboard.posts.to_vec();
+
+            let mut i = 4;
+            //wraparound check
+            //new copy will pass old copy
+            let mut should = true;
+            while should && i < 100 && voted_post.score > leading_posts[i].score {
+                if voted_post.card_mint.eq(&leading_posts[i].card_mint) {
+                    msg!("matching keysssssss with score {}, index {}", voted_post.score, i);
+                    leading_posts[i] = voted_post.to_leaderboard();
+                    let mut new_leaders = [LeaderboardPost::default(); 5];
+                    for i in (0..=4).rev() {
+                        new_leaders[i] = leading_posts.pop().unwrap();
+                    }
+                    i = 4;
+                    should = false;
+                    leaderboard.posts = new_leaders;
+                } else if should {
+                    i -= 1;
+                }
+                msg!("skipped one");
+            }
+            msg!("maide it");
+            //new post on leaderboard
+            if i != 4 {
+                leading_posts.insert(i + 1, voted_post.to_leaderboard());
+                leading_posts.pop();
+                let mut new_leaders = [LeaderboardPost::default(); 5];
+                for i in (0..=4).rev() {
+                    new_leaders[i] = leading_posts.pop().unwrap();
+                }
+                leaderboard.posts = new_leaders;
+            }
+            //panic!();
+
+          
+            Ok(())
+        } else {
+            Err(ErrorCode::SingleVotePerEpoch.into())
+        }
+    }
+}
+
+impl std::fmt::Display for LeaderboardPost {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Bob: {}", self.score)
+    }
+}
+
+impl Post {
+    fn to_leaderboard(&self) -> LeaderboardPost {
+        LeaderboardPost {
+            card_mint: self.card_mint,
+            body: self.body,
+            link: self.link,
+            score: self.score,
+            epoch: self.epoch,
+        }
+    }
 }
 
 fn new_body(body: String) -> [u8; 140] {
@@ -146,6 +274,22 @@ fn verify_vote_account(vote_address: Pubkey, card_mint: Pubkey) -> ProgramResult
 }
 
 #[derive(Accounts)]
+pub struct CreateLeaderboard<'info> {
+    #[account(mut)]
+    initializer: Signer<'info>,
+    #[account(mut)]
+    leaderboard: AccountInfo<'info>,
+    system_program: Program<'info, System>,
+    my_program: AccountInfo<'info>
+}
+
+#[derive(Accounts)]
+pub struct LoadLeaderboard<'info> {
+    #[account(zero)]
+    leaderboard: Loader<'info, Leaderboard>
+}
+
+#[derive(Accounts)]
 #[instruction(forum_bump: u8, forum_authority_bump: u8)]
 pub struct InitializeForum<'info> {
     initializer: Signer<'info>,
@@ -163,6 +307,8 @@ pub struct InitializeForum<'info> {
         payer = initializer
     )]
     forum_authority: Account<'info, ForumAuthority>,
+    // #[account(zero)]
+    // leaderboard: Loader<'info, Leaderboard>,
     clock: Sysvar<'info, Clock>,
     system_program: Program<'info, System>,
 }
@@ -267,6 +413,8 @@ pub struct SubmitVote<'info> {
     )]
     forum: Account<'info, Forum>,
     #[account(mut)]
+    leaderboard: Loader<'info, Leaderboard>,
+    #[account(mut)]
     post: Loader<'info, Post>,
     #[account(mut)]
     vote: Account<'info, Vote>,
@@ -361,12 +509,38 @@ pub struct Vote {
     epoch: u32,
 }
 
+
+#[account(zero_copy)]
+pub struct Leaderboard {
+    min_score: u32,
+    min_index: u8,
+    posts: [LeaderboardPost; 5],
+}
+#[zero_copy]
+pub struct LeaderboardPost {
+    card_mint: Pubkey,
+    body: [u8; 140],
+    link: [u8; 88],
+    score: u32,
+    epoch: u32,
+}
+impl Default for LeaderboardPost {
+    fn default() -> Self {
+        LeaderboardPost {
+            card_mint: Pubkey::default(),
+            body: [0u8; 140],
+            link: [0u8; 88],
+            score: 0,
+            epoch: 0
+        }
+    }
+}
+
 #[account]
 #[derive(Default)]
 pub struct ForumAuthority {
     bump: u8,
 }
-
 
 impl<'info>MintMembership<'info> {
     fn into_mint_membership_context(
@@ -389,9 +563,61 @@ pub enum ErrorCode {
     UnauthorizedPostAccount,
     #[msg("vote account does not match expected (fromSeed): authority pubky, 'vote', programId")]
     UnauthorizedVoteAccount,
+    #[msg("post account has already submitted this epoch")]
+    SinglePostPerEpoch,
+    #[msg("vote account has already voted this epoch")]
+    SingleVotePerEpoch,
 }
 /*
 
 so i can just take the unix timestamp and store it in the epoch account
 
+*/
+
+
+/*
+#[derive(Clone)]
+pub struct Boop {
+    pub val: [u8; 33],
+}
+impl borsh::BorshSerialize for Boop {
+    #[inline]
+    fn serialize<W: Write>(&self, _writer: &mut W) -> std::result::Result<(), std::io::Error> {
+        for el in self.val.iter() {
+            el.serialize(_writer)?;
+        }
+        Ok(())
+    }
+}
+impl borsh::BorshDeserialize for Boop {
+    #[inline]
+    fn deserialize(buf: &mut &[u8]) -> std::result::Result<Boop, std::io::Error> {
+        let mut result = [0u8; 33];
+        for i in 0..33 {
+            result[i] = u8::deserialize(buf)?;
+        }
+        Ok(Boop { val: result })
+    }
+}
+impl Default for Boop {
+    fn default() -> Boop {
+        Boop {
+            val: [0u8; 33]
+        }
+    }
+}
+#[account]
+#[derive(Default)]
+pub struct BigBoop {
+    pub boop: Boop,
+}
+
+
+   // #[account(
+    //     init,
+    //     seeds = [FORUM_SEED],
+    //     bump = forum_bump,
+    //     payer = initializer
+    // )]
+    // big_boop: Account<'info, BigBoop>,
 */
