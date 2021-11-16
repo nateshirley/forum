@@ -42,15 +42,15 @@ pub mod zine {
         let seeds = &[&LEADERBOARD_SEED[..], &[_bump]];
 
         let __anchor_rent = Rent::get()?;
-        //let space: usize = 1353;
-        let lamports = __anchor_rent.minimum_balance(1353);
+        //let space: usize = 1348;
+        let lamports = __anchor_rent.minimum_balance(1348);
 
         anchor_lang::solana_program::program::invoke_signed(
             &system_instruction::create_account(
                 &ctx.accounts.initializer.key(), 
                 &_leaderboard, 
                 lamports, 
-                1353, 
+                1348, 
                 ctx.program_id
             ),
             &[
@@ -62,18 +62,15 @@ pub mod zine {
         )?;
         Ok(())
     }
-    pub fn load_leaderboard(ctx: Context<LoadLeaderboard>) -> ProgramResult {
-        //can fill security holes here
-        let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
-        leaderboard.posts = [LeaderboardPost::default(); 5];
-        Ok(())
-    }
-
     pub fn initialize_forum(ctx: Context<InitializeForum>, forum_bump: u8, forum_authority_bump: u8) -> ProgramResult {
         ctx.accounts.forum.bump = forum_bump;
         ctx.accounts.forum.epoch = 0;
         ctx.accounts.forum.last_reset = ctx.accounts.clock.unix_timestamp;
         ctx.accounts.forum_authority.bump = forum_authority_bump;
+
+        let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
+        leaderboard.posts = [LeaderboardPost::default(); 5];
+        
         Ok(())
     }
 
@@ -109,6 +106,8 @@ pub mod zine {
                 .with_signer(&[&seeds[..]]),
             1,
         )?;
+
+        //add something that creates metadata for the membership card
         Ok(())
     }
 
@@ -235,13 +234,6 @@ pub struct CreateLeaderboard<'info> {
     #[account(mut)]
     leaderboard: AccountInfo<'info>,
     system_program: Program<'info, System>,
-    my_program: AccountInfo<'info>
-}
-
-#[derive(Accounts)]
-pub struct LoadLeaderboard<'info> {
-    #[account(zero)]
-    leaderboard: Loader<'info, Leaderboard>
 }
 
 #[derive(Accounts)]
@@ -262,8 +254,8 @@ pub struct InitializeForum<'info> {
         payer = initializer
     )]
     forum_authority: Account<'info, ForumAuthority>,
-    // #[account(zero)]
-    // leaderboard: Loader<'info, Leaderboard>,
+    #[account(zero)]
+    leaderboard: Loader<'info, Leaderboard>,
     clock: Sysvar<'info, Clock>,
     system_program: Program<'info, System>,
 }

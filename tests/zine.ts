@@ -46,6 +46,8 @@ describe("zine", () => {
     );
     leaderboard = _board;
     providerMintConfig = await getMintConfig(authority.publicKey);
+
+    console.log(program.account.leaderboard.size);
   });
 
   //can put init and leaderboard into one later on
@@ -58,36 +60,30 @@ describe("zine", () => {
           initializer: authority.publicKey,
           forum: forum,
           forumAuthority: forumAuthority,
+          leaderboard: leaderboard,
           clock: web3.SYSVAR_CLOCK_PUBKEY,
           systemProgram: SystemProgram.programId,
         },
+        instructions: [
+          program.instruction.createLeaderboard({
+            accounts: {
+              initializer: authority.publicKey,
+              leaderboard: leaderboard,
+              systemProgram: SystemProgram.programId,
+            },
+          }),
+        ],
       }
     );
     //console.log("init forum sig", tx);
 
     let newForum = await provider.connection.getAccountInfo(forum);
     //console.log(newForum);
-  });
-
-  it("create leaderboard", async () => {
-    const tx = await program.rpc.loadLeaderboard({
-      accounts: {
-        leaderboard: leaderboard,
-      },
-      instructions: [
-        program.instruction.createLeaderboard({
-          accounts: {
-            initializer: authority.publicKey,
-            leaderboard: leaderboard,
-            systemProgram: SystemProgram.programId,
-            myProgram: program.programId,
-          },
-        }),
-      ],
-    });
 
     // let lb = await program.account.leaderboard.fetch(leaderboard);
     // console.log(lb);
+    let lb = await provider.connection.getAccountInfo(leaderboard);
+    console.log(lb);
   });
 
   it("mint membership", async () => {
