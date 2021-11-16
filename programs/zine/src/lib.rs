@@ -6,26 +6,13 @@ use anchor_spl::token;
 use arrayvec::ArrayVec;
 declare_id!("GwMnqrRGaxWHJzu1vqzdssLjJfkM6jbLxAG8WekGwUjY");
 
-//add running total for votes received all time
-//should i put time in the post?
 
 /*
-leaderboard implementation
 
-i need to update the leaderboard each time there is a vote. need to know
-- lowest scoring item in leaderboard
-- tie goes to earlier post?
-
-can i get the accounts from within here or no? they have to be passed in
-every account that u are reading has to be passed in. that's why there is; writable? signer?
- 
-i have to do something that keeps track of them for each vote. that's the only way it will work
-can sort them after tho. 
-
-i need to keep track of
-- minimum score to make
-- index of minimum score
-- or i can just sort it every time
+add
+- running total for users -- all time score
+- security for initializing leaderboard
+- wrap leaderboard init into forum init
 
 */
 
@@ -44,8 +31,6 @@ actions
 
 all accounts derived from mintkey except member attribution
 everything else is stable from that
-
-
 */
 
 #[program]
@@ -57,7 +42,7 @@ pub mod zine {
         let seeds = &[&LEADERBOARD_SEED[..], &[_bump]];
 
         let __anchor_rent = Rent::get()?;
-        let space: usize = 1353;
+        //let space: usize = 1353;
         let lamports = __anchor_rent.minimum_balance(1353);
 
         anchor_lang::solana_program::program::invoke_signed(
@@ -80,19 +65,9 @@ pub mod zine {
     pub fn load_leaderboard(ctx: Context<LoadLeaderboard>) -> ProgramResult {
         //can fill security holes here
         let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
-        leaderboard.min_score = 3;
-        leaderboard.min_index = 0;
         leaderboard.posts = [LeaderboardPost::default(); 5];
         Ok(())
     }
-
-    /*
-    after that dumbass detour, i need to figure out how to keep track of the top posts
-
-    my idea right now is to
-    -- make it into vec, 
-    move, 
-    */
 
     pub fn initialize_forum(ctx: Context<InitializeForum>, forum_bump: u8, forum_authority_bump: u8) -> ProgramResult {
         ctx.accounts.forum.bump = forum_bump;
@@ -182,42 +157,16 @@ pub mod zine {
             voter.voted_for_card_mint = voted_post.card_mint.key();
 
             let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
-            let mut leading_posts = leaderboard.posts.to_vec();
-
-            let mut i = 4;
-            //wraparound check
-            //new copy will pass old copy
-            let mut should = true;
-            while should && i < 100 && voted_post.score > leading_posts[i].score {
-                if voted_post.card_mint.eq(&leading_posts[i].card_mint) {
-                    msg!("matching keysssssss with score {}, index {}", voted_post.score, i);
-                    leading_posts[i] = voted_post.to_leaderboard();
-                    let mut new_leaders = [LeaderboardPost::default(); 5];
-                    for i in (0..=4).rev() {
-                        new_leaders[i] = leading_posts.pop().unwrap();
-                    }
-                    i = 4;
-                    should = false;
-                    leaderboard.posts = new_leaders;
-                } else if should {
-                    i -= 1;
+            if let Some(mut new_leading_posts) = update_leading_posts(leaderboard.posts.to_vec(), voted_post) {
+                let mut leaders = [LeaderboardPost::default(); 5];
+                for i in (0..=(new_leading_posts.len() - 1)).rev() {
+                    leaders[i] = new_leading_posts.pop().unwrap();
                 }
-                msg!("skipped one");
+                leaderboard.posts = leaders;
+                msg!("vote triggered leaderboard updated");
+            } else {
+                msg!("voted post not yet eligible for leaderboard");
             }
-            msg!("maide it");
-            //new post on leaderboard
-            if i != 4 {
-                leading_posts.insert(i + 1, voted_post.to_leaderboard());
-                leading_posts.pop();
-                let mut new_leaders = [LeaderboardPost::default(); 5];
-                for i in (0..=4).rev() {
-                    new_leaders[i] = leading_posts.pop().unwrap();
-                }
-                leaderboard.posts = new_leaders;
-            }
-            //panic!();
-
-          
             Ok(())
         } else {
             Err(ErrorCode::SingleVotePerEpoch.into())
@@ -225,22 +174,28 @@ pub mod zine {
     }
 }
 
-impl std::fmt::Display for LeaderboardPost {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Bob: {}", self.score)
-    }
-}
-
-impl Post {
-    fn to_leaderboard(&self) -> LeaderboardPost {
-        LeaderboardPost {
-            card_mint: self.card_mint,
-            body: self.body,
-            link: self.link,
-            score: self.score,
-            epoch: self.epoch,
+fn update_leading_posts(mut leading_posts: Vec<LeaderboardPost>, voted_post: std::cell::RefMut<Post>) -> Option<Vec<LeaderboardPost>> {
+    let lowest_scoring_index = leading_posts.len() - 1; //4
+    let mut insert_marker = lowest_scoring_index; //last index in leaderboard
+    //wraparound check
+    while insert_marker < 100 && voted_post.score > leading_posts[insert_marker].score {
+        if voted_post.card_mint.eq(&leading_posts[insert_marker].card_mint) {
+            msg!("matching keys with score {}, at index {}", {voted_post.score}, insert_marker);
+            leading_posts[insert_marker] = voted_post.to_leaderboard();
+            return Some(leading_posts);
+        } else {
+            insert_marker -= 1;
+            msg!("skipped one");
         }
     }
+    //new post on leaderboard
+    //insert shifts everything to the right
+    if insert_marker != lowest_scoring_index {
+        leading_posts.insert(insert_marker + 1, voted_post.to_leaderboard());
+        leading_posts.pop();
+        return Some(leading_posts);
+    }
+    None
 }
 
 fn new_body(body: String) -> [u8; 140] {
@@ -499,6 +454,17 @@ pub struct Post {
     score: u32,
     epoch: u32,
 }
+impl Post {
+    fn to_leaderboard(&self) -> LeaderboardPost {
+        LeaderboardPost {
+            card_mint: self.card_mint,
+            body: self.body,
+            link: self.link,
+            score: self.score,
+            epoch: self.epoch,
+        }
+    }
+}
 //keyFromSeed: [cardMint, "vote", programID]
 //only thing i really need to track is whether they have voted this round, but can also include who if i want to
 #[account]
@@ -512,8 +478,6 @@ pub struct Vote {
 
 #[account(zero_copy)]
 pub struct Leaderboard {
-    min_score: u32,
-    min_index: u8,
     posts: [LeaderboardPost; 5],
 }
 #[zero_copy]
