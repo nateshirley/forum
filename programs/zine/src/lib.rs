@@ -1,19 +1,14 @@
 use anchor_lang::{
     prelude::{*},
-    solana_program::{system_instruction, program_option::COption},
+    solana_program::{system_instruction},
 };
 use anchor_spl::token;
-use arrayvec::ArrayVec;
 declare_id!("GwMnqrRGaxWHJzu1vqzdssLjJfkM6jbLxAG8WekGwUjY");
-
 
 /*
 
 add
 - running total for users -- all time score
-- security for initializing leaderboard
-- wrap leaderboard init into forum init
-
 */
 
 const MEMBER_SEED: &[u8] = b"member";
@@ -66,15 +61,16 @@ pub mod zine {
         Ok(())
     }
     pub fn initialize_forum(ctx: Context<InitializeForum>, forum_bump: u8, forum_authority_bump: u8) -> ProgramResult {
+        let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
+        verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
+
         ctx.accounts.forum.bump = forum_bump;
+        //right now it's in hex
         ctx.accounts.forum.epoch = 0;
         ctx.accounts.forum.last_reset = ctx.accounts.clock.unix_timestamp;
         ctx.accounts.forum_authority.bump = forum_authority_bump;
 
-        let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
-        verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
-        leaderboard.posts = [LeaderboardPost::default(); 5];
-        
+        leaderboard.posts = [LeaderboardPost::default(); 5];        
         Ok(())
     }
 
@@ -154,6 +150,9 @@ pub mod zine {
 
     pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
         verify_vote_account(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
+        let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
+        verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
+
         let current_epoch = ctx.accounts.forum.epoch;
         let voter = &mut ctx.accounts.vote;
         if voter.epoch <= current_epoch {
@@ -161,9 +160,7 @@ pub mod zine {
             voted_post.score += 1;
             voter.epoch = current_epoch + 1;
             voter.voted_for_card_mint = voted_post.card_mint.key();
-
-            let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
-            verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
+           
             if let Some(mut new_leading_posts) = update_leading_posts(leaderboard.posts.to_vec(), voted_post) {
                 let mut leaders = [LeaderboardPost::default(); 5];
                 for i in (0..=(new_leading_posts.len() - 1)).rev() {
@@ -431,7 +428,6 @@ pub struct Forum {
     bump: u8,
 }
 
-//enforcing attribution like this to easily see the actual wallet owners for every nft v quickly. at least active ones
 //pda from ["member", card_mint.key()]
 #[account]
 #[derive(Default)]
@@ -444,7 +440,6 @@ pub struct Member {
     bump: u8,
 }
 
-//point of this is to easily get the member account from the wallet.
 //pda from ["memberattribution", authority.key()]
 #[account]
 #[derive(Default)]
@@ -475,7 +470,6 @@ impl Post {
     }
 }
 //keyFromSeed: [cardMint, "vote", programID]
-//only thing i really need to track is whether they have voted this round, but can also include who if i want to
 #[account]
 #[derive(Default)]
 pub struct Vote {
@@ -483,7 +477,6 @@ pub struct Vote {
     voted_for_card_mint: Pubkey,
     epoch: u32,
 }
-
 
 #[account(zero_copy)]
 pub struct Leaderboard {

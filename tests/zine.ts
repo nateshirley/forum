@@ -17,6 +17,7 @@ import {
   getVoteAddress,
   submitVote,
 } from "./helpers/execution";
+const base58 = require("base58-encode");
 
 describe("zine", () => {
   // Configure the client to use the local cluster.
@@ -47,8 +48,6 @@ describe("zine", () => {
     );
     leaderboard = _board;
     providerMintConfig = await getMintConfig(authority.publicKey);
-
-    console.log(program.account.leaderboard.size);
   });
 
   //can put init and leaderboard into one later on
@@ -93,7 +92,7 @@ describe("zine", () => {
     // let lb = await program.account.leaderboard.fetch(leaderboard);
     // console.log(lb);
     let lb = await provider.connection.getAccountInfo(leaderboard);
-    console.log(lb);
+    //console.log(lb);
   });
 
   it("mint membership", async () => {
@@ -146,9 +145,9 @@ describe("zine", () => {
     await submitVote(post, mintConfig.authority, forum, leaderboard, wallet);
 
     let lb = await program.account.leaderboard.fetch(leaderboard);
-    console.log(lb);
+    //console.log(lb);
     let p = await program.account.post.fetch(post);
-    console.log(p.score);
+    //console.log(p.score);
   });
 
   const numberArrayToString = (rawNumber: number[]) => {
@@ -157,6 +156,40 @@ describe("zine", () => {
       numbers = numbers.slice(0, -1);
     }
     return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
+  };
+
+  it("fetch all posts", async () => {
+    let accounts = await fetchAllActiveEpochPosts();
+    //console.log(accounts);
+    let ogPost = await program.account.post.fetch(accounts[0].pubkey);
+    assert.ok(ogPost.score == 2);
+    //console.log(ogPost);
+  });
+
+  const fetchAllActiveEpochPosts = async () => {
+    //fetch for epoch + 1 to reflect post accounts updated this epoch
+    let activeForum = await program.account.forum.fetch(forum);
+    let toArrayLike = new Int32Array([activeForum.epoch + 1]).buffer;
+    let toUint8 = new Uint8Array(toArrayLike);
+    let byteString: string = base58(toUint8);
+    let config = {
+      filters: [
+        {
+          dataSize: program.account.post.size, //276
+        },
+        {
+          memcmp: {
+            bytes: byteString,
+            offset: 272,
+          },
+        },
+      ],
+    };
+    let accounts = await provider.connection.getProgramAccounts(
+      program.programId,
+      config
+    );
+    return accounts;
   };
 
   /*
@@ -181,6 +214,9 @@ describe("zine", () => {
 
   - fetch all posts from current epoch
   - fetch all forum members
+
+  components on front end
+
 
   */
 });
