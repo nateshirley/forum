@@ -40,17 +40,16 @@ pub mod zine {
     pub fn create_leaderboard(ctx: Context<CreateLeaderboard>) -> ProgramResult {
         let (_leaderboard, _bump) = Pubkey::find_program_address(&[LEADERBOARD_SEED], ctx.program_id);
         let seeds = &[&LEADERBOARD_SEED[..], &[_bump]];
-
         let __anchor_rent = Rent::get()?;
-        //let space: usize = 1348;
-        let lamports = __anchor_rent.minimum_balance(1348);
+        //let space: usize = 1349;
+        let lamports = __anchor_rent.minimum_balance(1349);
 
         anchor_lang::solana_program::program::invoke_signed(
             &system_instruction::create_account(
                 &ctx.accounts.initializer.key(), 
                 &_leaderboard, 
                 lamports, 
-                1348, 
+                1349, 
                 ctx.program_id
             ),
             &[
@@ -60,6 +59,10 @@ pub mod zine {
             ],
             &[&seeds[..]],
         )?;
+
+        let loader: Loader<Leaderboard> = Loader::try_from_unchecked(ctx.program_id, &ctx.accounts.leaderboard).unwrap();
+        let mut leaderboard = loader.load_init()?;
+        leaderboard.bump = _bump;
         Ok(())
     }
     pub fn initialize_forum(ctx: Context<InitializeForum>, forum_bump: u8, forum_authority_bump: u8) -> ProgramResult {
@@ -69,10 +72,13 @@ pub mod zine {
         ctx.accounts.forum_authority.bump = forum_authority_bump;
 
         let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
+        verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
         leaderboard.posts = [LeaderboardPost::default(); 5];
         
         Ok(())
     }
+
+   
 
     pub fn mint_membership(ctx: Context<MintMembership>, member_bump: u8, member_attribution_bump: u8) -> ProgramResult {
         verify_post_account(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
@@ -123,9 +129,10 @@ pub mod zine {
     //anyone can call once it's greater than one week from previous epoch
     pub fn advance_epoch(ctx: Context<AdvanceEpoch>) -> ProgramResult {
         //604800 seconds in a week
-        if ctx.accounts.clock.unix_timestamp - ctx.accounts.forum.last_reset > 1 {
+        let previous_start_time = ctx.accounts.forum.last_reset;
+        if ctx.accounts.clock.unix_timestamp - previous_start_time > 1 {
             ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
-            ctx.accounts.forum.last_reset = ctx.accounts.clock.unix_timestamp;
+            ctx.accounts.forum.last_reset = previous_start_time + 1;
         }
         Ok(())
     }
@@ -156,6 +163,7 @@ pub mod zine {
             voter.voted_for_card_mint = voted_post.card_mint.key();
 
             let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
+            verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
             if let Some(mut new_leading_posts) = update_leading_posts(leaderboard.posts.to_vec(), voted_post) {
                 let mut leaders = [LeaderboardPost::default(); 5];
                 for i in (0..=(new_leading_posts.len() - 1)).rev() {
@@ -224,6 +232,15 @@ fn verify_vote_account(vote_address: Pubkey, card_mint: Pubkey) -> ProgramResult
         Ok(())
     } else {
         Err(ErrorCode::UnauthorizedVoteAccount.into())
+    }
+}
+fn verify_leaderboard_account(leaderboard_address: &Pubkey, bump: u8, program_id: &Pubkey) -> ProgramResult {
+    let seeds = &[&LEADERBOARD_SEED[..], &[bump]];
+    let _leaderboard = Pubkey::create_program_address(seeds, program_id).unwrap();
+    if _leaderboard.eq(leaderboard_address) { 
+        Ok(()) 
+    } else { 
+        Err(ErrorCode::UnauthorizedVoteAccount.into()) 
     }
 }
 
@@ -470,6 +487,7 @@ pub struct Vote {
 
 #[account(zero_copy)]
 pub struct Leaderboard {
+    bump: u8,
     posts: [LeaderboardPost; 5],
 }
 #[zero_copy]
@@ -523,6 +541,8 @@ pub enum ErrorCode {
     SinglePostPerEpoch,
     #[msg("vote account has already voted this epoch")]
     SingleVotePerEpoch,
+    #[msg("leaderboard account does not match expected (fromSeed): 'leaderboard', programId")]
+    UnauthorizedLeaderboardAccount,
 }
 /*
 

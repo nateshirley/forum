@@ -31,6 +31,7 @@ describe("zine", () => {
   let forumAuthority = null;
   let forumAuthorityBump = null;
   let leaderboard = null;
+  let fakeLeader = null;
   let providerMintConfig = null;
 
   it("config", async () => {
@@ -75,6 +76,15 @@ describe("zine", () => {
         ],
       }
     );
+
+    // SystemProgram.createAccount({
+    //   fromPubkey: authority.publicKey,
+    //   lamports:
+    //     await provider.connection.getMinimumBalanceForRentExemption(1349),
+    //   newAccountPubkey: leaderboard,
+    //   programId: program.programId,
+    //   space: 1349,
+    // }),
     //console.log("init forum sig", tx);
 
     let newForum = await provider.connection.getAccountInfo(forum);
