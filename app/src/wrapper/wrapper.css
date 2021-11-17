@@ -1,0 +1,40 @@
+.wallet-notification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 12px 15px;
+}
+
+.wallet-notification-error {
+  background: rgba(235, 55, 66, 0.7);
+}
+
+.wallet-notification-info {
+  background: rgba(78, 68, 206, 0.7);
+}
+
+.wallet-notification-success {
+  background: rgba(33, 229, 111, 0.7);
+}
+
+.logo {
+  width: 127px;
+  height: 80px;
+}
+
+.connect {
+  background-color: red;
+  color: blue;
+}
+
+.tester {
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+.navbar {
+  height: 100px;
+  margin-left: 40px;
+  margin-right: 40px;
+}

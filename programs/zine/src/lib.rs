@@ -4,7 +4,7 @@ use anchor_lang::{
 };
 use anchor_spl::token;
 declare_id!("GwMnqrRGaxWHJzu1vqzdssLjJfkM6jbLxAG8WekGwUjY");
-
+mod verify_account;
 /*
 
 add
@@ -26,6 +26,15 @@ actions
 
 all accounts derived from mintkey except member attribution
 everything else is stable from that
+
+thinking about how to create the assets
+gonna have to play around with storing the metadata
+but i think i will do an attribution similar to the cards
+
+artifact_mint
+leaderboard
+and just copy all leaderboard data straight into it
+
 */
 
 #[program]
@@ -37,14 +46,14 @@ pub mod zine {
         let seeds = &[&LEADERBOARD_SEED[..], &[_bump]];
         let __anchor_rent = Rent::get()?;
         //let space: usize = 1349;
-        let lamports = __anchor_rent.minimum_balance(1349);
+        let lamports = __anchor_rent.minimum_balance(2689);
 
         anchor_lang::solana_program::program::invoke_signed(
             &system_instruction::create_account(
                 &ctx.accounts.initializer.key(), 
                 &_leaderboard, 
                 lamports, 
-                1349, 
+                2689, 
                 ctx.program_id
             ),
             &[
@@ -62,7 +71,7 @@ pub mod zine {
     }
     pub fn initialize_forum(ctx: Context<InitializeForum>, forum_bump: u8, forum_authority_bump: u8) -> ProgramResult {
         let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
-        verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
+        verify_account::leaderboard(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
 
         ctx.accounts.forum.bump = forum_bump;
         //right now it's in hex
@@ -70,14 +79,11 @@ pub mod zine {
         ctx.accounts.forum.last_reset = ctx.accounts.clock.unix_timestamp;
         ctx.accounts.forum_authority.bump = forum_authority_bump;
 
-        leaderboard.posts = [LeaderboardPost::default(); 5];        
+        leaderboard.posts = [LeaderboardPost::default(); 10];        
         Ok(())
     }
-
-   
-
     pub fn mint_membership(ctx: Context<MintMembership>, member_bump: u8, member_attribution_bump: u8) -> ProgramResult {
-        verify_post_account(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
+        verify_account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_init()?;
         post.card_mint = ctx.accounts.card_mint.key();
         post.body = [0; 140];
@@ -112,7 +118,6 @@ pub mod zine {
         //add something that creates metadata for the membership card
         Ok(())
     }
-
     //claim authority after a transfer
     pub fn claim_membership_authority(ctx: Context<ClaimMembershipAuthority>, member_attribution_bump: u8) -> ProgramResult {
         ctx.accounts.member.authority = ctx.accounts.authority.key();
@@ -121,7 +126,6 @@ pub mod zine {
         ctx.accounts.member_attribution.bump = member_attribution_bump;
         Ok(())
     }
-
     //anyone can call once it's greater than one week from previous epoch
     pub fn advance_epoch(ctx: Context<AdvanceEpoch>) -> ProgramResult {
         //604800 seconds in a week
@@ -132,9 +136,8 @@ pub mod zine {
         }
         Ok(())
     }
-
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
-        verify_post_account(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
+        verify_account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_epoch = ctx.accounts.forum.epoch;
         if post.epoch <= current_epoch {
@@ -147,22 +150,21 @@ pub mod zine {
             Err(ErrorCode::SinglePostPerEpoch.into())
         }
     }
-
-    pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
-        verify_vote_account(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
+    pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
+        verify_account::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
-        verify_leaderboard_account(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
+        verify_account::leaderboard(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
 
         let current_epoch = ctx.accounts.forum.epoch;
         let voter = &mut ctx.accounts.vote;
-        if voter.epoch <= current_epoch {
+        if true {//voter.epoch <= current_epoch {
             let mut voted_post = ctx.accounts.post.load_mut()?;
-            voted_post.score += 1;
+            voted_post.score += amount;
             voter.epoch = current_epoch + 1;
             voter.voted_for_card_mint = voted_post.card_mint.key();
            
             if let Some(mut new_leading_posts) = update_leading_posts(leaderboard.posts.to_vec(), voted_post) {
-                let mut leaders = [LeaderboardPost::default(); 5];
+                let mut leaders = [LeaderboardPost::default(); 10];
                 for i in (0..=(new_leading_posts.len() - 1)).rev() {
                     leaders[i] = new_leading_posts.pop().unwrap();
                 }
@@ -185,8 +187,7 @@ fn update_leading_posts(mut leading_posts: Vec<LeaderboardPost>, voted_post: std
     while insert_marker < 100 && voted_post.score > leading_posts[insert_marker].score {
         if voted_post.card_mint.eq(&leading_posts[insert_marker].card_mint) {
             msg!("matching keys with score {}, at index {}", {voted_post.score}, insert_marker);
-            leading_posts[insert_marker] = voted_post.to_leaderboard();
-            return Some(leading_posts);
+            leading_posts.remove(insert_marker);
         } else {
             insert_marker -= 1;
             msg!("skipped one");
@@ -196,7 +197,9 @@ fn update_leading_posts(mut leading_posts: Vec<LeaderboardPost>, voted_post: std
     //insert shifts everything to the right
     if insert_marker != lowest_scoring_index {
         leading_posts.insert(insert_marker + 1, voted_post.to_leaderboard());
-        leading_posts.pop();
+        if leading_posts.len() > lowest_scoring_index + 1 {
+            leading_posts.pop();
+        }
         return Some(leading_posts);
     }
     None
@@ -208,7 +211,6 @@ fn new_body(body: String) -> [u8; 140] {
     new_body[..bytes.len()].copy_from_slice(bytes);
     new_body
 }
-
 fn new_link(link: String) -> [u8; 88] {
     let bytes = link.as_bytes();
     let mut new_link = [0u8; 88];
@@ -216,30 +218,7 @@ fn new_link(link: String) -> [u8; 88] {
     new_link
 }
 
-//only thing i could do to make it a bit faster is store the authority on it. not sure tho
-fn verify_post_account(post_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
-    if post_address == Pubkey::create_with_seed(&card_mint, "post", &id()).unwrap() {
-        Ok(())
-    } else {
-        Err(ErrorCode::UnauthorizedPostAccount.into())
-    }
-}
-fn verify_vote_account(vote_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
-    if vote_address == Pubkey::create_with_seed(&card_mint, "vote", &id()).unwrap() {
-        Ok(())
-    } else {
-        Err(ErrorCode::UnauthorizedVoteAccount.into())
-    }
-}
-fn verify_leaderboard_account(leaderboard_address: &Pubkey, bump: u8, program_id: &Pubkey) -> ProgramResult {
-    let seeds = &[&LEADERBOARD_SEED[..], &[bump]];
-    let _leaderboard = Pubkey::create_program_address(seeds, program_id).unwrap();
-    if _leaderboard.eq(leaderboard_address) { 
-        Ok(()) 
-    } else { 
-        Err(ErrorCode::UnauthorizedVoteAccount.into()) 
-    }
-}
+
 
 #[derive(Accounts)]
 pub struct CreateLeaderboard<'info> {
@@ -481,7 +460,7 @@ pub struct Vote {
 #[account(zero_copy)]
 pub struct Leaderboard {
     bump: u8,
-    posts: [LeaderboardPost; 5],
+    posts: [LeaderboardPost; 10],
 }
 #[zero_copy]
 pub struct LeaderboardPost {
