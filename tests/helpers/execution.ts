@@ -152,7 +152,8 @@ export const fetchMemberAttribution = async (authority: PublicKey) => {
 export const newPost = async (
   authority: PublicKey,
   newBody: string,
-  newLink: string
+  newLink: string,
+  signer?: Keypair
 ) => {
   let [forum, _forumBump] = await getForumAddress();
   let memberAttribution = await fetchMemberAttribution(authority);
@@ -161,6 +162,7 @@ export const newPost = async (
     memberAttribution.cardMint
   );
   let post = await getPostAddress(memberAttribution.cardMint);
+  let signers = signer ? [signer] : [];
   const tx = await program.rpc.newPost(newBody, newLink, {
     accounts: {
       authority: authority,
@@ -170,6 +172,7 @@ export const newPost = async (
       cardMint: memberAttribution.cardMint,
       cardTokenAccount: cardTokenAccount,
     },
+    signers: signers,
   });
 };
 export const submitVote = async (
@@ -177,6 +180,7 @@ export const submitVote = async (
   authority: PublicKey,
   forum: PublicKey,
   leaderboard: PublicKey,
+  amount: number,
   signer?: Keypair
 ) => {
   let memberAttribution = await fetchMemberAttribution(authority);
@@ -186,7 +190,7 @@ export const submitVote = async (
   );
   let vote = await getVoteAddress(memberAttribution.cardMint);
   let signers = signer ? [signer] : [];
-  const tx = await program.rpc.submitVote({
+  const tx = await program.rpc.submitVote(amount, {
     accounts: {
       authority: authority,
       member: memberAttribution.member,
