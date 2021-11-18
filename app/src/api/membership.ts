@@ -2,11 +2,32 @@ import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { Provider, Program, utils } from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import { createAssociatedTokenAccountInstruction } from "./tokenHelpers";
-import { getForumAddress, getForumAuthority } from "./addresses";
+import {
+  getForumAddress,
+  getForumAuthority,
+  getMemberAddress,
+} from "./addresses";
 import { getMintConfig, MintConfig } from "./config";
 import idl from "../idl.json";
 import { Zine } from "./ZineType";
 const forumProgramId = new PublicKey(idl.metadata.address);
+
+export const fetchMembershipAccount = async (
+  forumProgram: Program<Zine>,
+  cardMint: PublicKey
+) => {
+  let [memberAddress, _bump] = await getMemberAddress(cardMint);
+  let membership = await forumProgram.account.member.fetch(memberAddress);
+  return {
+    publicKey: memberAddress,
+    authority: membership.authority,
+    card_mint: membership.cardMint,
+    post: membership.post,
+    vote: membership.vote,
+    id: membership.id,
+    bump: membership.bump,
+  };
+};
 
 export const fetchMembershipCardMintForWallet = async (
   forumProgram: Program<Zine>,

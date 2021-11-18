@@ -37,7 +37,7 @@ const NavigationBar: FC = () => {
             <button onClick={airdrop}>airdrop</button>
             <div >
                 {/* <Link to="/make">+make</Link> */}
-                {wallet && (
+                {wallet.connected && (
                     <div className="nav-wallet-button-outer">
                         <div className="nav-wallet-button"><WalletMultiButton style={connectStyle} /></div>
                         <div className="nav-wallet-button disconnect"><WalletDisconnectButton style={connectStyle} /></div>

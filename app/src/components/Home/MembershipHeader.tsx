@@ -19,27 +19,23 @@ if member {
 }
 */
 
+interface Props {
+    memberCardMint: PublicKey | undefined,
+    setMemberCardMint: (cardMint: PublicKey | undefined) => void;
+}
 
-function MembershipHeader() {
-    let [memberCardMint, setMemberCardMint] = useState<PublicKey | undefined>(undefined);
+
+function MembershipHeader(props: Props) {
     let wallet = useWallet();
     let program = getForumProgram(wallet);
 
-    //update member status when wallet is connected/disconnected
-    useEffect(() => {
-        fetchMembershipCardMintForWallet(program, wallet.publicKey).then((cardMint) => {
-            setMemberCardMint(cardMint);
-            console.log("(use effect) setting isMember to ", cardMint?.toBase58())
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [wallet.connected])
 
     const didPressMintMembership = () => {
         if (wallet.publicKey) {
             getMintConfig(wallet.publicKey).then((mintConfig) => {
                 mintMembership(mintConfig, getProvider(wallet)).then(() => {
                     fetchMembershipCardMintForWallet(program, wallet.publicKey).then((cardMint) => {
-                        setMemberCardMint(cardMint);
+                        props.setMemberCardMint(cardMint);
                         console.log("(use effect) setting isMember to ", cardMint?.toBase58())
                     })
                 })
@@ -47,10 +43,10 @@ function MembershipHeader() {
         }
     }
 
-    if (memberCardMint) {
+    if (props.memberCardMint) {
         return (
             <div>
-                Hello, friend {toDisplayString(memberCardMint)}
+                Hello, friend {toDisplayString(props.memberCardMint)}
             </div>
         )
     } else {

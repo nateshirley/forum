@@ -17,6 +17,7 @@ export const getMemberAttributionAddress = (authority: PublicKey) => {
     forumProgramId
   );
 };
+
 export const getCardTokenAccount = (
   authority: PublicKey,
   cardMint: PublicKey
@@ -38,6 +39,12 @@ export const getForumAddress = () => {
 export const getForumAuthority = () => {
   return PublicKey.findProgramAddress(
     [anchor.utils.bytes.utf8.encode("authority")],
+    forumProgramId
+  );
+};
+export const getLeaderboard = async () => {
+  return await PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("leaderboard")],
     forumProgramId
   );
 };

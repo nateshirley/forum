@@ -13,14 +13,12 @@ const ComponentSwitch: FC = () => {
 
     return (
         <Switch>
-            <div>
-                <Route path="/" >
-                    <Home />
-                </Route>
-                <Route path="/new">
-                    <New />
-                </Route>
-            </div>
+            <Route path="/" >
+                <Home />
+            </Route>
+            <Route path="/new">
+                <New />
+            </Route>
         </Switch>
     );
 

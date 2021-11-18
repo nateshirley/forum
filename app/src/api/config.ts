@@ -48,7 +48,6 @@ export const getMintConfig = async (authority: PublicKey) => {
     authority,
     cardMint.publicKey
   );
-  //these should be promise all
   let memberAddress = getMemberAddress(cardMint.publicKey);
   let memberAttribution = getMemberAttributionAddress(authority);
   let post = PublicKey.createWithSeed(

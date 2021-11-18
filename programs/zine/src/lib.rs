@@ -9,6 +9,7 @@ mod verify_account;
 
 add
 - running total for users -- all time score
+- add time of post
 - clear old member attribution on transfer, so i can rely on checking wallet for auth
 */
 
