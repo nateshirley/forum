@@ -9,6 +9,7 @@ mod verify_account;
 
 add
 - running total for users -- all time score
+- clear old member attribution on transfer, so i can rely on checking wallet for auth
 */
 
 const MEMBER_SEED: &[u8] = b"member";
@@ -395,6 +396,7 @@ pub struct ClaimMembershipAuthority<'info> {
         payer = authority,
     )]
     member_attribution: Account<'info, MemberAttribution>,
+    //add someth here that gets rid of old member attribution
     system_program: Program<'info, System>,
 }
 

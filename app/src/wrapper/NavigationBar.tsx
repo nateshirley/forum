@@ -4,9 +4,11 @@ import { WalletDisconnectButton, WalletMultiButton } from '@solana/wallet-adapte
 import React, { FC } from 'react';
 import logo from "../assets/record.png"
 import "./wrapper.css"
+import { getProvider } from '../api/config';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 const NavigationBar: FC = () => {
-    const { wallet } = useWallet();
+    let wallet = useWallet();
 
     let connectStyle = {
         color: "black",
@@ -16,13 +18,31 @@ const NavigationBar: FC = () => {
         fontWeight: 600
     }
 
+    const airdrop = async () => {
+        if (wallet.publicKey) {
+            const provider = getProvider(wallet);
+            await provider.connection.confirmTransaction(
+                await provider.connection.requestAirdrop(
+                    wallet.publicKey,
+                    5 * LAMPORTS_PER_SOL
+                ),
+                "confirmed"
+            );
+        }
+    }
+
     return (
         <nav className="navbar">
             <Link to="/"><img src={logo} alt="home" className="logo" /></Link>
+            <button onClick={airdrop}>airdrop</button>
             <div >
                 {/* <Link to="/make">+make</Link> */}
-                <WalletMultiButton style={connectStyle} />
-                {wallet && <WalletDisconnectButton style={connectStyle} />}
+                {wallet && (
+                    <div className="nav-wallet-button-outer">
+                        <div className="nav-wallet-button"><WalletMultiButton style={connectStyle} /></div>
+                        <div className="nav-wallet-button disconnect"><WalletDisconnectButton style={connectStyle} /></div>
+                    </div>
+                )}
             </div>
         </nav>
     );

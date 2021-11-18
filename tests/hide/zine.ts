@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { Zine } from "../target/types/zine";
+import { Zine } from "../../target/types/zine";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import * as assert from "assert";
 import { TextDecoder } from "util";
@@ -16,7 +16,7 @@ import {
   getPostAddress,
   getVoteAddress,
   submitVote,
-} from "./helpers/execution";
+} from "../helpers/execution";
 const base58 = require("base58-encode");
 
 describe("zine", () => {

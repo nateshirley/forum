@@ -1,0 +1,9 @@
+.component-parent {
+  padding-top: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 90%;
+  max-width: 540px;
+  margin-bottom: 150px;
+  color: black;
+}
