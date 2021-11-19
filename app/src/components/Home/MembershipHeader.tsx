@@ -8,6 +8,7 @@ import { getForumProgram, getProvider, getMintConfig } from '../../api/config'
 import { mintMembership } from "../../api/membership";
 import { toDisplayString } from "../../utils"
 import { ForumInfo, Membership } from "./Forum";
+import { Post } from "./ActivePosts";
 /*
 if member {
     - show welcome
@@ -23,11 +24,12 @@ if member {
 interface Props {
     memberCardMint: PublicKey | undefined,
     setMemberCardMint: (cardMint: PublicKey | undefined) => void,
-    isEligibleToPost: boolean,
+    canPost: boolean,
     membership: Membership | undefined,
     forumInfo: ForumInfo | undefined,
     cardTokenAccount: PublicKey | undefined,
     didSubmitNewPost: () => void,
+    activeUserPost: Post | undefined,
 }
 
 function MembershipHeader(props: Props) {
@@ -76,7 +78,7 @@ function MembershipHeader(props: Props) {
                 <div>
                     Hello, friend {toDisplayString(props.memberCardMint)}
                 </div>
-                {props.isEligibleToPost
+                {props.canPost
                     ? <div>
                         u can post
                         <div>
@@ -101,6 +103,12 @@ function MembershipHeader(props: Props) {
                     </div>
                     : <div>
                         u can't post
+                        <div>
+                            {props.activeUserPost?.body}
+                        </div>
+                        <div>
+                            {props.activeUserPost?.score}
+                        </div>
                     </div>
                 }
             </div>

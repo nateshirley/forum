@@ -4,13 +4,14 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import "../../Global.css";
 import MembershipHeader from './MembershipHeader';
 import ConnectWallet from './ConnectWallet';
-import ActivePosts from './ActivePosts';
+import ActivePosts, { Post } from './ActivePosts';
 import { useEffect, useState } from 'react';
 import { getForumProgram } from '../../api/config';
 import { getCardTokenAccount, getForumAddress, getLeaderboard } from '../../api/addresses';
 import BN from 'bn.js';
 import { PublicKey } from '@solana/web3.js';
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../../api/membership';
+import { numberArrayToString } from '../../utils';
 
 
 export interface ForumInfo {
@@ -38,8 +39,9 @@ function Forum() {
     let [membership, setMembership] = useState<Membership | undefined>(undefined);
     let [leaderboard, setLeaderboard] = useState<PublicKey | undefined>(undefined);
     let [cardTokenAccount, setCardTokenAccount] = useState<PublicKey | undefined>(undefined);
-    let [isEligibleToPost, setIsElegibleToPost] = useState(false);
-    let [isEligibleToLike, setIsEligibleToLike] = useState(false);
+    let [canPost, setCanPost] = useState(false);
+    let [canLike, setCanLike] = useState(false);
+    const [activeUserPost, setActiveUserPost] = useState<Post | undefined>(undefined);
     const [postRefresh, doPostRefresh] = useState(0);
 
 
@@ -92,24 +94,34 @@ function Forum() {
         if (membership && forumInfo) {
             let activeEpoch = forumInfo?.epoch ?? 0;
             program.account.vote.fetch(membership.vote).then((likeAccount) => {
-                setIsEligibleToLike(likeAccount.epoch <= activeEpoch);
+                setCanLike(likeAccount.epoch <= activeEpoch);
             });
             program.account.post.fetch(membership.post).then((postAccount) => {
-                setIsElegibleToPost(postAccount.epoch <= activeEpoch);
+                setCanPost(postAccount.epoch <= activeEpoch);
+                if (postAccount.epoch > activeEpoch && membership) { //they already posted, set the post
+                    setActiveUserPost({
+                        publicKey: membership.post,
+                        cardMint: postAccount.cardMint,
+                        body: numberArrayToString(postAccount.body),
+                        link: numberArrayToString(postAccount.link),
+                        score: postAccount.score,
+                        epoch: postAccount.epoch
+                    })
+                }
             })
         } else {
-            setIsEligibleToLike(false);
-            setIsElegibleToPost(false);
+            setCanLike(false);
+            setCanPost(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [membership, forumInfo])
 
     const didSubmitNewPost = () => {
-        setIsElegibleToPost(false);
+        setCanPost(false);
         doPostRefresh(prev => prev + 1);
     }
     const didPerformLike = () => {
-        setIsEligibleToLike(false);
+        setCanLike(false);
     }
 
 
@@ -117,15 +129,15 @@ function Forum() {
     if (!wallet.connected) {
         header = <ConnectWallet />
     } else {
-        header = <MembershipHeader memberCardMint={memberCardMint} setMemberCardMint={setMemberCardMint} isEligibleToPost={isEligibleToPost}
-            membership={membership} forumInfo={forumInfo} cardTokenAccount={cardTokenAccount} didSubmitNewPost={didSubmitNewPost} />
+        header = <MembershipHeader memberCardMint={memberCardMint} setMemberCardMint={setMemberCardMint} canPost={canPost}
+            membership={membership} forumInfo={forumInfo} cardTokenAccount={cardTokenAccount} didSubmitNewPost={didSubmitNewPost} activeUserPost={activeUserPost} />
     }
 
     return (
         <div className="component-parent">
             {header}
             <ActivePosts forumInfo={forumInfo} leaderboard={leaderboard} membership={membership}
-                cardTokenAccount={cardTokenAccount} isEligibleToLike={isEligibleToLike} refresh={postRefresh} didPerformLike={didPerformLike} />
+                cardTokenAccount={cardTokenAccount} canLike={canLike} refresh={postRefresh} didPerformLike={didPerformLike} />
         </div>
     );
 }

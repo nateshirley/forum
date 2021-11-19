@@ -11,12 +11,12 @@ interface Props {
     leaderboard: PublicKey | undefined,
     membership: Membership | undefined,
     cardTokenAccount: PublicKey | undefined,
-    isEligibleToLike: boolean,
+    canLike: boolean,
     refresh: number,
     didPerformLike: () => void,
 }
 
-interface Post {
+export interface Post {
     publicKey: PublicKey,
     cardMint: PublicKey,
     body: string,
@@ -93,7 +93,7 @@ function ActivePosts(props: Props) {
                         <a href={post.link}>{post.link}</a>
                     </div>
                     <div>
-                        {props.isEligibleToLike
+                        {props.canLike
                             ? <button onClick={() => didPressLike(post.publicKey, index)}>like</button>
                             : <div>already liked</div>
                         }
