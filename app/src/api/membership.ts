@@ -17,16 +17,20 @@ export const fetchMembershipAccount = async (
   cardMint: PublicKey
 ) => {
   let [memberAddress, _bump] = await getMemberAddress(cardMint);
-  let membership = await forumProgram.account.member.fetch(memberAddress);
-  return {
-    publicKey: memberAddress,
-    authority: membership.authority,
-    cardMint: membership.cardMint,
-    post: membership.post,
-    vote: membership.vote,
-    id: membership.id,
-    bump: membership.bump,
-  };
+  try {
+    let membership = await forumProgram.account.member.fetch(memberAddress);
+    return {
+      publicKey: memberAddress,
+      authority: membership.authority,
+      cardMint: membership.cardMint,
+      post: membership.post,
+      vote: membership.vote,
+      id: membership.id,
+      bump: membership.bump,
+    };
+  } catch {
+    return undefined;
+  }
 };
 
 export const fetchMembershipCardMintForWallet = async (

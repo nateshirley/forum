@@ -5,12 +5,24 @@ use anchor_lang::{
 use anchor_spl::token;
 declare_id!("GwMnqrRGaxWHJzu1vqzdssLjJfkM6jbLxAG8WekGwUjY");
 mod verify_account;
+
+
 /*
+- need to do more work thinking about governance -- one vote per all time score?
+- some sort of weighted average?
+- how to issue new membership? directly on market
+     - figure out how the IDOs work i guess
+     - problem is that the shares dont force u to convert to voting power
+- talk to wil barnes maybe? jet governance
+- look at wilson's strategy for pawn shop, also maybe someone from partyDAO
+
 
 add
 - running total for users -- all time score
 - add time of post
 - clear old member attribution on transfer, so i can rely on checking wallet for auth
+- generate new leaderboard data when advancing the epoch, assign it to mint for new nft
+    - add reverse attribution so [epoch, leaderboard] = nft mintkey
 */
 
 const MEMBER_SEED: &[u8] = b"member";
@@ -20,24 +32,6 @@ const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 
 //can add a name to this to make infinite forums
-
-/*
-actions
-- post 
-- vote
-
-all accounts derived from mintkey except member attribution
-everything else is stable from that
-
-thinking about how to create the assets
-gonna have to play around with storing the metadata
-but i think i will do an attribution similar to the cards
-
-artifact_mint
-leaderboard
-and just copy all leaderboard data straight into it
-
-*/
 
 #[program]
 pub mod zine {

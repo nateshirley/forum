@@ -7,7 +7,7 @@ import { fetchMembershipCardMintForWallet } from "../../api/membership";
 import { getForumProgram, getProvider, getMintConfig } from '../../api/config'
 import { mintMembership } from "../../api/membership";
 import { toDisplayString } from "../../utils"
-import { ForumInfo, Membership } from "./Forum";
+import { ForumInfo, Membership } from "./Home";
 import { Post } from "./ActivePosts";
 /*
 if member {
@@ -33,10 +33,10 @@ interface Props {
 }
 
 function MembershipHeader(props: Props) {
-    let wallet = useWallet();
+    const wallet = useWallet();
     let program = getForumProgram(wallet);
-    let [postBody, setPostBody] = useState('');
-    let [postLink, setPostLink] = useState('');
+    const [postBody, setPostBody] = useState('');
+    const [postLink, setPostLink] = useState('');
 
     const didPressNewPost = async () => {
         if (wallet.publicKey && props.memberCardMint && props.membership && props.forumInfo && props.cardTokenAccount) {
