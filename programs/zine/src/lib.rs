@@ -15,18 +15,24 @@ mod verify_account;
 - how to issue new membership? directly on market
      - figure out how the IDOs work i guess
      - problem is that the shares dont force u to convert to voting power
+     - u would prefer that the new members automatically become contributors
 - talk to wil barnes maybe? jet governance
 - look at wilson's strategy for pawn shop, also maybe someone from partyDAO
+- i need to figure out what they are called. 
+- maybe if i did everything magazine themed it would help people understand?
+if it's prh people will probably associate it with audio
+ipfs also works 
 
 
 add
-- clear old member attribution on transfer, so i can rely on checking wallet for auth
 - generate new leaderboard data when advancing the epoch, assign it to mint for new nft
     - add reverse attribution so [epoch, leaderboard] = nft mintkey
+- test if wallet works with svgs
 
 done
 - add time of post
 - running total for users -- all time score
+- clear old member attribution on transfer, so i can rely on checking wallet for auth
 
 */
 
@@ -35,6 +41,7 @@ const MEMBER_ATTRIBUTION_SEED: &[u8] = b"memberattribution";
 const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
+const ZINE_SEED: &[u8] = b"zine";
 
 //can add a name to this to make infinite forums
 
@@ -132,14 +139,15 @@ pub mod zine {
         Ok(())
     }
     //anyone can call once it's greater than one week from previous epoch
-    pub fn advance_epoch(ctx: Context<AdvanceEpoch>) -> ProgramResult {
+    pub fn advance_epoch(ctx: Context<AdvanceEpoch>, _zine_bump: u8) -> ProgramResult {
         //604800 seconds in a week
-        let previous_start_time = ctx.accounts.forum.last_reset;
         let current_time = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
+        let previous_start_time = ctx.accounts.forum.last_reset;
         if current_time - previous_start_time > 1 {
             ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
             ctx.accounts.forum.last_reset = previous_start_time + 1;
-        }
+        }     
+
         Ok(())
     }
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
@@ -312,14 +320,25 @@ pub struct MintMembership<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(zine_bump: u8)]
 pub struct AdvanceEpoch<'info> {
+    #[account(mut)]
+    advancer: Signer<'info>,
     #[account(
         mut,
         seeds = [FORUM_SEED],
         bump = forum.bump
     )]
     forum: Account<'info, Forum>,
+    #[account(
+        init,
+        seeds = [ZINE_SEED, &forum.epoch.to_le_bytes()],
+        bump,
+        payer = advancer
+    )]
+    zine: Account<'info, Zine>,
     clock: Sysvar<'info, Clock>,
+    system_program: Program<'info, System>
 }
 
 #[derive(Accounts)]
@@ -495,6 +514,13 @@ impl Default for LeaderboardPost {
             score: 0,
         }
     }
+}
+
+#[account]
+#[derive(Default)]
+pub struct Zine {
+    isse: u32,
+    card_mint: Pubkey
 }
 
 #[account]
