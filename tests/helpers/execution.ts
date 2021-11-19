@@ -80,6 +80,7 @@ export const mintMembership = async (
         cardTokenAccount: mintConfig.cardTokenAccount,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
+        clock: web3.SYSVAR_CLOCK_PUBKEY,
       },
       instructions: [
         //create token mint account for member card nft
@@ -171,6 +172,7 @@ export const newPost = async (
       post: post,
       cardMint: memberAttribution.cardMint,
       cardTokenAccount: cardTokenAccount,
+      clock: web3.SYSVAR_CLOCK_PUBKEY,
     },
     signers: signers,
   });

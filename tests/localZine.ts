@@ -20,7 +20,6 @@ import {
 const base58 = require("base58-encode");
 
 describe("local zine", () => {
-  // Configure the client to use the local cluster.
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
   const authority = provider.wallet;
@@ -50,37 +49,63 @@ describe("local zine", () => {
     providerMintConfig = await getMintConfig(authority.publicKey);
   });
 
-  it("fetch all posts", async () => {
-    let accounts = await fetchAllActiveEpochPosts();
-    console.log(accounts);
-    let ogPost = await program.account.post.fetch(accounts[0].pubkey);
-    //assert.ok(ogPost.score == 2);
-    //console.log(ogPost);
-  });
+  // it("clock", async () => {
+  //   let time = await provider.connection.getBlockTime(100874);
+  //   console.log(time);
+  // });
 
-  const fetchAllActiveEpochPosts = async () => {
-    //fetch for epoch + 1 to reflect post accounts updated this epoch
-    let activeForum = await program.account.forum.fetch(forum);
-    let toArrayLike = new Int32Array([activeForum.epoch + 1]).buffer;
-    let toUint8 = new Uint8Array(toArrayLike);
-    let byteString: string = base58(toUint8);
-    let config = {
-      filters: [
-        {
-          dataSize: program.account.post.size, //276
+  /*
+  it("claim membership auth", async () => {
+    let cardTokenAccount = await getCardTokenAccount();
+    let [memberAttribution, memberAttributionBump] =
+      await getMemberAttributionAddress(authority.publicKey);
+    const tx = await program.rpc.claimMembershipAuthority(
+      memberAttributionBump,
+      {
+        accounts: {
+          authority: authority.publicKey,
+          member: member,
+          cardMint: cardMint.publicKey,
+          cardTokenAccount: cardTokenAccount,
+          memberAttribution: memberAttribution,
+          systemProgram: SystemProgram.programId,
         },
-        {
-          memcmp: {
-            bytes: byteString,
-            offset: 272,
-          },
-        },
-      ],
-    };
-    let accounts = await provider.connection.getProgramAccounts(
-      program.programId,
-      config
+      }
     );
-    return accounts;
-  };
+  });
+  */
+
+  // it("fetch all posts", async () => {
+  //   let accounts = await fetchAllActiveEpochPosts();
+  //   console.log(accounts);
+  //   let ogPost = await program.account.post.fetch(accounts[0].pubkey);
+  //   //assert.ok(ogPost.score == 2);
+  //   //console.log(ogPost);
+  // });
+
+  // const fetchAllActiveEpochPosts = async () => {
+  //   //fetch for epoch + 1 to reflect post accounts updated this epoch
+  //   let activeForum = await program.account.forum.fetch(forum);
+  //   let toArrayLike = new Int32Array([activeForum.epoch + 1]).buffer;
+  //   let toUint8 = new Uint8Array(toArrayLike);
+  //   let byteString: string = base58(toUint8);
+  //   let config = {
+  //     filters: [
+  //       {
+  //         dataSize: program.account.post.size, //276
+  //       },
+  //       {
+  //         memcmp: {
+  //           bytes: byteString,
+  //           offset: 272,
+  //         },
+  //       },
+  //     ],
+  //   };
+  //   let accounts = await provider.connection.getProgramAccounts(
+  //     program.programId,
+  //     config
+  //   );
+  //   return accounts;
+  // };
 });

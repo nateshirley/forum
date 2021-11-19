@@ -125,6 +125,11 @@ export type Zine = {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -227,6 +232,11 @@ export type Zine = {
           "name": "cardTokenAccount",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -308,7 +318,7 @@ export type Zine = {
           },
           {
             "name": "lastReset",
-            "type": "i64"
+            "type": "u64"
           },
           {
             "name": "bump",
@@ -397,11 +407,19 @@ export type Zine = {
             }
           },
           {
-            "name": "score",
-            "type": "u32"
+            "name": "timestamp",
+            "type": "u64"
           },
           {
             "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "epochScore",
+            "type": "u32"
+          },
+          {
+            "name": "allTimeScore",
             "type": "u32"
           }
         ]
@@ -435,6 +453,10 @@ export type Zine = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
           },
           {
             "name": "posts",
@@ -493,10 +515,6 @@ export type Zine = {
           },
           {
             "name": "score",
-            "type": "u32"
-          },
-          {
-            "name": "epoch",
             "type": "u32"
           }
         ]
@@ -659,6 +677,11 @@ export const IDL: Zine = {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -761,6 +784,11 @@ export const IDL: Zine = {
           "name": "cardTokenAccount",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -842,7 +870,7 @@ export const IDL: Zine = {
           },
           {
             "name": "lastReset",
-            "type": "i64"
+            "type": "u64"
           },
           {
             "name": "bump",
@@ -931,11 +959,19 @@ export const IDL: Zine = {
             }
           },
           {
-            "name": "score",
-            "type": "u32"
+            "name": "timestamp",
+            "type": "u64"
           },
           {
             "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "epochScore",
+            "type": "u32"
+          },
+          {
+            "name": "allTimeScore",
             "type": "u32"
           }
         ]
@@ -969,6 +1005,10 @@ export const IDL: Zine = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "epoch",
+            "type": "u32"
           },
           {
             "name": "posts",
@@ -1027,10 +1067,6 @@ export const IDL: Zine = {
           },
           {
             "name": "score",
-            "type": "u32"
-          },
-          {
-            "name": "epoch",
             "type": "u32"
           }
         ]

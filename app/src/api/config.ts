@@ -9,12 +9,12 @@ import {
 import { Zine } from "./ZineType";
 
 import idl from "../idl.json";
-const forumProgramId = new PublicKey(idl.metadata.address);
+import { FORUM_PROGRAM_ID } from "../utils";
 
 export const getForumProgram = (wallet: WalletContextState): Program<Zine> => {
   const provider = getProvider(wallet);
   let myIdl: any = idl;
-  return new Program(myIdl, forumProgramId, provider);
+  return new Program(myIdl, FORUM_PROGRAM_ID, provider);
 };
 export const getProvider = (withWallet: WalletContextState) => {
   const commitment: Commitment = "processed";
@@ -53,12 +53,12 @@ export const getMintConfig = async (authority: PublicKey) => {
   let post = PublicKey.createWithSeed(
     cardMint.publicKey,
     "post",
-    forumProgramId
+    FORUM_PROGRAM_ID
   );
   let vote = PublicKey.createWithSeed(
     cardMint.publicKey,
     "vote",
-    forumProgramId
+    FORUM_PROGRAM_ID
   );
   return await Promise.all([memberAddress, memberAttribution, post, vote]).then(
     (values) => {

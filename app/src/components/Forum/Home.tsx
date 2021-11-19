@@ -12,14 +12,15 @@ import "../../Global.css";
 a lot of aesthetic stuff
 - form validation for post
 - sorting posts by score and by time
-- need to add time to post and figure out how to decode time 
 - show liked post or link to liked post
+- and then something to show off previous leaderboards
+
+done
 - make a post details page. just a way to link to a post account for a particular card mint.
     - like literally just post/...id and show the post for that account
     - could add more stuff to it later
-- and then something to show off previous leaderboards
+    - need to add time to post and figure out how to decode time 
 */
-
 
 export interface ForumInfo {
     publicKey: PublicKey,
@@ -27,7 +28,6 @@ export interface ForumInfo {
     epoch: number,
     lastReset: BN,
     bump: number
-
 }
 export interface Membership {
     publicKey: PublicKey,
@@ -38,7 +38,6 @@ export interface Membership {
     id: number,
     bump: number,
 }
-
 interface Props {
     forumInfo: ForumInfo | undefined,
     memberCardMint: PublicKey | undefined,
@@ -61,7 +60,6 @@ function Home(props: Props) {
         props.setCanPost(false);
         doPostRefresh(prev => prev + 1);
     }
-
 
     let header;
     if (!wallet.connected) {

@@ -1,4 +1,9 @@
-import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import {
+  PublicKey,
+  Keypair,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
+} from "@solana/web3.js";
 import { Provider, Program, utils } from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import { createAssociatedTokenAccountInstruction } from "./tokenHelpers";
@@ -10,7 +15,7 @@ import {
 import { getMintConfig, MintConfig } from "./config";
 import idl from "../idl.json";
 import { Zine } from "./ZineType";
-const forumProgramId = new PublicKey(idl.metadata.address);
+import { FORUM_PROGRAM_ID } from "../utils";
 
 export const fetchMembershipAccount = async (
   forumProgram: Program<Zine>,
@@ -63,7 +68,7 @@ export const mintMembership = async (
   let signers = signer ? [signer, mintConfig.cardMint] : [mintConfig.cardMint];
   let [forum, _forumBump] = await getForumAddress();
   let [forumAuthority, _forumAuthorityBump] = await getForumAuthority();
-  const program = new Program(idl as any, forumProgramId, provider);
+  const program = new Program(idl as any, FORUM_PROGRAM_ID, provider);
 
   const tx = await program.rpc.mintMembership(
     mintConfig.memberBump,
@@ -81,6 +86,7 @@ export const mintMembership = async (
         cardTokenAccount: mintConfig.cardTokenAccount,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
+        clock: SYSVAR_CLOCK_PUBKEY,
       },
       instructions: [
         //create token mint account for member card nft

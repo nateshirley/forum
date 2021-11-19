@@ -18,8 +18,10 @@ export interface Post {
     cardMint: PublicKey,
     body: string,
     link: string,
-    score: number,
+    timestamp: number,
     epoch: number,
+    epochScore: number,
+    allTimeScore: number
 }
 
 function ActivePosts(props: Props) {
@@ -52,7 +54,8 @@ function ActivePosts(props: Props) {
         if (activePosts && tx) {
             console.log("successful vote w/ sig: ", tx);
             const posts = [...activePosts];
-            posts[index].score += 1;
+            posts[index].epochScore += 1;
+            posts[index].allTimeScore += 1;
             setActivePosts(posts);
         }
     }
@@ -60,16 +63,21 @@ function ActivePosts(props: Props) {
     let postCards;
     if (activePosts) {
         postCards = activePosts.map((post, index) => {
+            let date = Date.now() / 1000;
+            let secondsSince = date - post.timestamp;
             return (
                 <div key={index} className="post-outer">
                     <div>
                         {post.body}
                     </div>
                     <div>
-                        {post.score}
+                        {post.epochScore}
                     </div>
                     <div>
                         <a href={post.link}>{post.link}</a>
+                    </div>
+                    <div>
+                        {secondsSince}
                     </div>
                     <div>
                         {props.canLike

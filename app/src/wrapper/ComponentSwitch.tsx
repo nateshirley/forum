@@ -11,6 +11,7 @@ import { getCardTokenAccount, getForumAddress, getLeaderboard } from '../api/add
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../api/membership';
 import { numberArrayToString } from '../utils';
 import { Post } from '../components/Forum/ActivePosts';
+import { fetchedPostAccountToPostObject } from '../api/posts';
 
 
 
@@ -30,7 +31,7 @@ const ComponentSwitch: FC = () => {
     useEffect(() => {
         getForumAddress().then(([forum, bump]) => {
             program.account.forum.fetch(forum).then((fetchedInfo) => {
-                console.log("setting forum info")
+                console.log("setting forum info", fetchedInfo)
                 setForumInfo({
                     publicKey: forum,
                     membership: fetchedInfo.membership,
@@ -82,14 +83,7 @@ const ComponentSwitch: FC = () => {
                 setCanPost(postAccount.epoch <= activeEpoch);
                 if (postAccount.epoch > activeEpoch && membership) { //they already posted, set the post
                     //console.log(membership.post.toBase58(), " jjjjjjjjj")
-                    setActiveUserPost({
-                        publicKey: membership.post,
-                        cardMint: postAccount.cardMint,
-                        body: numberArrayToString(postAccount.body),
-                        link: numberArrayToString(postAccount.link),
-                        score: postAccount.score,
-                        epoch: postAccount.epoch
-                    })
+                    setActiveUserPost(fetchedPostAccountToPostObject(postAccount, membership.post));
                 }
             })
         } else {

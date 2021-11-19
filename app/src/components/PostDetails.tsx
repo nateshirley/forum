@@ -7,6 +7,7 @@ import { getForumProgram } from "../api/config";
 import { Post } from "./Forum/ActivePosts";
 import { numberArrayToString } from "../utils";
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from "../api/membership";
+import { fetchedPostAccountToPostObject } from "../api/posts";
 
 interface Props {
     canLike: boolean,
@@ -46,14 +47,7 @@ function PostDetails(props: Props) {
     const queryForPostAtAddress = async (postAddress: PublicKey) => {
         try {
             let postAccount = await program.account.post.fetch(postAddress);
-            setPostInfo({
-                publicKey: postAddress,
-                cardMint: postAccount.cardMint,
-                body: numberArrayToString(postAccount.body),
-                link: numberArrayToString(postAccount.link),
-                score: postAccount.score,
-                epoch: postAccount.epoch
-            });
+            setPostInfo(fetchedPostAccountToPostObject(postAccount, postAddress));
             return true;
         } catch (e) {
             return false;
@@ -88,17 +82,16 @@ function PostDetails(props: Props) {
                     {postInfo.body}
                 </div>
                 <div>
-                    {postInfo.score}
+                    {postInfo.epochScore}
                 </div>
                 <div>
                     <a href={postInfo.link}>{postInfo.link}</a>
                 </div>
                 <div>
-                    {/* {props.canLike
+                    {props.canLike
                         ? <button onClick={() => didPressLike(postInfo.publicKey)}>like</button>
                         : <div>not able</div>
-                    } */}
-                    <button onClick={() => didPressLike(postInfo.publicKey)}>like</button>
+                    }
                 </div>
             </div>
         )

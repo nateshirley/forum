@@ -1,9 +1,11 @@
 use anchor_lang::{
     prelude::{*},
+    AccountsClose,
     solana_program::{system_instruction},
 };
 use anchor_spl::token;
-declare_id!("GwMnqrRGaxWHJzu1vqzdssLjJfkM6jbLxAG8WekGwUjY");
+use std::convert::TryFrom;
+declare_id!("5NDm6sMH9pUS3QvZfuPaZ3ZBUq8dYpQDjh4y3F2rCdTE");
 mod verify_account;
 
 
@@ -18,11 +20,14 @@ mod verify_account;
 
 
 add
-- running total for users -- all time score
-- add time of post
 - clear old member attribution on transfer, so i can rely on checking wallet for auth
 - generate new leaderboard data when advancing the epoch, assign it to mint for new nft
     - add reverse attribution so [epoch, leaderboard] = nft mintkey
+
+done
+- add time of post
+- running total for users -- all time score
+
 */
 
 const MEMBER_SEED: &[u8] = b"member";
@@ -42,14 +47,14 @@ pub mod zine {
         let seeds = &[&LEADERBOARD_SEED[..], &[_bump]];
         let __anchor_rent = Rent::get()?;
         //let space: usize = 1349;
-        let lamports = __anchor_rent.minimum_balance(2689);
+        let lamports = __anchor_rent.minimum_balance(2653);
 
         anchor_lang::solana_program::program::invoke_signed(
             &system_instruction::create_account(
                 &ctx.accounts.initializer.key(), 
                 &_leaderboard, 
                 lamports, 
-                2689, 
+                2653, 
                 ctx.program_id
             ),
             &[
@@ -72,7 +77,7 @@ pub mod zine {
         ctx.accounts.forum.bump = forum_bump;
         //right now it's in hex
         ctx.accounts.forum.epoch = 0;
-        ctx.accounts.forum.last_reset = ctx.accounts.clock.unix_timestamp;
+        ctx.accounts.forum.last_reset = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
         ctx.accounts.forum_authority.bump = forum_authority_bump;
 
         leaderboard.posts = [LeaderboardPost::default(); 10];        
@@ -84,8 +89,10 @@ pub mod zine {
         post.card_mint = ctx.accounts.card_mint.key();
         post.body = [0; 140];
         post.link = [0; 88];
-        post.score = 0;
+        post.epoch_score = 0;
+        post.all_time_score = 0;
         post.epoch = 0;
+        post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
 
         ctx.accounts.vote.authority_card_mint = ctx.accounts.card_mint.key();
 
@@ -117,16 +124,19 @@ pub mod zine {
     //claim authority after a transfer
     pub fn claim_membership_authority(ctx: Context<ClaimMembershipAuthority>, member_attribution_bump: u8) -> ProgramResult {
         ctx.accounts.member.authority = ctx.accounts.authority.key();
-        ctx.accounts.member_attribution.member = ctx.accounts.member.key();
-        ctx.accounts.member_attribution.card_mint = ctx.accounts.card_mint.key();
-        ctx.accounts.member_attribution.bump = member_attribution_bump;
+        ctx.accounts.new_member_attribution.member = ctx.accounts.member.key();
+        ctx.accounts.new_member_attribution.card_mint = ctx.accounts.card_mint.key();
+        ctx.accounts.new_member_attribution.bump = member_attribution_bump;
+
+        ctx.accounts.previous_member_attribution.close(ctx.accounts.authority.to_account_info())?;
         Ok(())
     }
     //anyone can call once it's greater than one week from previous epoch
     pub fn advance_epoch(ctx: Context<AdvanceEpoch>) -> ProgramResult {
         //604800 seconds in a week
         let previous_start_time = ctx.accounts.forum.last_reset;
-        if ctx.accounts.clock.unix_timestamp - previous_start_time > 1 {
+        let current_time = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
+        if current_time - previous_start_time > 1 {
             ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
             ctx.accounts.forum.last_reset = previous_start_time + 1;
         }
@@ -136,11 +146,12 @@ pub mod zine {
         verify_account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_epoch = ctx.accounts.forum.epoch;
-        if post.epoch <= current_epoch {
+        if true {//voter.epoch <= current_epoch {
             post.body = new_body(body);
             post.link = new_link(link);
-            post.score = 0;
+            post.epoch_score = 0;
             post.epoch = current_epoch + 1;
+            post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
             Ok(())
         } else {
             Err(ErrorCode::SinglePostPerEpoch.into())
@@ -155,7 +166,8 @@ pub mod zine {
         let voter = &mut ctx.accounts.vote;
         if true {//voter.epoch <= current_epoch {
             let mut voted_post = ctx.accounts.post.load_mut()?;
-            voted_post.score += amount;
+            voted_post.epoch_score += amount;
+            voted_post.all_time_score += amount;
             voter.epoch = current_epoch + 1;
             voter.voted_for_card_mint = voted_post.card_mint.key();
            
@@ -180,9 +192,9 @@ fn update_leading_posts(mut leading_posts: Vec<LeaderboardPost>, voted_post: std
     let lowest_scoring_index = leading_posts.len() - 1; //4
     let mut insert_marker = lowest_scoring_index; //last index in leaderboard
     //wraparound check
-    while insert_marker < 100 && voted_post.score > leading_posts[insert_marker].score {
+    while insert_marker < 100 && voted_post.epoch_score > leading_posts[insert_marker].score {
         if voted_post.card_mint.eq(&leading_posts[insert_marker].card_mint) {
-            msg!("matching keys with score {}, at index {}", {voted_post.score}, insert_marker);
+            msg!("matching keys with score {}, at index {}", {voted_post.epoch_score}, insert_marker);
             leading_posts.remove(insert_marker);
         } else {
             insert_marker -= 1;
@@ -296,6 +308,7 @@ pub struct MintMembership<'info> {
     card_token_account: Account<'info, token::TokenAccount>,
     system_program: Program<'info, System>,
     token_program: Program<'info, token::Token>,
+    clock: Sysvar<'info, Clock>,
 }
 
 #[derive(Accounts)]
@@ -334,6 +347,7 @@ pub struct NewPost<'info> {
         constraint = card_token_account.owner == authority.key()
     )]
     card_token_account: Account<'info, token::TokenAccount>,
+    clock: Sysvar<'info, Clock>,
 }
 
 #[derive(Accounts)]
@@ -390,7 +404,11 @@ pub struct ClaimMembershipAuthority<'info> {
         bump = member_attribution_bump,
         payer = authority,
     )]
-    member_attribution: Account<'info, MemberAttribution>,
+    new_member_attribution: Account<'info, MemberAttribution>,
+    #[account(
+        constraint = previous_member_attribution.card_mint == card_mint.key()
+    )]
+    previous_member_attribution: Account<'info, MemberAttribution>,
     //add someth here that gets rid of old member attribution
     system_program: Program<'info, System>,
 }
@@ -400,7 +418,7 @@ pub struct ClaimMembershipAuthority<'info> {
 pub struct Forum {
     membership: u32,
     epoch: u32,
-    last_reset: i64,
+    last_reset: u64,
     bump: u8,
 }
 
@@ -424,15 +442,16 @@ pub struct MemberAttribution {
     card_mint: Pubkey,
     bump: u8
 }
-
 //keyFromSeed: [cardMint, "post", programID]
 #[account(zero_copy)]
 pub struct Post {
     card_mint: Pubkey,
     body: [u8; 140],
     link: [u8; 88],
-    score: u32,
+    timestamp: u64, //seconds since 1972
     epoch: u32,
+    epoch_score: u32,
+    all_time_score: u32,
 }
 impl Post {
     fn to_leaderboard(&self) -> LeaderboardPost {
@@ -440,8 +459,7 @@ impl Post {
             card_mint: self.card_mint,
             body: self.body,
             link: self.link,
-            score: self.score,
-            epoch: self.epoch,
+            score: self.epoch_score,
         }
     }
 }
@@ -453,10 +471,12 @@ pub struct Vote {
     voted_for_card_mint: Pubkey,
     epoch: u32,
 }
-
+//i should probably change this and make it 
+//epoch
 #[account(zero_copy)]
 pub struct Leaderboard {
     bump: u8,
+    epoch: u32,
     posts: [LeaderboardPost; 10],
 }
 #[zero_copy]
@@ -465,7 +485,6 @@ pub struct LeaderboardPost {
     body: [u8; 140],
     link: [u8; 88],
     score: u32,
-    epoch: u32,
 }
 impl Default for LeaderboardPost {
     fn default() -> Self {
@@ -474,7 +493,6 @@ impl Default for LeaderboardPost {
             body: [0u8; 140],
             link: [0u8; 88],
             score: 0,
-            epoch: 0
         }
     }
 }

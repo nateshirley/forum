@@ -166,7 +166,7 @@ describe("zine", () => {
     );
 
     let lb = await program.account.leaderboard.fetch(leaderboard);
-    console.log(lb);
+    //console.log(lb);
   });
 
   const numberArrayToString = (rawNumber: number[]) => {
@@ -179,14 +179,15 @@ describe("zine", () => {
 
   it("fetch all posts", async () => {
     let accounts = await fetchAllActiveEpochPosts();
-    //console.log(accounts);
-    let ogPost = await program.account.post.fetch(accounts[0].pubkey);
+    console.log(accounts);
+    //let ogPost = await program.account.post.fetch(accounts[0].pubkey);
     //assert.ok(ogPost.score == 2);
     //console.log(ogPost);
   });
 
   const fetchAllActiveEpochPosts = async () => {
     //fetch for epoch + 1 to reflect post accounts updated this epoch
+    console.log(program.account.post.size);
     let activeForum = await program.account.forum.fetch(forum);
     let toArrayLike = new Int32Array([activeForum.epoch + 1]).buffer;
     let toUint8 = new Uint8Array(toArrayLike);
@@ -194,12 +195,12 @@ describe("zine", () => {
     let config = {
       filters: [
         {
-          dataSize: program.account.post.size, //276
+          dataSize: program.account.post.size,
         },
         {
           memcmp: {
             bytes: byteString,
-            offset: 272,
+            offset: 276,
           },
         },
       ],

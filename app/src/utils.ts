@@ -1,5 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
 
+export const FORUM_PROGRAM_ID = new PublicKey(
+  "5NDm6sMH9pUS3QvZfuPaZ3ZBUq8dYpQDjh4y3F2rCdTE"
+);
+
 export const toDisplayString = (
   publicKey: PublicKey,
   sliceLength: number = 4

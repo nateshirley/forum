@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { PublicKey, Keypair, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
 import { Provider, Program, utils } from '@project-serum/anchor';
 import { useWallet } from "@solana/wallet-adapter-react";
 import { fetchMembershipCardMintForWallet } from "../../api/membership";
@@ -49,6 +49,7 @@ function MembershipHeader(props: Props) {
                     post: props.membership.post,
                     cardMint: props.membership.cardMint,
                     cardTokenAccount: props.cardTokenAccount,
+                    clock: SYSVAR_CLOCK_PUBKEY,
                 },
             });
             console.log("submitted post w/ sig: ", tx)
@@ -107,7 +108,7 @@ function MembershipHeader(props: Props) {
                             {props.activeUserPost?.body}
                         </div>
                         <div>
-                            {props.activeUserPost?.score}
+                            {props.activeUserPost?.epochScore}
                         </div>
                     </div>
                 }
