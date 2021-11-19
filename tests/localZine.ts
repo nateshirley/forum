@@ -49,6 +49,36 @@ describe("local zine", () => {
     providerMintConfig = await getMintConfig(authority.publicKey);
   });
 
+  it("advance epoch", async () => {
+    let _forumAccount = await program.account.forum.fetch(forum);
+    let [zine, zineBump] = await getZineAddress(_forumAccount.epoch);
+
+    const tx = await program.rpc.advanceEpoch(zineBump, {
+      accounts: {
+        advancer: provider.wallet.publicKey,
+        forum: forum,
+        zine: zine,
+        clock: web3.SYSVAR_CLOCK_PUBKEY,
+        systemProgram: web3.SystemProgram.programId,
+      },
+    });
+
+    // let _forum = await program.account.forum.fetch(forum);
+    // console.log(_forum);
+  });
+
+  const getZineAddress = async (epoch: number) => {
+    let toArrayLike = new Int32Array([epoch]).buffer;
+    let epochArray = new Uint8Array(toArrayLike);
+    console.log(epochArray);
+    return await PublicKey.findProgramAddress(
+      [anchor.utils.bytes.utf8.encode("zine"), epochArray], //
+      program.programId
+    );
+  };
+
+  //EG3W5QksBV8zfahaeraDL2r2qXe1RBVWaUUJunajumcu
+  //AbQF5gxgVwgAwEKaHcZtYQ8yKAfsyixYcobokaNsf9T9
   // it("clock", async () => {
   //   let time = await provider.connection.getBlockTime(100874);
   //   console.log(time);
