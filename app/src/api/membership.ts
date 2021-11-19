@@ -21,7 +21,7 @@ export const fetchMembershipAccount = async (
   return {
     publicKey: memberAddress,
     authority: membership.authority,
-    card_mint: membership.cardMint,
+    cardMint: membership.cardMint,
     post: membership.post,
     vote: membership.vote,
     id: membership.id,

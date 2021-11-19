@@ -11,6 +11,9 @@ interface Props {
     leaderboard: PublicKey | undefined,
     membership: Membership | undefined,
     cardTokenAccount: PublicKey | undefined,
+    isEligibleToLike: boolean,
+    refresh: number,
+    didPerformLike: () => void,
 }
 
 interface Post {
@@ -31,13 +34,24 @@ function ActivePosts(props: Props) {
     let membership = props.membership;
 
     useEffect(() => {
+        performRefresh();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.forumInfo])
+
+    useEffect(() => {
+        if (props.refresh > 0) {
+            performRefresh();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.refresh]);
+
+    const performRefresh = () => {
         if (props.forumInfo) {
             fetchAllActivePostsDecoded(props.forumInfo.epoch, provider.connection, program).then((posts) => {
                 setActivePosts(posts);
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.forumInfo])
+    }
 
     const didPressLike = async (post: PublicKey, index: number) => {
         if (wallet.publicKey && forumInfo && membership && props.cardTokenAccount && props.leaderboard) {
@@ -50,11 +64,12 @@ function ActivePosts(props: Props) {
                     leaderboard: props.leaderboard,
                     post: post,
                     vote: membership.vote,
-                    cardMint: membership.card_mint,
+                    cardMint: membership.cardMint,
                     cardTokenAccount: props.cardTokenAccount,
                 },
             });
             console.log("successful vote w/ sig: ", tx);
+            props.didPerformLike();
             if (activePosts) {
                 const posts = [...activePosts];
                 posts[index].score += 1;
@@ -63,28 +78,28 @@ function ActivePosts(props: Props) {
         }
     }
 
-    const postCard = (post: Post, index: number) => {
-        return (
-            <div key={index} className="post-outer">
-                <div>
-                    {post.body}
-                </div>
-                <div>
-                    {post.score}
-                </div>
-                <div>
-                    <a href={post.link}>{post.link}</a>
-                </div>
-                <div>
-                    <button onClick={() => didPressLike(post.publicKey, index)}>like</button>
-                </div>
-            </div>
-        )
-    }
     let postCards;
     if (activePosts) {
         postCards = activePosts.map((post, index) => {
-            return postCard(post, index);
+            return (
+                <div key={index} className="post-outer">
+                    <div>
+                        {post.body}
+                    </div>
+                    <div>
+                        {post.score}
+                    </div>
+                    <div>
+                        <a href={post.link}>{post.link}</a>
+                    </div>
+                    <div>
+                        {props.isEligibleToLike
+                            ? <button onClick={() => didPressLike(post.publicKey, index)}>like</button>
+                            : <div>already liked</div>
+                        }
+                    </div>
+                </div>
+            )
         })
     }
 

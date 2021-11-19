@@ -12,12 +12,6 @@ import BN from 'bn.js';
 import { PublicKey } from '@solana/web3.js';
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../../api/membership';
 
-enum AppState {
-    Push,
-    Transaction,
-    SharedPushes,
-    Fetching
-}
 
 export interface ForumInfo {
     publicKey: PublicKey,
@@ -29,7 +23,7 @@ export interface ForumInfo {
 export interface Membership {
     publicKey: PublicKey,
     authority: PublicKey,
-    card_mint: PublicKey,
+    cardMint: PublicKey,
     post: PublicKey,
     vote: PublicKey,
     id: number,
@@ -44,6 +38,10 @@ function Forum() {
     let [membership, setMembership] = useState<Membership | undefined>(undefined);
     let [leaderboard, setLeaderboard] = useState<PublicKey | undefined>(undefined);
     let [cardTokenAccount, setCardTokenAccount] = useState<PublicKey | undefined>(undefined);
+    let [isEligibleToPost, setIsElegibleToPost] = useState(false);
+    let [isEligibleToLike, setIsEligibleToLike] = useState(false);
+    const [postRefresh, doPostRefresh] = useState(0);
+
 
     useEffect(() => {
         getForumAddress().then(([forum, bump]) => {
@@ -90,18 +88,44 @@ function Forum() {
         }
     }, [wallet.publicKey, memberCardMint])
 
+    useEffect(() => {
+        if (membership && forumInfo) {
+            let activeEpoch = forumInfo?.epoch ?? 0;
+            program.account.vote.fetch(membership.vote).then((likeAccount) => {
+                setIsEligibleToLike(likeAccount.epoch <= activeEpoch);
+            });
+            program.account.post.fetch(membership.post).then((postAccount) => {
+                setIsElegibleToPost(postAccount.epoch <= activeEpoch);
+            })
+        } else {
+            setIsEligibleToLike(false);
+            setIsElegibleToPost(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [membership, forumInfo])
+
+    const didSubmitNewPost = () => {
+        setIsElegibleToPost(false);
+        doPostRefresh(prev => prev + 1);
+    }
+    const didPerformLike = () => {
+        setIsEligibleToLike(false);
+    }
+
 
     let header;
     if (!wallet.connected) {
         header = <ConnectWallet />
     } else {
-        header = <MembershipHeader memberCardMint={memberCardMint} setMemberCardMint={setMemberCardMint} />
+        header = <MembershipHeader memberCardMint={memberCardMint} setMemberCardMint={setMemberCardMint} isEligibleToPost={isEligibleToPost}
+            membership={membership} forumInfo={forumInfo} cardTokenAccount={cardTokenAccount} didSubmitNewPost={didSubmitNewPost} />
     }
 
     return (
         <div className="component-parent">
             {header}
-            <ActivePosts forumInfo={forumInfo} leaderboard={leaderboard} membership={membership} cardTokenAccount={cardTokenAccount} />
+            <ActivePosts forumInfo={forumInfo} leaderboard={leaderboard} membership={membership}
+                cardTokenAccount={cardTokenAccount} isEligibleToLike={isEligibleToLike} refresh={postRefresh} didPerformLike={didPerformLike} />
         </div>
     );
 }
