@@ -84,7 +84,7 @@ pub mod zine {
         ctx.accounts.forum.bump = forum_bump;
         //right now it's in hex
         ctx.accounts.forum.epoch = 0;
-        ctx.accounts.forum.last_reset = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
+        ctx.accounts.forum.last_refresh = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
         ctx.accounts.forum_authority.bump = forum_authority_bump;
 
         leaderboard.posts = [LeaderboardPost::default(); 10];        
@@ -139,15 +139,25 @@ pub mod zine {
         Ok(())
     }
     //anyone can call once it's greater than one week from previous epoch
+    /*
+    introduces an auction period,
+    sets up the data and initializes an auction for the previous week
+    //so it should really be 
+
+    states
+    - active epoch
+    - auction
+    i need to figure out how to prevent people from posting/voting during the auction state
+    - i think i'll just add a state variable to the forum 
+    */
     pub fn advance_epoch(ctx: Context<AdvanceEpoch>, _zine_bump: u8) -> ProgramResult {
         //604800 seconds in a week
         let current_time = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
-        let previous_start_time = ctx.accounts.forum.last_reset;
+        let previous_start_time = ctx.accounts.forum.last_refresh;
         if current_time - previous_start_time > 1 {
             ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
-            ctx.accounts.forum.last_reset = previous_start_time + 1;
+            ctx.accounts.forum.last_refresh = previous_start_time + 1;
         }     
-
         Ok(())
     }
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
@@ -432,12 +442,18 @@ pub struct ClaimMembershipAuthority<'info> {
     system_program: Program<'info, System>,
 }
 
+/*
+state (leaving room for more)
+0: active epoch
+1: auction
+*/
 #[account]
 #[derive(Default)]
 pub struct Forum {
     membership: u32,
     epoch: u32,
-    last_reset: u64,
+    last_refresh: u64,
+    state: u8,
     bump: u8,
 }
 
