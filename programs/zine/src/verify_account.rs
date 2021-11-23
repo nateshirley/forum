@@ -56,6 +56,26 @@ current thoughts on membership issuance
 - i think it makes more sense to go directly into the auction for membership. shouldn't be too bad
 - 5 min extension forces everyone to reveal their prices earlier, otherwise they are just wasting everyone's time
 
+im p sure something will get fucked up if i push 36 accounts into this program bc the stack size can't handle it.
+i also think it will be a waste of time atm
+so i'm going to implement a redemption mech for winners to redeem
+
+only other option is to have 9 auctions in the background and let them talk to each other
+then the ui will just show a tx option for each of the
+
+how would that work?
+each account would have its own auction index, but share the same leaderboard,
+each account responsible for settling the tx for that new member,
+how would u know which account to submit new bids to?
+
+u would have to guarantee that the new bid is in the correct account.
+is there any benefit to this??
+it's basically just a more complicated version of the other design i think
+fuck it
+
+the only option is redemption or passing in 40 accounts. redemption
+
+
 
 how to issue the member tokens?
 - i think you will have to create a whitelist with the winners and let them claim
@@ -97,4 +117,19 @@ create an attribution account with seed ["zine", zineMint], that stores the epoc
 
 being able to find the zine with either [epochnumber] or [zinemint]
 u probably need both
+
+
+
+
+okay so i just need a basic auction, 9 slots, will start with 4. very similar to the leaderboard
+
+
+i think i can just use the same logic??
+
+
+
+
+
+
+
 */

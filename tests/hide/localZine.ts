@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { Zine } from "../target/types/zine";
+import { Zine } from "../../target/types/zine";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import * as assert from "assert";
 import { TextDecoder } from "util";
@@ -16,7 +16,9 @@ import {
   getPostAddress,
   getVoteAddress,
   submitVote,
-} from "./helpers/execution";
+} from "../helpers/execution";
+import { numberArrayToString } from "../../app/src/utils";
+import { getMemberAddress } from "../../app/src/api/addresses";
 const base58 = require("base58-encode");
 
 describe("local zine", () => {
@@ -47,32 +49,55 @@ describe("local zine", () => {
     );
     leaderboard = _board;
     providerMintConfig = await getMintConfig(authority.publicKey);
+
+    // let [membership, bump] = await getMemberAddress(
+    //   providerMintConfig.cardMint.publicKey
+    // );
+    // let info = await program.account.member.fetch(membership);
+  });
+
+  it("make some posts", async () => {
+    const newBody = "fuuuuuuuuck yeah";
+    const newLink = "https://yelllow.xyz/";
+    await newPost(authority.publicKey, newBody, newLink);
+    let updatedPost = await program.account.post.fetch(providerMintConfig.post);
+    //console.log(updatedPost);
+    let updatedBody = numberArrayToString(updatedPost.body);
+    assert.ok(updatedBody === newBody);
+
+    let post = await getPostAddress(providerMintConfig.cardMint.publicKey);
+    await submitVote(post, providerMintConfig.authority, forum, leaderboard, 1);
+
+    let board = await program.account.leaderboard.fetch(leaderboard);
+    console.log(board);
   });
 
   it("advance epoch", async () => {
     let _forumAccount = await program.account.forum.fetch(forum);
-    let [zine, zineBump] = await getZineAddress(_forumAccount.epoch);
+    let [artifact, artifactBump] = await getArtifactAddress(
+      _forumAccount.epoch
+    );
 
-    const tx = await program.rpc.advanceEpoch(zineBump, {
+    const tx = await program.rpc.advanceEpoch(artifactBump, {
       accounts: {
         advancer: provider.wallet.publicKey,
         forum: forum,
-        zine: zine,
+        artifact: artifact,
         clock: web3.SYSVAR_CLOCK_PUBKEY,
         systemProgram: web3.SystemProgram.programId,
       },
     });
 
-    // let _forum = await program.account.forum.fetch(forum);
-    // console.log(_forum);
+    let _forum = await program.account.forum.fetch(forum);
+    console.log(_forum);
+    console.log(program.account.artifact.size);
   });
 
-  const getZineAddress = async (epoch: number) => {
+  const getArtifactAddress = async (epoch: number) => {
     let toArrayLike = new Int32Array([epoch]).buffer;
     let epochArray = new Uint8Array(toArrayLike);
-    console.log(epochArray);
     return await PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode("zine"), epochArray], //
+      [anchor.utils.bytes.utf8.encode("artifact"), epochArray], //
       program.programId
     );
   };

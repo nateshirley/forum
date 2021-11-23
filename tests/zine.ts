@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { Zine } from "../../target/types/zine";
+import { Zine } from "../target/types/zine";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import * as assert from "assert";
 import { TextDecoder } from "util";
@@ -16,7 +16,8 @@ import {
   getPostAddress,
   getVoteAddress,
   submitVote,
-} from "../helpers/execution";
+  getArtifactAddress,
+} from "./helpers/execution";
 const base58 = require("base58-encode");
 
 describe("zine", () => {
@@ -165,8 +166,12 @@ describe("zine", () => {
       wallet
     );
 
-    let lb = await program.account.leaderboard.fetch(leaderboard);
-    //console.log(lb);
+    let lb: any = await program.account.leaderboard.fetch(leaderboard);
+    // console.log(lb);
+    // lb.posts.map((post) => {
+    //   let body = numberArrayToString(post.body);
+    //   console.log(body);
+    // });
   });
 
   const numberArrayToString = (rawNumber: number[]) => {
@@ -177,13 +182,81 @@ describe("zine", () => {
     return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
   };
 
+  it("build artifact", async () => {
+    let _forumAccount = await program.account.forum.fetch(forum);
+    let [artifact, artifactBump] = await getArtifactAddress(
+      _forumAccount.epoch
+    );
+    let artifactCardMint = Keypair.generate();
+
+    let tx = await program.rpc.startArtifactAuction({
+      accounts: {
+        initializer: authority.publicKey,
+        artifact: artifact,
+        forum: forum,
+      },
+      instructions: [
+        SystemProgram.createAccount({
+          fromPubkey: authority.publicKey,
+          newAccountPubkey: artifactCardMint.publicKey,
+          space: MintLayout.span,
+          lamports: await provider.connection.getMinimumBalanceForRentExemption(
+            MintLayout.span
+          ),
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        //init the mint
+        Token.createInitMintInstruction(
+          TOKEN_PROGRAM_ID,
+          artifactCardMint.publicKey,
+          0,
+          forumAuthority,
+          forumAuthority
+        ),
+        program.instruction.buildArtifact(artifactBump, {
+          accounts: {
+            initializer: authority.publicKey,
+            artifact: artifact,
+            artifactCardMint: artifactCardMint.publicKey,
+            forum: forum,
+            forumAuthority: forumAuthority,
+            leaderboard: leaderboard,
+            clock: web3.SYSVAR_CLOCK_PUBKEY,
+            systemProgram: web3.SystemProgram.programId,
+          },
+        }),
+      ],
+      signers: [artifactCardMint],
+    });
+
+    let art = await program.account.artifact.fetch(artifact);
+    console.log(art);
+  });
+
+  it("advance epoch", async () => {
+    let _forumAccount = await program.account.forum.fetch(forum);
+
+    const tx = await program.rpc.advanceEpoch({
+      accounts: {
+        advancer: provider.wallet.publicKey,
+        forum: forum,
+        clock: web3.SYSVAR_CLOCK_PUBKEY,
+        systemProgram: web3.SystemProgram.programId,
+      },
+    });
+
+    //let _forum = await program.account.forum.fetch(forum);
+  });
+
+  /*
   it("fetch all posts", async () => {
     let accounts = await fetchAllActiveEpochPosts();
-    console.log(accounts);
+    //console.log(accounts);
     //let ogPost = await program.account.post.fetch(accounts[0].pubkey);
     //assert.ok(ogPost.score == 2);
     //console.log(ogPost);
   });
+  */
 
   const fetchAllActiveEpochPosts = async () => {
     //fetch for epoch + 1 to reflect post accounts updated this epoch
