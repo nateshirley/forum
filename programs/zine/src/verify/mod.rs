@@ -1,29 +1,84 @@
-use crate::{id, ErrorCode};
-use anchor_lang::prelude::*;
-const LEADERBOARD_SEED: &[u8] = b"leaderboard";
+pub mod account {
+    use crate::{id, ErrorCode, ARTIFACT_SEED, LEADERBOARD_SEED};
+    use anchor_lang::prelude::*;
 
-//only thing i could do to make it a bit faster is store the authority on it. not sure tho
-pub fn post(post_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
-    if post_address == Pubkey::create_with_seed(&card_mint, "post", &id()).unwrap() {
-        Ok(())
-    } else {
-        Err(ErrorCode::UnauthorizedPostAccount.into())
+    pub fn post(post_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
+        if post_address.eq(&Pubkey::create_with_seed(&card_mint, "post", &id())?) {
+            Ok(())
+        } else {
+            Err(ErrorCode::UnauthorizedPostAccount.into())
+        }
+    }
+    pub fn vote(vote_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
+        if vote_address == Pubkey::create_with_seed(&card_mint, "vote", &id())? {
+            Ok(())
+        } else {
+            Err(ErrorCode::UnauthorizedVoteAccount.into())
+        }
+    }
+    pub fn leaderboard(leaderboard_address: Pubkey, bump: u8) -> ProgramResult {
+        let seeds = &[&LEADERBOARD_SEED[..], &[bump]];
+        let _leaderboard = Pubkey::create_program_address(seeds, &id())?;
+        if _leaderboard.eq(&leaderboard_address) {
+            Ok(())
+        } else {
+            Err(ErrorCode::UnauthorizedVoteAccount.into())
+        }
+    }
+    pub fn artifact(artifact_address: Pubkey, epoch: u32, bump: u8) -> ProgramResult {
+        let seeds = &[ARTIFACT_SEED, &epoch.to_le_bytes(), &[bump]];
+        let _artifact = Pubkey::create_program_address(seeds, &id())?;
+        if _artifact.eq(&artifact_address) {
+            Ok(())
+        } else {
+            Err(ErrorCode::UnauthorizedArtifactAccount.into())
+        }
     }
 }
-pub fn vote(vote_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
-    if vote_address == Pubkey::create_with_seed(&card_mint, "vote", &id()).unwrap() {
-        Ok(())
-    } else {
-        Err(ErrorCode::UnauthorizedVoteAccount.into())
+
+pub mod clock {
+    use crate::{ErrorCode, ARTIFACT_AUCTION_LENGTH, SESSION_LENGTH};
+    use anchor_lang::prelude::*;
+    use std::convert::TryFrom;
+
+    pub fn to_post(clock: &Sysvar<anchor_lang::prelude::Clock>, last_dawn: u64) -> ProgramResult {
+        to_edit_leaderboard(clock, last_dawn)
     }
-}
-pub fn leaderboard(leaderboard_address: &Pubkey, bump: u8, program_id: &Pubkey) -> ProgramResult {
-    let seeds = &[&LEADERBOARD_SEED[..], &[bump]];
-    let _leaderboard = Pubkey::create_program_address(seeds, program_id).unwrap();
-    if _leaderboard.eq(leaderboard_address) {
-        Ok(())
-    } else {
-        Err(ErrorCode::UnauthorizedVoteAccount.into())
+    pub fn to_vote(clock: &Sysvar<anchor_lang::prelude::Clock>, last_dawn: u64) -> ProgramResult {
+        to_edit_leaderboard(clock, last_dawn)
+    }
+    pub fn to_edit_leaderboard(
+        clock: &Sysvar<anchor_lang::prelude::Clock>,
+        last_dawn: u64,
+    ) -> ProgramResult {
+        let now = u64::try_from(clock.unix_timestamp).unwrap();
+        if now - last_dawn < SESSION_LENGTH {
+            Ok(())
+        } else {
+            Err(ErrorCode::SessionWindowClosed.into())
+        }
+    }
+    pub fn to_build_artifact(
+        clock: &Sysvar<anchor_lang::prelude::Clock>,
+        last_dawn: u64,
+    ) -> ProgramResult {
+        let now = u64::try_from(clock.unix_timestamp).unwrap();
+        if now - last_dawn > SESSION_LENGTH {
+            Ok(())
+        } else {
+            Err(ErrorCode::EpochHasNotReachedArtifactWindow.into())
+        }
+    }
+    pub fn to_advance_epoch(
+        clock: &Sysvar<anchor_lang::prelude::Clock>,
+        last_dawn: u64,
+    ) -> ProgramResult {
+        let now = u64::try_from(clock.unix_timestamp).unwrap();
+        if now - last_dawn > (SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH) {
+            Ok(())
+        } else {
+            Err(ErrorCode::EpochIneligbileForNewDawn.into())
+        }
     }
 }
 
@@ -125,7 +180,26 @@ okay so i just need a basic auction, 9 slots, will start with 4. very similar to
 
 
 i think i can just use the same logic??
+---------------------
 
+
+
+
+
+
+
+
+potential phases
+
+1. open forum
+2. artifact built
+    - no more posts
+    - no more votes
+3. started auction
+    - no posts/votes
+    - only bid for thing
+4. auction ended (no more bids, need to advance to next epoch)
+    -
 
 
 

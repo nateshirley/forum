@@ -1,6 +1,6 @@
 import React, { FC, useState, useEffect } from 'react';
 import { clusterApiUrl, Connection, ConfirmOptions, Commitment, PublicKey } from '@solana/web3.js';
-import { Provider, Wallet } from '@project-serum/anchor';
+import { Provider, Wallet, web3 } from '@project-serum/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Route, Switch } from 'react-router-dom';
 import Home, { ForumInfo, Membership } from '../components/Forum/Home';
@@ -105,6 +105,7 @@ const ComponentSwitch: FC = () => {
                     vote: membership.vote,
                     cardMint: membership.cardMint,
                     cardTokenAccount: cardTokenAccount,
+                    //clock: web3.SYSVAR_CLOCK_PUBKEY
                 },
             });
             setCanLike(false);

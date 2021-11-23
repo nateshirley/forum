@@ -1,5 +1,5 @@
 import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
+import { BN, Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { Zine } from "../target/types/zine";
@@ -17,7 +17,12 @@ import {
   getVoteAddress,
   submitVote,
   getArtifactAddress,
+  getArtifactAttributionAddress,
+  getArtifactAuctionAddress,
+  getArtifactAuctionHouseAddress,
 } from "./helpers/execution";
+import { getAssociatedTokenAccountAddress } from "../app/src/api/tokenHelpers";
+import { createAssociatedTokenAccountInstruction } from "./helpers/tokenHelpers";
 const base58 = require("base58-encode");
 
 describe("zine", () => {
@@ -33,8 +38,12 @@ describe("zine", () => {
   let forumAuthority = null;
   let forumAuthorityBump = null;
   let leaderboard = null;
+  let leaderboardBump = null;
   let fakeLeader = null;
   let providerMintConfig = null;
+  let artifactAuction = null;
+  let artifactAuctionBump = null;
+  let artifactCardMint = Keypair.generate();
 
   it("config", async () => {
     let [_forum, _forumBump] = await getForumAddress();
@@ -48,7 +57,11 @@ describe("zine", () => {
       program.programId
     );
     leaderboard = _board;
+    leaderboardBump = _boardBump;
     providerMintConfig = await getMintConfig(authority.publicKey);
+    let [_a_auction, _abump] = await getArtifactAuctionAddress();
+    artifactAuction = _a_auction;
+    artifactAuctionBump = _abump;
   });
 
   //can put init and leaderboard into one later on
@@ -56,6 +69,7 @@ describe("zine", () => {
     const tx = await program.rpc.initializeForum(
       forumBump,
       forumAuthorityBump,
+      artifactAuctionBump,
       {
         accounts: {
           initializer: authority.publicKey,
@@ -63,10 +77,11 @@ describe("zine", () => {
           forumAuthority: forumAuthority,
           leaderboard: leaderboard,
           clock: web3.SYSVAR_CLOCK_PUBKEY,
+          artifactAuction: artifactAuction,
           systemProgram: SystemProgram.programId,
         },
         instructions: [
-          program.instruction.createLeaderboard({
+          program.instruction.createLeaderboard(leaderboardBump, {
             accounts: {
               initializer: authority.publicKey,
               leaderboard: leaderboard,
@@ -87,7 +102,7 @@ describe("zine", () => {
   it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 
-    let newMember = await program.account.member.fetch(
+    let newMember = await program.account.membership.fetch(
       providerMintConfig.member
     );
     assert.ok(newMember.cardMint.equals(providerMintConfig.cardMint.publicKey));
@@ -174,25 +189,19 @@ describe("zine", () => {
     // });
   });
 
-  const numberArrayToString = (rawNumber: number[]) => {
-    let numbers = new Uint8Array(rawNumber);
-    while (numbers[numbers.length - 1] === 0) {
-      numbers = numbers.slice(0, -1);
-    }
-    return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
-  };
-
-  it("build artifact", async () => {
+  it("build artifact + start auction", async () => {
     let _forumAccount = await program.account.forum.fetch(forum);
     let [artifact, artifactBump] = await getArtifactAddress(
       _forumAccount.epoch
     );
-    let artifactCardMint = Keypair.generate();
+    let [artifactAttribution, artifactAttributionBump] =
+      await getArtifactAttributionAddress(artifactCardMint.publicKey);
 
     let tx = await program.rpc.startArtifactAuction({
       accounts: {
         initializer: authority.publicKey,
         artifact: artifact,
+        artifactAuction: artifactAuction,
         forum: forum,
       },
       instructions: [
@@ -213,24 +222,98 @@ describe("zine", () => {
           forumAuthority,
           forumAuthority
         ),
-        program.instruction.buildArtifact(artifactBump, {
-          accounts: {
-            initializer: authority.publicKey,
-            artifact: artifact,
-            artifactCardMint: artifactCardMint.publicKey,
-            forum: forum,
-            forumAuthority: forumAuthority,
-            leaderboard: leaderboard,
-            clock: web3.SYSVAR_CLOCK_PUBKEY,
-            systemProgram: web3.SystemProgram.programId,
-          },
-        }),
+        program.instruction.buildArtifact(
+          artifactAttributionBump,
+          forumAuthorityBump,
+          artifactBump,
+          {
+            accounts: {
+              initializer: authority.publicKey,
+              artifact: artifact,
+              artifactCardMint: artifactCardMint.publicKey,
+              artifactAttribution: artifactAttribution,
+              forum: forum,
+              forumAuthority: forumAuthority,
+              leaderboard: leaderboard,
+              clock: web3.SYSVAR_CLOCK_PUBKEY,
+              systemProgram: web3.SystemProgram.programId,
+            },
+          }
+        ),
       ],
       signers: [artifactCardMint],
     });
 
     let art = await program.account.artifact.fetch(artifact);
     console.log(art);
+  });
+
+  it("bid for artifact", async () => {
+    let [auctionHouse, auctionHouseBump] =
+      await getArtifactAuctionHouseAddress();
+    let auctionState = await program.account.artifactAuction.fetch(
+      artifactAuction
+    );
+    let newestLoser = auctionState.leadingBid.bidder;
+    const tx = await program.rpc.placeBidForArtifact(
+      auctionHouseBump,
+      new BN(1 * web3.LAMPORTS_PER_SOL),
+      {
+        accounts: {
+          bidder: authority.publicKey,
+          newestLoser: newestLoser,
+          artifactAuction: artifactAuction,
+          artifactAuctionHouse: auctionHouse,
+          clock: web3.SYSVAR_CLOCK_PUBKEY,
+          systemProgram: web3.SystemProgram.programId,
+        },
+      }
+    );
+  });
+
+  it("settle artifact auction", async () => {
+    let _forumAccount = await program.account.forum.fetch(forum);
+    let [artifact, artifactBump] = await getArtifactAddress(
+      _forumAccount.epoch
+    );
+    let auctionState = await program.account.artifactAuction.fetch(
+      artifactAuction
+    );
+    let winner = auctionState.leadingBid.bidder;
+    let artifactTokenAccount = await getAssociatedTokenAccountAddress(
+      winner,
+      artifactCardMint.publicKey
+    );
+    console.log(artifactCardMint.publicKey.toBase58());
+    let [auctionHouse, auctionHouseBump] =
+      await getArtifactAuctionHouseAddress();
+    const tx = await program.rpc.settleArtifactAuction(
+      auctionHouseBump,
+      forumAuthorityBump,
+      {
+        accounts: {
+          settler: authority.publicKey,
+          artifact: artifact,
+          artifactCardMint: artifactCardMint.publicKey,
+          artifactTokenAccount: artifactTokenAccount,
+          winner: winner,
+          artifactAuction: artifactAuction,
+          artifactAuctionHouse: auctionHouse,
+          forum: forum,
+          forumAuthority: forumAuthority,
+          clock: web3.SYSVAR_CLOCK_PUBKEY,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        instructions: [
+          createAssociatedTokenAccountInstruction(
+            artifactCardMint.publicKey,
+            artifactTokenAccount,
+            winner,
+            authority.publicKey
+          ),
+        ],
+      }
+    );
   });
 
   it("advance epoch", async () => {
@@ -247,6 +330,13 @@ describe("zine", () => {
 
     //let _forum = await program.account.forum.fetch(forum);
   });
+  const numberArrayToString = (rawNumber: number[]) => {
+    let numbers = new Uint8Array(rawNumber);
+    while (numbers[numbers.length - 1] === 0) {
+      numbers = numbers.slice(0, -1);
+    }
+    return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
+  };
 
   /*
   it("fetch all posts", async () => {
@@ -256,8 +346,8 @@ describe("zine", () => {
     //assert.ok(ogPost.score == 2);
     //console.log(ogPost);
   });
-  */
-
+  
+  
   const fetchAllActiveEpochPosts = async () => {
     //fetch for epoch + 1 to reflect post accounts updated this epoch
     console.log(program.account.post.size);
@@ -285,21 +375,6 @@ describe("zine", () => {
     return accounts;
   };
 
-  /*
-  it("advance epoch", async () => {
-    setTimeout(async () => {
-      const tx = await program.rpc.advanceEpoch({
-        accounts: {
-          forum: forum,
-          clock: web3.SYSVAR_CLOCK_PUBKEY,
-        },
-      });
-
-      let _forum = await program.account.forum.fetch(forum);
-      console.log(_forum);
-    }, 2000);
-  });
-  */
 
   /*
 
@@ -314,6 +389,21 @@ describe("zine", () => {
   */
 });
 
+/*
+  it("advance epoch", async () => {
+    setTimeout(async () => {
+      const tx = await program.rpc.advanceEpoch({
+        accounts: {
+          forum: forum,
+          clock: web3.SYSVAR_CLOCK_PUBKEY,
+        },
+      });
+
+      let _forum = await program.account.forum.fetch(forum);
+      console.log(_forum);
+    }, 2000);
+  });
+  */
 /*
   it("claim membership auth", async () => {
     let cardTokenAccount = await getCardTokenAccount();

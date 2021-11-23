@@ -33,6 +33,13 @@ export const getArtifactAddress = async (epoch: number) => {
   );
 };
 
+export const getArtifactAttributionAddress = async (cardMint: PublicKey) => {
+  return await PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("artifact"), cardMint.toBuffer()], //
+    program.programId
+  );
+};
+
 export const getMintConfig = async (authority: PublicKey) => {
   let cardMint = Keypair.generate();
   let cardTokenAccount = await getCardTokenAccount(
@@ -76,11 +83,12 @@ export const mintMembership = async (
   const tx = await program.rpc.mintMembership(
     mintConfig.memberBump,
     mintConfig.memberAttributionBump,
+    _forumAuthorityBump,
     {
       accounts: {
         authority: mintConfig.authority,
-        member: mintConfig.member,
-        memberAttribution: mintConfig.memberAttribution,
+        membership: mintConfig.member,
+        membershipAttribution: mintConfig.memberAttribution,
         forum: forum,
         forumAuthority: forumAuthority,
         post: mintConfig.post,
@@ -149,6 +157,8 @@ export const mintMembership = async (
     "minted membership for wallet address: ",
     mintConfig.authority.toBase58()
   );
+  let p = await program.account.post.fetch(mintConfig.post);
+  console.log(p);
 };
 
 export const fetchMemberAttribution = async (authority: PublicKey) => {
@@ -156,7 +166,7 @@ export const fetchMemberAttribution = async (authority: PublicKey) => {
     [anchor.utils.bytes.utf8.encode("memberattribution"), authority.toBuffer()],
     program.programId
   );
-  return await program.account.memberAttribution.fetch(address);
+  return await program.account.membershipAttribution.fetch(address);
 };
 
 export const newPost = async (
@@ -176,7 +186,7 @@ export const newPost = async (
   const tx = await program.rpc.newPost(newBody, newLink, {
     accounts: {
       authority: authority,
-      member: memberAttribution.member,
+      membership: memberAttribution.membership,
       forum: forum,
       post: post,
       cardMint: memberAttribution.cardMint,
@@ -204,16 +214,31 @@ export const submitVote = async (
   const tx = await program.rpc.submitVote(amount, {
     accounts: {
       authority: authority,
-      member: memberAttribution.member,
+      membership: memberAttribution.membership,
       forum: forum,
       leaderboard: leaderboard,
       post: forPost,
       vote: vote,
       cardMint: memberAttribution.cardMint,
       cardTokenAccount: cardTokenAccount,
+      clock: web3.SYSVAR_CLOCK_PUBKEY,
     },
     signers: signers,
   });
+};
+
+export const getArtifactAuctionAddress = async () => {
+  return PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("a_auction")],
+    program.programId
+  );
+};
+
+export const getArtifactAuctionHouseAddress = async () => {
+  return PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("a_aux_house")],
+    program.programId
+  );
 };
 
 export const getMemberAddress = (cardMint: PublicKey) => {
