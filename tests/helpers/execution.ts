@@ -24,6 +24,15 @@ interface MintConfig {
   vote: PublicKey;
 }
 
+export const getArtifactAddress = async (epoch: number) => {
+  let toArrayLike = new Int32Array([epoch]).buffer;
+  let epochArray = new Uint8Array(toArrayLike);
+  return await PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("artifact"), epochArray], //
+    program.programId
+  );
+};
+
 export const getMintConfig = async (authority: PublicKey) => {
   let cardMint = Keypair.generate();
   let cardTokenAccount = await getCardTokenAccount(

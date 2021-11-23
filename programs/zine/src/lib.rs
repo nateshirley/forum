@@ -1,27 +1,15 @@
 use anchor_lang::{
-    prelude::{*},
+    prelude::*,
+    solana_program::{program_option, system_instruction},
     AccountsClose,
-    solana_program::{system_instruction},
 };
 use anchor_spl::token;
-use std::convert::TryFrom;
-declare_id!("5NDm6sMH9pUS3QvZfuPaZ3ZBUq8dYpQDjh4y3F2rCdTE");
+use borsh::BorshDeserialize;
+use std::convert::{TryFrom, TryInto};
+declare_id!("5KTaKLJ6zATJjU3xMuJS1Yk637FHCw9wSskigppDnUYM");
+mod string_helper;
 mod verify_account;
-
-
 /*
-- need to do more work thinking about governance -- one vote per all time score?
-- some sort of weighted average?
-- how to issue new membership? directly on market
-     - figure out how the IDOs work i guess
-     - problem is that the shares dont force u to convert to voting power
-     - u would prefer that the new members automatically become contributors
-- talk to wil barnes maybe? jet governance
-- look at wilson's strategy for pawn shop, also maybe someone from partyDAO
-- i need to figure out what they are called. 
-- maybe if i did everything magazine themed it would help people understand?
-if it's prh people will probably associate it with audio
-ipfs also works 
 
 
 add
@@ -41,7 +29,7 @@ const MEMBER_ATTRIBUTION_SEED: &[u8] = b"memberattribution";
 const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
-const ZINE_SEED: &[u8] = b"zine";
+const ARTIFACT_SEED: &[u8] = b"artifact";
 
 //can add a name to this to make infinite forums
 
@@ -50,19 +38,21 @@ pub mod zine {
     use super::*;
 
     pub fn create_leaderboard(ctx: Context<CreateLeaderboard>) -> ProgramResult {
-        let (_leaderboard, _bump) = Pubkey::find_program_address(&[LEADERBOARD_SEED], ctx.program_id);
+        let (_leaderboard, _bump) =
+            Pubkey::find_program_address(&[LEADERBOARD_SEED], ctx.program_id);
         let seeds = &[&LEADERBOARD_SEED[..], &[_bump]];
         let __anchor_rent = Rent::get()?;
-        //let space: usize = 1349;
-        let lamports = __anchor_rent.minimum_balance(2653);
+        //let space: usize = 2653;
+        //let bytes: u16 = std::mem::size_of::<LeaderboardPost>().try_into().unwrap(); //doesnt work
 
+        let lamports = __anchor_rent.minimum_balance(2653);
         anchor_lang::solana_program::program::invoke_signed(
             &system_instruction::create_account(
-                &ctx.accounts.initializer.key(), 
-                &_leaderboard, 
-                lamports, 
-                2653, 
-                ctx.program_id
+                &ctx.accounts.initializer.key(),
+                &_leaderboard,
+                lamports,
+                2653,
+                ctx.program_id,
             ),
             &[
                 ctx.accounts.initializer.to_account_info(),
@@ -72,25 +62,38 @@ pub mod zine {
             &[&seeds[..]],
         )?;
 
-        let loader: Loader<Leaderboard> = Loader::try_from_unchecked(ctx.program_id, &ctx.accounts.leaderboard).unwrap();
+        let loader: Loader<Leaderboard> =
+            Loader::try_from_unchecked(ctx.program_id, &ctx.accounts.leaderboard).unwrap();
         let mut leaderboard = loader.load_init()?;
         leaderboard.bump = _bump;
         Ok(())
     }
-    pub fn initialize_forum(ctx: Context<InitializeForum>, forum_bump: u8, forum_authority_bump: u8) -> ProgramResult {
-        let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
-        verify_account::leaderboard(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
+    pub fn initialize_forum(
+        ctx: Context<InitializeForum>,
+        forum_bump: u8,
+        forum_authority_bump: u8,
+    ) -> ProgramResult {
+        let mut leaderboard = ctx.accounts.leaderboard.load_init()?; //maybe try it with try_mut
+        verify_account::leaderboard(
+            &ctx.accounts.leaderboard.key(),
+            leaderboard.bump,
+            ctx.program_id,
+        )?;
 
         ctx.accounts.forum.bump = forum_bump;
-        //right now it's in hex
         ctx.accounts.forum.epoch = 0;
-        ctx.accounts.forum.last_reset = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
+        ctx.accounts.forum.last_refresh = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
         ctx.accounts.forum_authority.bump = forum_authority_bump;
 
-        leaderboard.posts = [LeaderboardPost::default(); 10];        
+        leaderboard.posts = [LeaderboardPost::default(); 10];
+        leaderboard.epoch = 0;
         Ok(())
     }
-    pub fn mint_membership(ctx: Context<MintMembership>, member_bump: u8, member_attribution_bump: u8) -> ProgramResult {
+    pub fn mint_membership(
+        ctx: Context<MintMembership>,
+        member_bump: u8,
+        member_attribution_bump: u8,
+    ) -> ProgramResult {
         verify_account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_init()?;
         post.card_mint = ctx.accounts.card_mint.key();
@@ -116,7 +119,10 @@ pub mod zine {
 
         ctx.accounts.forum.membership = ctx.accounts.forum.membership + 1;
 
-        let seeds = &[&FORUM_AUTHORITY_SEED[..], &[ctx.accounts.forum_authority.bump]];
+        let seeds = &[
+            &FORUM_AUTHORITY_SEED[..],
+            &[ctx.accounts.forum_authority.bump],
+        ];
         //mint one subscription token to the subscriber
         token::mint_to(
             ctx.accounts
@@ -129,34 +135,61 @@ pub mod zine {
         Ok(())
     }
     //claim authority after a transfer
-    pub fn claim_membership_authority(ctx: Context<ClaimMembershipAuthority>, member_attribution_bump: u8) -> ProgramResult {
+    pub fn claim_membership_authority(
+        ctx: Context<ClaimMembershipAuthority>,
+        member_attribution_bump: u8,
+    ) -> ProgramResult {
         ctx.accounts.member.authority = ctx.accounts.authority.key();
         ctx.accounts.new_member_attribution.member = ctx.accounts.member.key();
         ctx.accounts.new_member_attribution.card_mint = ctx.accounts.card_mint.key();
         ctx.accounts.new_member_attribution.bump = member_attribution_bump;
 
-        ctx.accounts.previous_member_attribution.close(ctx.accounts.authority.to_account_info())?;
+        ctx.accounts
+            .previous_member_attribution
+            .close(ctx.accounts.authority.to_account_info())?;
         Ok(())
     }
-    //anyone can call once it's greater than one week from previous epoch
-    pub fn advance_epoch(ctx: Context<AdvanceEpoch>, _zine_bump: u8) -> ProgramResult {
+
+    pub fn build_artifact(ctx: Context<BuildArtifact>, artifact_bump: u8) -> ProgramResult {
+        //clock checks here. u can't build the artifact until the forum submission time has passed
+        create_artifact_account(&ctx, artifact_bump)?;
+        let loader: Loader<Artifact> =
+            Loader::try_from_unchecked(ctx.program_id, &ctx.accounts.artifact).unwrap();
+        let mut artifact = loader.load_init()?;
+        let leaderboard = ctx.accounts.leaderboard.load().unwrap();
+        artifact.epoch = ctx.accounts.forum.epoch;
+        artifact.card_mint = ctx.accounts.artifact_card_mint.key();
+        artifact.posts = leaderboard.posts;
+        artifact.bump = artifact_bump;
+        Ok(())
+    }
+    pub fn start_artifact_auction(ctx: Context<StartArtifactAuction>) -> ProgramResult {
+        //checks here, u can't start the auction until the artifact that matches the epoch has been passed
+        let artifact = ctx.accounts.artifact.load_init()?;
+        assert!(artifact.epoch == ctx.accounts.forum.epoch);
+
+        //start the auction
+        Ok(())
+    }
+
+    pub fn advance_epoch(ctx: Context<AdvanceEpoch>) -> ProgramResult {
         //604800 seconds in a week
         let current_time = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
-        let previous_start_time = ctx.accounts.forum.last_reset;
+        let previous_start_time = ctx.accounts.forum.last_refresh;
         if current_time - previous_start_time > 1 {
             ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
-            ctx.accounts.forum.last_reset = previous_start_time + 1;
-        }     
-
+            ctx.accounts.forum.last_refresh = previous_start_time + 1;
+        }
         Ok(())
     }
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
         verify_account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_epoch = ctx.accounts.forum.epoch;
-        if true {//voter.epoch <= current_epoch {
-            post.body = new_body(body);
-            post.link = new_link(link);
+        if true {
+            //voter.epoch <= current_epoch { //check state
+            post.body = string_helper::new_body(body);
+            post.link = string_helper::new_link(link);
             post.epoch_score = 0;
             post.epoch = current_epoch + 1;
             post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
@@ -168,18 +201,25 @@ pub mod zine {
     pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
         verify_account::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
-        verify_account::leaderboard(&ctx.accounts.leaderboard.key(), leaderboard.bump, ctx.program_id)?;
+        verify_account::leaderboard(
+            &ctx.accounts.leaderboard.key(),
+            leaderboard.bump,
+            ctx.program_id,
+        )?;
 
         let current_epoch = ctx.accounts.forum.epoch;
         let voter = &mut ctx.accounts.vote;
-        if true {//voter.epoch <= current_epoch {
+        if true {
+            //voter.epoch <= current_epoch {
             let mut voted_post = ctx.accounts.post.load_mut()?;
             voted_post.epoch_score += amount;
             voted_post.all_time_score += amount;
             voter.epoch = current_epoch + 1;
             voter.voted_for_card_mint = voted_post.card_mint.key();
-           
-            if let Some(mut new_leading_posts) = update_leading_posts(leaderboard.posts.to_vec(), voted_post) {
+
+            if let Some(mut new_leading_posts) =
+                update_leading_posts(leaderboard.posts.to_vec(), voted_post)
+            {
                 let mut leaders = [LeaderboardPost::default(); 10];
                 for i in (0..=(new_leading_posts.len() - 1)).rev() {
                     leaders[i] = new_leading_posts.pop().unwrap();
@@ -196,13 +236,50 @@ pub mod zine {
     }
 }
 
-fn update_leading_posts(mut leading_posts: Vec<LeaderboardPost>, voted_post: std::cell::RefMut<Post>) -> Option<Vec<LeaderboardPost>> {
+fn create_artifact_account(ctx: &Context<BuildArtifact>, artifact_bump: u8) -> ProgramResult {
+    let seeds = &[
+        ARTIFACT_SEED,
+        &ctx.accounts.forum.epoch.to_le_bytes(),
+        &[artifact_bump],
+    ];
+    let _artifact = Pubkey::create_program_address(seeds, ctx.program_id).unwrap();
+    let __anchor_rent = Rent::get()?;
+    let lamports = __anchor_rent.minimum_balance(2685);
+    anchor_lang::solana_program::program::invoke_signed(
+        &system_instruction::create_account(
+            &ctx.accounts.initializer.key(),
+            &_artifact,
+            lamports,
+            2685,
+            ctx.program_id,
+        ),
+        &[
+            ctx.accounts.initializer.to_account_info(),
+            ctx.accounts.artifact.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+        ],
+        &[&seeds[..]],
+    )?;
+    Ok(())
+}
+
+fn update_leading_posts(
+    mut leading_posts: Vec<LeaderboardPost>,
+    voted_post: std::cell::RefMut<Post>,
+) -> Option<Vec<LeaderboardPost>> {
     let lowest_scoring_index = leading_posts.len() - 1; //4
     let mut insert_marker = lowest_scoring_index; //last index in leaderboard
-    //wraparound check
+                                                  //wraparound check
     while insert_marker < 100 && voted_post.epoch_score > leading_posts[insert_marker].score {
-        if voted_post.card_mint.eq(&leading_posts[insert_marker].card_mint) {
-            msg!("matching keys with score {}, at index {}", {voted_post.epoch_score}, insert_marker);
+        if voted_post
+            .card_mint
+            .eq(&leading_posts[insert_marker].card_mint)
+        {
+            msg!(
+                "matching keys with score {}, at index {}",
+                { voted_post.epoch_score },
+                insert_marker
+            );
             leading_posts.remove(insert_marker);
         } else {
             insert_marker -= 1;
@@ -220,21 +297,6 @@ fn update_leading_posts(mut leading_posts: Vec<LeaderboardPost>, voted_post: std
     }
     None
 }
-
-fn new_body(body: String) -> [u8; 140] {
-    let bytes = body.as_bytes();
-    let mut new_body = [0u8; 140];
-    new_body[..bytes.len()].copy_from_slice(bytes);
-    new_body
-}
-fn new_link(link: String) -> [u8; 88] {
-    let bytes = link.as_bytes();
-    let mut new_link = [0u8; 88];
-    new_link[..bytes.len()].copy_from_slice(bytes);
-    new_link
-}
-
-
 
 #[derive(Accounts)]
 pub struct CreateLeaderboard<'info> {
@@ -257,7 +319,7 @@ pub struct InitializeForum<'info> {
     )]
     forum: Account<'info, Forum>,
     #[account(
-        init, 
+        init,
         seeds = [FORUM_AUTHORITY_SEED],
         bump = forum_authority_bump,
         payer = initializer
@@ -320,7 +382,6 @@ pub struct MintMembership<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(zine_bump: u8)]
 pub struct AdvanceEpoch<'info> {
     #[account(mut)]
     advancer: Signer<'info>,
@@ -330,15 +391,8 @@ pub struct AdvanceEpoch<'info> {
         bump = forum.bump
     )]
     forum: Account<'info, Forum>,
-    #[account(
-        init,
-        seeds = [ZINE_SEED, &forum.epoch.to_le_bytes()],
-        bump,
-        payer = advancer
-    )]
-    zine: Account<'info, Zine>,
     clock: Sysvar<'info, Clock>,
-    system_program: Program<'info, System>
+    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -399,7 +453,7 @@ pub struct SubmitVote<'info> {
     card_token_account: Account<'info, token::TokenAccount>,
 }
 
-//can do a different one for reclaiming, if u already have a member attribution account. just the same func 
+//can do a different one for reclaiming, if u already have a member attribution account. just the same func
 //could technically build it in to the posts. but probably won't. whatever
 #[derive(Accounts)]
 #[instruction(member_attribution_bump: u8)]
@@ -432,12 +486,20 @@ pub struct ClaimMembershipAuthority<'info> {
     system_program: Program<'info, System>,
 }
 
+/*
+state (leaving room for more)
+0: active epoch
+1: auction
+//i should probably pass in the clock always and validate timestamps
+//no state. will come back to this
+*/
 #[account]
 #[derive(Default)]
 pub struct Forum {
     membership: u32,
     epoch: u32,
-    last_reset: u64,
+    last_refresh: u64,
+    state: u8,
     bump: u8,
 }
 
@@ -459,7 +521,7 @@ pub struct Member {
 pub struct MemberAttribution {
     member: Pubkey,
     card_mint: Pubkey,
-    bump: u8
+    bump: u8,
 }
 //keyFromSeed: [cardMint, "post", programID]
 #[account(zero_copy)]
@@ -490,13 +552,12 @@ pub struct Vote {
     voted_for_card_mint: Pubkey,
     epoch: u32,
 }
-//i should probably change this and make it 
-//epoch
+
 #[account(zero_copy)]
 pub struct Leaderboard {
-    bump: u8,
     epoch: u32,
     posts: [LeaderboardPost; 10],
+    bump: u8,
 }
 #[zero_copy]
 pub struct LeaderboardPost {
@@ -516,11 +577,51 @@ impl Default for LeaderboardPost {
     }
 }
 
-#[account]
+#[derive(Accounts)]
+pub struct BuildArtifact<'info> {
+    initializer: Signer<'info>,
+    #[account(mut)]
+    artifact: AccountInfo<'info>,
+    #[account(
+        constraint = artifact_card_mint.decimals == 0,
+        constraint = artifact_card_mint.supply == 0,
+        constraint = artifact_card_mint.freeze_authority.unwrap() == forum_authority.key(),
+        constraint = artifact_card_mint.mint_authority.unwrap() == forum_authority.key(),
+    )]
+    artifact_card_mint: Account<'info, token::Mint>,
+    forum: Account<'info, Forum>,
+    #[account(
+        seeds = [FORUM_AUTHORITY_SEED],
+        bump = forum_authority.bump,
+    )]
+    forum_authority: Account<'info, ForumAuthority>,
+    leaderboard: Loader<'info, Leaderboard>,
+    clock: Sysvar<'info, Clock>,
+    system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct StartArtifactAuction<'info> {
+    initializer: Signer<'info>,
+    #[account(zero)]
+    artifact: Loader<'info, Artifact>,
+    forum: Account<'info, Forum>,
+}
+
+#[account(zero_copy)]
 #[derive(Default)]
-pub struct Zine {
-    isse: u32,
-    card_mint: Pubkey
+pub struct Artifact {
+    epoch: u32,
+    card_mint: Pubkey,
+    posts: [LeaderboardPost; 10],
+    bump: u8,
+}
+
+//pda from "artifact", card_mint
+//could also do with seed
+#[account]
+pub struct ArtifactAttribution {
+    artifact: Pubkey,
 }
 
 #[account]
@@ -529,10 +630,8 @@ pub struct ForumAuthority {
     bump: u8,
 }
 
-impl<'info>MintMembership<'info> {
-    fn into_mint_membership_context(
-        &self,
-    ) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
+impl<'info> MintMembership<'info> {
+    fn into_mint_membership_context(&self) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = token::MintTo {
             mint: self.card_mint.to_account_info(),
@@ -542,7 +641,6 @@ impl<'info>MintMembership<'info> {
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
-
 
 #[error]
 pub enum ErrorCode {
@@ -562,7 +660,6 @@ pub enum ErrorCode {
 so i can just take the unix timestamp and store it in the epoch account
 
 */
-
 
 /*
 #[derive(Clone)]
