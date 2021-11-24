@@ -14,11 +14,11 @@ import {
 } from "./addresses";
 import { getMintConfig, MintConfig } from "./config";
 import idl from "../idl.json";
-import { Zine } from "./ZineType";
+import { Forum } from "./ForumType";
 import { FORUM_PROGRAM_ID } from "../utils";
 
 export const fetchMembershipAccount = async (
-  forumProgram: Program<Zine>,
+  forumProgram: Program<Forum>,
   cardMint: PublicKey
 ) => {
   let [memberAddress, _bump] = await getMemberAddress(cardMint);
@@ -39,7 +39,7 @@ export const fetchMembershipAccount = async (
 };
 
 export const fetchMembershipCardMintForWallet = async (
-  forumProgram: Program<Zine>,
+  forumProgram: Program<Forum>,
   walletAddress: PublicKey | null
 ): Promise<PublicKey | undefined> => {
   if (walletAddress) {

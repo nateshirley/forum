@@ -1,6 +1,6 @@
 use crate::{
-    anchor_transfer, bid::Bid, ErrorCode, PlaceBidForArtifact, SettleArtifactAuction,
-    A_AUX_HOUSE_SEED,
+    anchor_transfer, bid::Bid, ErrorCode, PlaceBidForArtifact,
+    SettleArtifactAuctionAndAdvanceEpoch, A_AUX_HOUSE_SEED,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token;
@@ -105,7 +105,7 @@ impl<'info> PlaceBidForArtifact<'info> {
     }
 }
 
-impl<'info> SettleArtifactAuction<'info> {
+impl<'info> SettleArtifactAuctionAndAdvanceEpoch<'info> {
     pub fn into_mint_artifact_context(
         &self,
     ) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
@@ -120,7 +120,7 @@ impl<'info> SettleArtifactAuction<'info> {
 }
 
 pub mod clock {
-    use crate::{ErrorCode, PlaceBidForArtifact, SettleArtifactAuction};
+    use crate::{ErrorCode, PlaceBidForArtifact, SettleArtifactAuctionAndAdvanceEpoch};
     use anchor_lang::prelude::*;
     use std::convert::TryFrom;
 
@@ -133,7 +133,9 @@ pub mod clock {
             Err(ErrorCode::BidOnExpiredAuction.into())
         }
     }
-    pub fn verify_to_settle(ctx: &Context<SettleArtifactAuction>) -> ProgramResult {
+    pub fn verify_to_settle_and_advance(
+        ctx: &Context<SettleArtifactAuctionAndAdvanceEpoch>,
+    ) -> ProgramResult {
         if u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap()
             > ctx.accounts.artifact_auction.end_timestamp
         {

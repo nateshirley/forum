@@ -1,6 +1,6 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { Program } from "@project-serum/anchor";
-import { Zine } from "./ZineType";
+import { Forum } from "./ForumType";
 import * as BufferLayout from "@solana/buffer-layout";
 import { numberArrayToString } from "../utils";
 import { Post } from "../components/Forum/ActivePosts";
@@ -26,7 +26,7 @@ const PostLayout = BufferLayout.struct([
 export const getProgramAccountsForActivePosts = async (
   epoch: number,
   connection: Connection,
-  forumProgram: Program<Zine>
+  forumProgram: Program<Forum>
 ) => {
   //fetch for epoch + 1 to reflect post accounts updated this epoch
   console.log(forumProgram.account.post.size);
@@ -73,7 +73,7 @@ export const fetchedPostAccountToPostObject = (
 export const fetchAllActivePostsDecoded = async (
   epoch: number,
   connection: Connection,
-  forumProgram: Program<Zine>
+  forumProgram: Program<Forum>
 ) => {
   let accounts = await getProgramAccountsForActivePosts(
     epoch,

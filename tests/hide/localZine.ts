@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { Zine } from "../target/types/zine";
+import { Forum } from "../target/types/forum";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import * as assert from "assert";
 import { TextDecoder } from "util";
@@ -26,7 +26,7 @@ describe("local zine", () => {
   anchor.setProvider(provider);
   const authority = provider.wallet;
 
-  const program = anchor.workspace.Zine as Program<Zine>;
+  const program = anchor.workspace.Forum as Program<Forum>;
 
   let forum = null;
   let forumBump = null;

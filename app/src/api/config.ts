@@ -6,12 +6,12 @@ import {
   getMemberAttributionAddress,
   getCardTokenAccount,
 } from "./addresses";
-import { Zine } from "./ZineType";
+import { Forum } from "./ForumType";
 
 import idl from "../idl.json";
 import { FORUM_PROGRAM_ID } from "../utils";
 
-export const getForumProgram = (wallet: WalletContextState): Program<Zine> => {
+export const getForumProgram = (wallet: WalletContextState): Program<Forum> => {
   const provider = getProvider(wallet);
   let myIdl: any = idl;
   return new Program(myIdl, FORUM_PROGRAM_ID, provider);

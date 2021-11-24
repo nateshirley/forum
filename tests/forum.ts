@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { BN, Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { Zine } from "../target/types/zine";
+import { Forum } from "../target/types/forum";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import * as assert from "assert";
 import { TextDecoder } from "util";
@@ -25,13 +25,13 @@ import { getAssociatedTokenAccountAddress } from "../app/src/api/tokenHelpers";
 import { createAssociatedTokenAccountInstruction } from "./helpers/tokenHelpers";
 const base58 = require("base58-encode");
 
-describe("zine", () => {
+describe("forum", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
   const authority = provider.wallet;
 
-  const program = anchor.workspace.Zine as Program<Zine>;
+  const program = anchor.workspace.Forum as Program<Forum>;
 
   let forum = null;
   let forumBump = null;
@@ -199,7 +199,6 @@ describe("zine", () => {
 
     let tx = await program.rpc.startArtifactAuction({
       accounts: {
-        initializer: authority.publicKey,
         artifact: artifact,
         artifactAuction: artifactAuction,
         forum: forum,
@@ -224,7 +223,6 @@ describe("zine", () => {
         ),
         program.instruction.buildArtifact(
           artifactAttributionBump,
-          forumAuthorityBump,
           artifactBump,
           {
             accounts: {
@@ -271,7 +269,7 @@ describe("zine", () => {
     );
   });
 
-  it("settle artifact auction", async () => {
+  it("settle artifact auction and advance", async () => {
     let _forumAccount = await program.account.forum.fetch(forum);
     let [artifact, artifactBump] = await getArtifactAddress(
       _forumAccount.epoch
@@ -287,12 +285,10 @@ describe("zine", () => {
     console.log(artifactCardMint.publicKey.toBase58());
     let [auctionHouse, auctionHouseBump] =
       await getArtifactAuctionHouseAddress();
-    const tx = await program.rpc.settleArtifactAuction(
+    const tx = await program.rpc.settleArtifactAuctionAndAdvanceEpoch(
       auctionHouseBump,
-      forumAuthorityBump,
       {
         accounts: {
-          settler: authority.publicKey,
           artifact: artifact,
           artifactCardMint: artifactCardMint.publicKey,
           artifactTokenAccount: artifactTokenAccount,
@@ -314,21 +310,6 @@ describe("zine", () => {
         ],
       }
     );
-  });
-
-  it("advance epoch", async () => {
-    let _forumAccount = await program.account.forum.fetch(forum);
-
-    const tx = await program.rpc.advanceEpoch({
-      accounts: {
-        advancer: provider.wallet.publicKey,
-        forum: forum,
-        clock: web3.SYSVAR_CLOCK_PUBKEY,
-        systemProgram: web3.SystemProgram.programId,
-      },
-    });
-
-    //let _forum = await program.account.forum.fetch(forum);
   });
   const numberArrayToString = (rawNumber: number[]) => {
     let numbers = new Uint8Array(rawNumber);

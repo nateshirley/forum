@@ -6,7 +6,7 @@ use anchor_lang::{
 use anchor_spl::token;
 use borsh::BorshDeserialize;
 use std::convert::TryFrom;
-declare_id!("5KTaKLJ6zATJjU3xMuJS1Yk637FHCw9wSskigppDnUYM");
+declare_id!("B3WXuTeEWq5cMRj6q8zncRGobUC1f8jFUAjGcMAppDqe");
 mod anchor_transfer;
 mod artifact_auction;
 mod bid;
@@ -43,7 +43,7 @@ const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 //can add a name to this to make infinite forums
 
 #[program]
-pub mod zine {
+pub mod forum {
     use super::*;
 
     pub fn create_leaderboard(
@@ -60,7 +60,7 @@ pub mod zine {
     pub fn initialize_forum(
         ctx: Context<InitializeForum>,
         forum_bump: u8,
-        _forum_authority_bump: u8,
+        forum_authority_bump: u8,
         artifact_auction_bump: u8,
     ) -> ProgramResult {
         let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
@@ -69,7 +69,7 @@ pub mod zine {
         ctx.accounts.forum.bump = forum_bump;
         ctx.accounts.forum.epoch = 1;
         ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
-
+        ctx.accounts.forum_authority.bump = forum_authority_bump;
         ctx.accounts.artifact_auction.bump = artifact_auction_bump;
 
         leaderboard.posts = [LeaderboardPost::default(); 10];
@@ -80,7 +80,6 @@ pub mod zine {
         ctx: Context<MintMembership>,
         member_bump: u8,
         member_attribution_bump: u8,
-        forum_authority_bump: u8,
     ) -> ProgramResult {
         verify::account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_init()?;
@@ -103,7 +102,7 @@ pub mod zine {
 
         ctx.accounts.forum.membership = ctx.accounts.forum.membership + 1;
 
-        let seeds = &[&FORUM_AUTHORITY_SEED[..], &[forum_authority_bump]];
+        let seeds = &[&FORUM_AUTHORITY_SEED[..], &[ctx.accounts.forum_authority.bump]];
         //mint one subscription token to the subscriber
         token::mint_to(
             ctx.accounts
@@ -134,7 +133,6 @@ pub mod zine {
     pub fn build_artifact(
         ctx: Context<BuildArtifact>,
         _artifact_attribution_bump: u8,
-        _forum_authority_bump: u8,
         artifact_bump: u8,
     ) -> ProgramResult {
         //verify::clock::to_build_artifact(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
@@ -180,24 +178,22 @@ pub mod zine {
         Ok(())
     }
     //bundled in with advancing the epoch
-    pub fn settle_artifact_auction(ctx: Context<SettleArtifactAuction>, _auction_house_bump: u8, forum_authority_bump: u8) -> ProgramResult {
-        let seeds = &[&FORUM_AUTHORITY_SEED[..], &[forum_authority_bump]];
-        //mint one subscription token to the subscriber
+    //let me experiment with signing creation with the auction house
+    pub fn settle_artifact_auction_and_advance_epoch(ctx: Context<SettleArtifactAuctionAndAdvanceEpoch>, _auction_house_bump: u8) -> ProgramResult {
+        //artifact_auction::clock::verify_to_settle_and_advance(&ctx)?;
+
+        let epoch_length = SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
+        ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
+        ctx.accounts.forum.last_dawn = ctx.accounts.forum.last_dawn + epoch_length;
+
+        let seeds = &[&FORUM_AUTHORITY_SEED[..], &[ctx.accounts.forum_authority.bump]];
+        //mint the artifact token to the winner of the auction
         token::mint_to(
             ctx.accounts
                 .into_mint_artifact_context()
                 .with_signer(&[&seeds[..]]),
             1,
         )?;
-        Ok(())
-    }
-
-    pub fn advance_epoch(ctx: Context<AdvanceEpoch>) -> ProgramResult {
-        //this will actually be bundled with the settle auction
-        //verify::clock::to_advance_epoch(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
-        let epoch_length = SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
-        ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
-        ctx.accounts.forum.last_dawn = ctx.accounts.forum.last_dawn + epoch_length;
         Ok(())
     }
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
@@ -233,15 +229,10 @@ pub mod zine {
             voter.epoch = current_epoch;
             voter.voted_for_card_mint = voted_post.card_mint.key();
 
-            if let Some(mut new_leading_posts) =
-                leaderboard::update_posts(leaderboard.posts.to_vec(), voted_post)
+            if let Some(new_leading_posts) =
+                leaderboard::updated_posts(leaderboard.posts.to_vec(), voted_post)
             {
-                let mut leaders = [LeaderboardPost::default(); 10];
-                for i in (0..=(new_leading_posts.len() - 1)).rev() {
-                    leaders[i] = new_leading_posts.pop().unwrap();
-                }
-                leaderboard.posts = leaders;
-                msg!("vote triggered leaderboard updated");
+                leaderboard.posts = new_leading_posts;
             }
             Ok(())
         } else {
@@ -271,10 +262,12 @@ pub struct InitializeForum<'info> {
     )]
     forum: Account<'info, Forum>,
     #[account(
+        init,
         seeds = [FORUM_AUTHORITY_SEED],
         bump = forum_authority_bump,
+        payer = initializer
     )]
-    forum_authority: AccountInfo<'info>,
+    forum_authority: Account<'info, ForumAuthority>,
     #[account(zero)]
     leaderboard: Loader<'info, Leaderboard>,
     #[account(
@@ -289,7 +282,7 @@ pub struct InitializeForum<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(member_bump: u8, member_attribution_bump: u8, forum_authority_bump: u8)]
+#[instruction(member_bump: u8, member_attribution_bump: u8)]
 pub struct MintMembership<'info> {
     authority: Signer<'info>,
     #[account(
@@ -313,9 +306,9 @@ pub struct MintMembership<'info> {
     forum: Account<'info, Forum>,
     #[account(
         seeds = [FORUM_AUTHORITY_SEED],
-        bump = forum_authority_bump,
+        bump = forum_authority.bump,
     )]
-    forum_authority: AccountInfo<'info>,
+    forum_authority: Account<'info, ForumAuthority>,
     #[account(zero)]
     post: Loader<'info, Post>,
     #[account(zero)]
@@ -336,20 +329,6 @@ pub struct MintMembership<'info> {
     system_program: Program<'info, System>,
     token_program: Program<'info, token::Token>,
     clock: Sysvar<'info, Clock>,
-}
-
-#[derive(Accounts)]
-pub struct AdvanceEpoch<'info> {
-    #[account(mut)]
-    advancer: Signer<'info>,
-    #[account(
-        mut,
-        seeds = [FORUM_SEED],
-        bump = forum.bump
-    )]
-    forum: Account<'info, Forum>,
-    clock: Sysvar<'info, Clock>,
-    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -444,6 +423,109 @@ pub struct ClaimMembershipAuthority<'info> {
     system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+#[instruction(artifact_attribution_bump: u8)]
+pub struct BuildArtifact<'info> {
+    initializer: Signer<'info>,
+    #[account(mut)]
+    artifact: UncheckedAccount<'info>,
+    #[account(
+        constraint = artifact_card_mint.decimals == 0,
+        constraint = artifact_card_mint.supply == 0,
+        constraint = artifact_card_mint.freeze_authority.unwrap() == forum_authority.key(),
+        constraint = artifact_card_mint.mint_authority.unwrap() == forum_authority.key(),
+    )]
+    artifact_card_mint: Account<'info, token::Mint>,
+    #[account(
+        init,
+        seeds = [ARTIFACT_SEED, artifact_card_mint.key().as_ref()],
+        bump = artifact_attribution_bump,
+        payer = initializer
+    )]
+    artifact_attribution: Account<'info, ArtifactAttribution>,
+    forum: Account<'info, Forum>,
+    #[account(
+        seeds = [FORUM_AUTHORITY_SEED],
+        bump = forum_authority.bump,
+    )]
+    forum_authority: Account<'info, ForumAuthority>,
+    leaderboard: Loader<'info, Leaderboard>,
+    clock: Sysvar<'info, Clock>,
+    system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct StartArtifactAuction<'info> {
+    #[account(zero)]
+    artifact: Loader<'info, Artifact>,
+    #[account(
+        mut,
+        constraint = artifact_auction.epoch < forum.epoch,
+        seeds = [ARTIFACT_AUCTION_SEED],
+        bump = artifact_auction.bump,
+    )]
+    artifact_auction: Account<'info, ArtifactAuction>,
+    forum: Account<'info, Forum>,
+}
+
+#[derive(Accounts)]
+#[instruction(artifact_auction_house_bump: u8)]
+pub struct PlaceBidForArtifact<'info> {
+    bidder: Signer<'info>,
+    #[account(mut)]
+    newest_loser: AccountInfo<'info>,
+    artifact_auction: Account<'info, ArtifactAuction>,
+    #[account(
+        mut, 
+        seeds = [A_AUX_HOUSE_SEED],
+        bump = artifact_auction_house_bump
+    )]
+    artifact_auction_house: AccountInfo<'info>,
+    clock: Sysvar<'info, Clock>,
+    system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(artifact_auction_house_bump: u8)]
+pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
+    artifact: Loader<'info, Artifact>,
+    #[account(
+        mut,
+        constraint = artifact_card_mint.supply == 0
+    )]
+    artifact_card_mint: Account<'info, token::Mint>,
+    #[account(
+        mut,
+        constraint = artifact_token_account.owner == winner.key(),
+        constraint = artifact_token_account.mint == artifact_card_mint.key()
+    )]
+    artifact_token_account: Account<'info, token::TokenAccount>,
+    #[account(
+        constraint = winner.key() == artifact_auction.leading_bid.bidder
+    )]
+    winner: AccountInfo<'info>,
+    #[account(
+        constraint = artifact_auction.epoch == forum.epoch,
+        seeds = [ARTIFACT_AUCTION_SEED],
+        bump = artifact_auction.bump,
+    )]
+    artifact_auction: Account<'info, ArtifactAuction>,
+    #[account(
+        mut, 
+        seeds = [A_AUX_HOUSE_SEED],
+        bump = artifact_auction_house_bump
+    )]
+    artifact_auction_house: AccountInfo<'info>,
+    forum: Account<'info, Forum>,
+    #[account(
+        seeds = [FORUM_AUTHORITY_SEED],
+        bump = forum_authority.bump,
+    )]
+    forum_authority: Account<'info, ForumAuthority>,
+    clock: Sysvar<'info, Clock>,
+    token_program: Program<'info, token::Token>,
+}
+
 #[account]
 #[derive(Default)]
 pub struct Forum {
@@ -451,6 +533,12 @@ pub struct Forum {
     epoch: u32,
     last_dawn: u64,
     bump: u8,
+}
+
+#[account]
+#[derive(Default)]
+pub struct ForumAuthority {
+    bump: u8
 }
 
 //pda from ["member", card_mint.key()]
@@ -503,111 +591,7 @@ pub struct Vote {
     epoch: u32,
 }
 
-#[derive(Accounts)]
-#[instruction(artifact_attribution_bump: u8, forum_authority_bump: u8)]
-pub struct BuildArtifact<'info> {
-    initializer: Signer<'info>,
-    #[account(mut)]
-    artifact: UncheckedAccount<'info>,
-    #[account(
-        constraint = artifact_card_mint.decimals == 0,
-        constraint = artifact_card_mint.supply == 0,
-        constraint = artifact_card_mint.freeze_authority.unwrap() == forum_authority.key(),
-        constraint = artifact_card_mint.mint_authority.unwrap() == forum_authority.key(),
-    )]
-    artifact_card_mint: Account<'info, token::Mint>,
-    #[account(
-        init,
-        seeds = [ARTIFACT_SEED, artifact_card_mint.key().as_ref()],
-        bump = artifact_attribution_bump,
-        payer = initializer
-    )]
-    artifact_attribution: Account<'info, ArtifactAttribution>,
-    forum: Account<'info, Forum>,
-    #[account(
-        seeds = [FORUM_AUTHORITY_SEED],
-        bump = forum_authority_bump,
-    )]
-    forum_authority: AccountInfo<'info>,
-    leaderboard: Loader<'info, Leaderboard>,
-    clock: Sysvar<'info, Clock>,
-    system_program: Program<'info, System>,
-}
 
-#[derive(Accounts)]
-pub struct StartArtifactAuction<'info> {
-    initializer: Signer<'info>,
-    #[account(zero)]
-    artifact: Loader<'info, Artifact>,
-    #[account(
-        mut,
-        constraint = artifact_auction.epoch < forum.epoch,
-        seeds = [ARTIFACT_AUCTION_SEED],
-        bump = artifact_auction.bump,
-    )]
-    artifact_auction: Account<'info, ArtifactAuction>,
-    forum: Account<'info, Forum>,
-}
-
-#[derive(Accounts)]
-#[instruction(artifact_auction_house_bump: u8)]
-pub struct PlaceBidForArtifact<'info> {
-    bidder: Signer<'info>,
-    #[account(mut)]
-    newest_loser: AccountInfo<'info>,
-    artifact_auction: Account<'info, ArtifactAuction>,
-    #[account(
-        mut, 
-        seeds = [A_AUX_HOUSE_SEED],
-        bump = artifact_auction_house_bump
-    )]
-    artifact_auction_house: AccountInfo<'info>,
-    clock: Sysvar<'info, Clock>,
-    system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-#[instruction(artifact_auction_house_bump: u8, forum_authority_bump: u8)]
-pub struct SettleArtifactAuction<'info> {
-   // #[account(mut)]
-    settler: Signer<'info>,
-    artifact: Loader<'info, Artifact>,
-    #[account(
-        mut,
-        constraint = artifact_card_mint.supply == 0
-    )]
-    artifact_card_mint: Account<'info, token::Mint>,
-    #[account(
-        mut,
-        constraint = artifact_token_account.owner == winner.key(),
-        constraint = artifact_token_account.mint == artifact_card_mint.key()
-    )]
-    artifact_token_account: Account<'info, token::TokenAccount>,
-    #[account(
-        constraint = winner.key() == artifact_auction.leading_bid.bidder
-    )]
-    winner: AccountInfo<'info>,
-    #[account(
-        constraint = artifact_auction.epoch == forum.epoch,
-        seeds = [ARTIFACT_AUCTION_SEED],
-        bump = artifact_auction.bump,
-    )]
-    artifact_auction: Account<'info, ArtifactAuction>,
-    #[account(
-        mut, 
-        seeds = [A_AUX_HOUSE_SEED],
-        bump = artifact_auction_house_bump
-    )]
-    artifact_auction_house: AccountInfo<'info>,
-    forum: Account<'info, Forum>,
-    // #[account(
-    //     seeds = [FORUM_AUTHORITY_SEED],
-    //     bump = forum_authority_bump,
-    // )]
-    forum_authority: AccountInfo<'info>,
-    clock: Sysvar<'info, Clock>,
-    token_program: Program<'info, token::Token>,
-}
 
 #[account(zero_copy)]
 #[derive(Default)]
@@ -661,7 +645,7 @@ pub enum ErrorCode {
     LowBallBid,
     #[msg("u are trying to bid on an auction that has expired")]
     BidOnExpiredAuction,
-    #[msg("u are trying to settle an auction that has not ended")]
+    #[msg("u are trying to settle an auction that's still open for bidding")]
     SettleActiveAuction
 }
 /*

@@ -1,7 +1,22 @@
 use crate::Post;
 use anchor_lang::prelude::*;
 
-pub fn update_posts(
+pub fn updated_posts(
+    leading_posts: Vec<LeaderboardPost>,
+    newly_voted_post: std::cell::RefMut<Post>,
+) -> Option<[LeaderboardPost; 10]> {
+    if let Some(mut new_leading_posts) = get_updated_posts_vec(leading_posts, newly_voted_post) {
+        let mut leaders = [LeaderboardPost::default(); 10];
+        for i in (0..=(new_leading_posts.len() - 1)).rev() {
+            leaders[i] = new_leading_posts.pop().unwrap();
+        }
+        return Some(leaders);
+    } else {
+        None
+    }
+}
+
+pub fn get_updated_posts_vec(
     mut leading_posts: Vec<LeaderboardPost>,
     newly_voted_post: std::cell::RefMut<Post>,
 ) -> Option<Vec<LeaderboardPost>> {

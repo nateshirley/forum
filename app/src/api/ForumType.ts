@@ -1,6 +1,6 @@
-export type Zine = {
+export type Forum = {
   "version": "0.0.0",
-  "name": "zine",
+  "name": "forum",
   "instructions": [
     {
       "name": "createLeaderboard",
@@ -21,7 +21,12 @@ export type Zine = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "leaderboardBump",
+          "type": "u8"
+        }
+      ]
     },
     {
       "name": "initializeForum",
@@ -47,6 +52,11 @@ export type Zine = {
           "isSigner": false
         },
         {
+          "name": "artifactAuction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "clock",
           "isMut": false,
           "isSigner": false
@@ -65,6 +75,10 @@ export type Zine = {
         {
           "name": "forumAuthorityBump",
           "type": "u8"
+        },
+        {
+          "name": "artifactAuctionBump",
+          "type": "u8"
         }
       ]
     },
@@ -77,12 +91,12 @@ export type Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "memberAttribution",
+          "name": "membershipAttribution",
           "isMut": true,
           "isSigner": false
         },
@@ -152,7 +166,7 @@ export type Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": true,
           "isSigner": false
         },
@@ -167,8 +181,13 @@ export type Zine = {
           "isSigner": false
         },
         {
-          "name": "memberAttribution",
+          "name": "newMembershipAttribution",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "previousMembershipAttribution",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -179,7 +198,204 @@ export type Zine = {
       ],
       "args": [
         {
-          "name": "memberAttributionBump",
+          "name": "membershipAttributionBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "buildArtifact",
+      "accounts": [
+        {
+          "name": "initializer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactCardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAttribution",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "leaderboard",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "artifactAttributionBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "startArtifactAuction",
+      "accounts": [
+        {
+          "name": "initializer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "placeBidForArtifact",
+      "accounts": [
+        {
+          "name": "bidder",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newestLoser",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "settleArtifactAuction",
+      "accounts": [
+        {
+          "name": "settler",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactCardMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "winner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "auctionHouseBump",
           "type": "u8"
         }
       ]
@@ -188,12 +404,22 @@ export type Zine = {
       "name": "advanceEpoch",
       "accounts": [
         {
+          "name": "advancer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "forum",
           "isMut": true,
           "isSigner": false
         },
         {
           "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -209,7 +435,7 @@ export type Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": false,
           "isSigner": false
         },
@@ -259,7 +485,7 @@ export type Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": false,
           "isSigner": false
         },
@@ -292,6 +518,11 @@ export type Zine = {
           "name": "cardTokenAccount",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -303,6 +534,32 @@ export type Zine = {
     }
   ],
   "accounts": [
+    {
+      "name": "artifactAuction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "endTimestamp",
+            "type": "u64"
+          },
+          {
+            "name": "leadingBid",
+            "type": {
+              "defined": "Bid"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
     {
       "name": "forum",
       "type": {
@@ -317,7 +574,7 @@ export type Zine = {
             "type": "u32"
           },
           {
-            "name": "lastReset",
+            "name": "lastDawn",
             "type": "u64"
           },
           {
@@ -328,7 +585,19 @@ export type Zine = {
       }
     },
     {
-      "name": "member",
+      "name": "forumAuthority",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "membership",
       "type": {
         "kind": "struct",
         "fields": [
@@ -360,12 +629,12 @@ export type Zine = {
       }
     },
     {
-      "name": "memberAttribution",
+      "name": "membershipAttribution",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "member",
+            "name": "membership",
             "type": "publicKey"
           },
           {
@@ -446,14 +715,53 @@ export type Zine = {
       }
     },
     {
-      "name": "leaderboard",
+      "name": "artifact",
       "type": {
         "kind": "struct",
         "fields": [
           {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "cardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "posts",
+            "type": {
+              "array": [
+                {
+                  "defined": "LeaderboardPost"
+                },
+                10
+              ]
+            }
+          },
+          {
             "name": "bump",
             "type": "u8"
-          },
+          }
+        ]
+      }
+    },
+    {
+      "name": "artifactAttribution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "artifact",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "leaderboard",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "epoch",
             "type": "u32"
@@ -468,15 +776,7 @@ export type Zine = {
                 10
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "forumAuthority",
-      "type": {
-        "kind": "struct",
-        "fields": [
+          },
           {
             "name": "bump",
             "type": "u8"
@@ -486,6 +786,22 @@ export type Zine = {
     }
   ],
   "types": [
+    {
+      "name": "Bid",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bidder",
+            "type": "publicKey"
+          },
+          {
+            "name": "lamports",
+            "type": "u64"
+          }
+        ]
+      }
+    },
     {
       "name": "LeaderboardPost",
       "type": {
@@ -545,14 +861,49 @@ export type Zine = {
     {
       "code": 304,
       "name": "UnauthorizedLeaderboardAccount",
-      "msg": "leaderboard account does not match expected (fromSeed): 'leaderboard', programId"
+      "msg": "leaderboard account does not match expected, pda seed: 'leaderboard'"
+    },
+    {
+      "code": 305,
+      "name": "UnauthorizedArtifactAccount",
+      "msg": "artifact account does not match expected, pda seed: 'artifact', epoch"
+    },
+    {
+      "code": 306,
+      "name": "SessionWindowClosed",
+      "msg": "session window closed. no posts or votes can be submitted until the epoch reaches a new dawn"
+    },
+    {
+      "code": 307,
+      "name": "EpochHasNotReachedArtifactWindow",
+      "msg": "artifact window not open. session is still playing out"
+    },
+    {
+      "code": 308,
+      "name": "EpochIneligbileForNewDawn",
+      "msg": "epoch has not reached new dawn"
+    },
+    {
+      "code": 309,
+      "name": "LowBallBid",
+      "msg": "bid does not meet minimum"
+    },
+    {
+      "code": 310,
+      "name": "BidOnExpiredAuction",
+      "msg": "u are trying to bid on an auction that has expired"
+    },
+    {
+      "code": 311,
+      "name": "SettleActiveAuction",
+      "msg": "u are trying to settle an auction that's still open for bidding"
     }
   ]
 };
 
-export const IDL: Zine = {
+export const IDL: Forum = {
   "version": "0.0.0",
-  "name": "zine",
+  "name": "forum",
   "instructions": [
     {
       "name": "createLeaderboard",
@@ -573,7 +924,12 @@ export const IDL: Zine = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "leaderboardBump",
+          "type": "u8"
+        }
+      ]
     },
     {
       "name": "initializeForum",
@@ -599,6 +955,11 @@ export const IDL: Zine = {
           "isSigner": false
         },
         {
+          "name": "artifactAuction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "clock",
           "isMut": false,
           "isSigner": false
@@ -617,6 +978,10 @@ export const IDL: Zine = {
         {
           "name": "forumAuthorityBump",
           "type": "u8"
+        },
+        {
+          "name": "artifactAuctionBump",
+          "type": "u8"
         }
       ]
     },
@@ -629,12 +994,12 @@ export const IDL: Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "memberAttribution",
+          "name": "membershipAttribution",
           "isMut": true,
           "isSigner": false
         },
@@ -704,7 +1069,7 @@ export const IDL: Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": true,
           "isSigner": false
         },
@@ -719,8 +1084,13 @@ export const IDL: Zine = {
           "isSigner": false
         },
         {
-          "name": "memberAttribution",
+          "name": "newMembershipAttribution",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "previousMembershipAttribution",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -731,7 +1101,204 @@ export const IDL: Zine = {
       ],
       "args": [
         {
-          "name": "memberAttributionBump",
+          "name": "membershipAttributionBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "buildArtifact",
+      "accounts": [
+        {
+          "name": "initializer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactCardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAttribution",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "leaderboard",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "artifactAttributionBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "startArtifactAuction",
+      "accounts": [
+        {
+          "name": "initializer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "placeBidForArtifact",
+      "accounts": [
+        {
+          "name": "bidder",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newestLoser",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "settleArtifactAuction",
+      "accounts": [
+        {
+          "name": "settler",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactCardMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "winner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "auctionHouseBump",
           "type": "u8"
         }
       ]
@@ -740,12 +1307,22 @@ export const IDL: Zine = {
       "name": "advanceEpoch",
       "accounts": [
         {
+          "name": "advancer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
           "name": "forum",
           "isMut": true,
           "isSigner": false
         },
         {
           "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -761,7 +1338,7 @@ export const IDL: Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": false,
           "isSigner": false
         },
@@ -811,7 +1388,7 @@ export const IDL: Zine = {
           "isSigner": true
         },
         {
-          "name": "member",
+          "name": "membership",
           "isMut": false,
           "isSigner": false
         },
@@ -844,6 +1421,11 @@ export const IDL: Zine = {
           "name": "cardTokenAccount",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -855,6 +1437,32 @@ export const IDL: Zine = {
     }
   ],
   "accounts": [
+    {
+      "name": "artifactAuction",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "endTimestamp",
+            "type": "u64"
+          },
+          {
+            "name": "leadingBid",
+            "type": {
+              "defined": "Bid"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
     {
       "name": "forum",
       "type": {
@@ -869,7 +1477,7 @@ export const IDL: Zine = {
             "type": "u32"
           },
           {
-            "name": "lastReset",
+            "name": "lastDawn",
             "type": "u64"
           },
           {
@@ -880,7 +1488,19 @@ export const IDL: Zine = {
       }
     },
     {
-      "name": "member",
+      "name": "forumAuthority",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "membership",
       "type": {
         "kind": "struct",
         "fields": [
@@ -912,12 +1532,12 @@ export const IDL: Zine = {
       }
     },
     {
-      "name": "memberAttribution",
+      "name": "membershipAttribution",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "member",
+            "name": "membership",
             "type": "publicKey"
           },
           {
@@ -998,14 +1618,53 @@ export const IDL: Zine = {
       }
     },
     {
-      "name": "leaderboard",
+      "name": "artifact",
       "type": {
         "kind": "struct",
         "fields": [
           {
+            "name": "epoch",
+            "type": "u32"
+          },
+          {
+            "name": "cardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "posts",
+            "type": {
+              "array": [
+                {
+                  "defined": "LeaderboardPost"
+                },
+                10
+              ]
+            }
+          },
+          {
             "name": "bump",
             "type": "u8"
-          },
+          }
+        ]
+      }
+    },
+    {
+      "name": "artifactAttribution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "artifact",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "leaderboard",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "epoch",
             "type": "u32"
@@ -1020,15 +1679,7 @@ export const IDL: Zine = {
                 10
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "forumAuthority",
-      "type": {
-        "kind": "struct",
-        "fields": [
+          },
           {
             "name": "bump",
             "type": "u8"
@@ -1038,6 +1689,22 @@ export const IDL: Zine = {
     }
   ],
   "types": [
+    {
+      "name": "Bid",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bidder",
+            "type": "publicKey"
+          },
+          {
+            "name": "lamports",
+            "type": "u64"
+          }
+        ]
+      }
+    },
     {
       "name": "LeaderboardPost",
       "type": {
@@ -1097,7 +1764,42 @@ export const IDL: Zine = {
     {
       "code": 304,
       "name": "UnauthorizedLeaderboardAccount",
-      "msg": "leaderboard account does not match expected (fromSeed): 'leaderboard', programId"
+      "msg": "leaderboard account does not match expected, pda seed: 'leaderboard'"
+    },
+    {
+      "code": 305,
+      "name": "UnauthorizedArtifactAccount",
+      "msg": "artifact account does not match expected, pda seed: 'artifact', epoch"
+    },
+    {
+      "code": 306,
+      "name": "SessionWindowClosed",
+      "msg": "session window closed. no posts or votes can be submitted until the epoch reaches a new dawn"
+    },
+    {
+      "code": 307,
+      "name": "EpochHasNotReachedArtifactWindow",
+      "msg": "artifact window not open. session is still playing out"
+    },
+    {
+      "code": 308,
+      "name": "EpochIneligbileForNewDawn",
+      "msg": "epoch has not reached new dawn"
+    },
+    {
+      "code": 309,
+      "name": "LowBallBid",
+      "msg": "bid does not meet minimum"
+    },
+    {
+      "code": 310,
+      "name": "BidOnExpiredAuction",
+      "msg": "u are trying to bid on an auction that has expired"
+    },
+    {
+      "code": 311,
+      "name": "SettleActiveAuction",
+      "msg": "u are trying to settle an auction that's still open for bidding"
     }
   ]
 };

@@ -2,14 +2,14 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { Zine } from "../../target/types/zine";
+import { Forum } from "../target/types/forum";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAccountAddress,
 } from "./tokenHelpers";
 
-const program = anchor.workspace.Zine as Program<Zine>;
+const program = anchor.workspace.Forum as Program<Forum>;
 const provider = anchor.Provider.env();
 
 interface MintConfig {
@@ -83,7 +83,6 @@ export const mintMembership = async (
   const tx = await program.rpc.mintMembership(
     mintConfig.memberBump,
     mintConfig.memberAttributionBump,
-    _forumAuthorityBump,
     {
       accounts: {
         authority: mintConfig.authority,

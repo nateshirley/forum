@@ -69,17 +69,6 @@ pub mod clock {
             Err(ErrorCode::EpochHasNotReachedArtifactWindow.into())
         }
     }
-    pub fn to_advance_epoch(
-        clock: &Sysvar<anchor_lang::prelude::Clock>,
-        last_dawn: u64,
-    ) -> ProgramResult {
-        let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now - last_dawn > (SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH) {
-            Ok(())
-        } else {
-            Err(ErrorCode::EpochIneligbileForNewDawn.into())
-        }
-    }
 }
 
 /*
