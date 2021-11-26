@@ -28,9 +28,8 @@ export const getProgramAccountsForActivePosts = async (
   connection: Connection,
   forumProgram: Program<Forum>
 ) => {
-  //fetch for epoch + 1 to reflect post accounts updated this epoch
   console.log(forumProgram.account.post.size);
-  let toArrayLike = new Int32Array([epoch + 1]).buffer;
+  let toArrayLike = new Int32Array([epoch]).buffer;
   let toUint8 = new Uint8Array(toArrayLike);
   let byteString: string = base58(toUint8);
   let config = {

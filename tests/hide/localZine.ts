@@ -139,7 +139,6 @@ describe("local zine", () => {
   // });
 
   // const fetchAllActiveEpochPosts = async () => {
-  //   //fetch for epoch + 1 to reflect post accounts updated this epoch
   //   let activeForum = await program.account.forum.fetch(forum);
   //   let toArrayLike = new Int32Array([activeForum.epoch + 1]).buffer;
   //   let toUint8 = new Uint8Array(toArrayLike);

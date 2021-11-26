@@ -267,11 +267,6 @@ export type Forum = {
       "name": "startArtifactAuction",
       "accounts": [
         {
-          "name": "initializer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
           "name": "artifact",
           "isMut": true,
           "isSigner": false
@@ -335,13 +330,8 @@ export type Forum = {
       ]
     },
     {
-      "name": "settleArtifactAuction",
+      "name": "settleArtifactAuctionAndAdvanceEpoch",
       "accounts": [
-        {
-          "name": "settler",
-          "isMut": false,
-          "isSigner": true
-        },
         {
           "name": "artifact",
           "isMut": false,
@@ -399,32 +389,6 @@ export type Forum = {
           "type": "u8"
         }
       ]
-    },
-    {
-      "name": "advanceEpoch",
-      "accounts": [
-        {
-          "name": "advancer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "forum",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "clock",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
     },
     {
       "name": "newPost",
@@ -576,6 +540,10 @@ export type Forum = {
           {
             "name": "lastDawn",
             "type": "u64"
+          },
+          {
+            "name": "state",
+            "type": "u8"
           },
           {
             "name": "bump",
@@ -1170,11 +1138,6 @@ export const IDL: Forum = {
       "name": "startArtifactAuction",
       "accounts": [
         {
-          "name": "initializer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
           "name": "artifact",
           "isMut": true,
           "isSigner": false
@@ -1238,13 +1201,8 @@ export const IDL: Forum = {
       ]
     },
     {
-      "name": "settleArtifactAuction",
+      "name": "settleArtifactAuctionAndAdvanceEpoch",
       "accounts": [
-        {
-          "name": "settler",
-          "isMut": false,
-          "isSigner": true
-        },
         {
           "name": "artifact",
           "isMut": false,
@@ -1302,32 +1260,6 @@ export const IDL: Forum = {
           "type": "u8"
         }
       ]
-    },
-    {
-      "name": "advanceEpoch",
-      "accounts": [
-        {
-          "name": "advancer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "forum",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "clock",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
     },
     {
       "name": "newPost",
@@ -1479,6 +1411,10 @@ export const IDL: Forum = {
           {
             "name": "lastDawn",
             "type": "u64"
+          },
+          {
+            "name": "state",
+            "type": "u8"
           },
           {
             "name": "bump",

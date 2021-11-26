@@ -30,6 +30,12 @@ export const getPostAddress = async (cardMint: PublicKey) => {
 export const getVoteAddress = async (cardMint: PublicKey) => {
   return await PublicKey.createWithSeed(cardMint, "vote", FORUM_PROGRAM_ID);
 };
+export const getLeaderboard = () => {
+  return PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("leaderboard")],
+    FORUM_PROGRAM_ID
+  );
+};
 export const getForumAddress = () => {
   return PublicKey.findProgramAddress(
     [anchor.utils.bytes.utf8.encode("forum")],
@@ -42,9 +48,31 @@ export const getForumAuthority = () => {
     FORUM_PROGRAM_ID
   );
 };
-export const getLeaderboard = async () => {
+
+export const getArtifactAuctionAddress = async () => {
+  return PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("a_auction")],
+    FORUM_PROGRAM_ID
+  );
+};
+
+export const getArtifactAuctionHouseAddress = async () => {
+  return PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("a_aux_house")],
+    FORUM_PROGRAM_ID
+  );
+};
+export const getArtifactAddress = async (epoch: number) => {
+  let toArrayLike = new Int32Array([epoch]).buffer;
+  let epochArray = new Uint8Array(toArrayLike);
   return await PublicKey.findProgramAddress(
-    [anchor.utils.bytes.utf8.encode("leaderboard")],
+    [anchor.utils.bytes.utf8.encode("artifact"), epochArray], //
+    FORUM_PROGRAM_ID
+  );
+};
+export const getArtifactAttributionAddress = async (cardMint: PublicKey) => {
+  return await PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("artifact"), cardMint.toBuffer()], //
     FORUM_PROGRAM_ID
   );
 };

@@ -44,7 +44,7 @@ function MembershipHeader(props: Props) {
             const tx = await program.rpc.newPost(postBody, postLink, {
                 accounts: {
                     authority: wallet.publicKey,
-                    member: props.membership.publicKey,
+                    membership: props.membership.publicKey,
                     forum: props.forumInfo.publicKey,
                     post: props.membership.post,
                     cardMint: props.membership.cardMint,

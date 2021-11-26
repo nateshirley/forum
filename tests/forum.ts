@@ -25,6 +25,7 @@ import { getAssociatedTokenAccountAddress } from "../app/src/api/tokenHelpers";
 import { createAssociatedTokenAccountInstruction } from "./helpers/tokenHelpers";
 const base58 = require("base58-encode");
 
+//https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/
 describe("forum", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.Provider.env();
@@ -62,6 +63,7 @@ describe("forum", () => {
     let [_a_auction, _abump] = await getArtifactAuctionAddress();
     artifactAuction = _a_auction;
     artifactAuctionBump = _abump;
+    console.log(program.account.post.size);
   });
 
   //can put init and leaderboard into one later on
@@ -131,7 +133,15 @@ describe("forum", () => {
     // let updatedVote = await program.account.vote.fetch(vote);
     // console.log(updatedVote);
   });
-
+  const numberArrayToString = (rawNumber: number[]) => {
+    let numbers = new Uint8Array(rawNumber);
+    while (numbers[numbers.length - 1] === 0) {
+      numbers = numbers.slice(0, -1);
+    }
+    return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
+  };
+  /*
+  
   it("mint dif", async () => {
     let wallet = Keypair.generate();
     await provider.connection.confirmTransaction(
@@ -188,6 +198,7 @@ describe("forum", () => {
     //   console.log(body);
     // });
   });
+
 
   it("build artifact + start auction", async () => {
     let _forumAccount = await program.account.forum.fetch(forum);
@@ -311,13 +322,8 @@ describe("forum", () => {
       }
     );
   });
-  const numberArrayToString = (rawNumber: number[]) => {
-    let numbers = new Uint8Array(rawNumber);
-    while (numbers[numbers.length - 1] === 0) {
-      numbers = numbers.slice(0, -1);
-    }
-    return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
-  };
+
+  */
 
   /*
   it("fetch all posts", async () => {
@@ -330,7 +336,6 @@ describe("forum", () => {
   
   
   const fetchAllActiveEpochPosts = async () => {
-    //fetch for epoch + 1 to reflect post accounts updated this epoch
     console.log(program.account.post.size);
     let activeForum = await program.account.forum.fetch(forum);
     let toArrayLike = new Int32Array([activeForum.epoch + 1]).buffer;

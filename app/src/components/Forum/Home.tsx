@@ -14,7 +14,7 @@ a lot of aesthetic stuff
 - sorting posts by score and by time
 - show liked post or link to liked post
 - and then something to show off previous leaderboards
-
+//4 311 010
 done
 - make a post details page. just a way to link to a post account for a particular card mint.
     - like literally just post/...id and show the post for that account
@@ -26,7 +26,9 @@ export interface ForumInfo {
     publicKey: PublicKey,
     membership: number,
     epoch: number,
-    lastReset: BN,
+    state: number,
+    lastDawn: BN,
+    tillArtifactAuction: number,
     bump: number
 }
 export interface Membership {
@@ -55,6 +57,7 @@ interface Props {
 function Home(props: Props) {
     const wallet = useWallet();
     const [postRefresh, doPostRefresh] = useState(0);
+    const program = getForumProgram(wallet);
 
     const didSubmitNewPost = () => {
         props.setCanPost(false);
@@ -69,9 +72,25 @@ function Home(props: Props) {
             membership={props.membership} forumInfo={props.forumInfo} cardTokenAccount={props.cardTokenAccount} didSubmitNewPost={didSubmitNewPost} activeUserPost={props.activeUserPost} />
     }
 
+    let forumStatus = (
+        <div>
+            forum status
+            <div>epoch {props.forumInfo?.epoch}</div>
+            <div>until auction: {props.forumInfo?.tillArtifactAuction}</div>
+        </div>
+    )
+
+
+    useEffect(() => {
+        // program.provider.connection.getBlockTime(137368).then((time) => {
+        //     console.log(time, "TIME")
+        // });
+    })
+
     return (
         <div className="component-parent">
             {header}
+            {forumStatus}
             <ActivePosts forumInfo={props.forumInfo} canLike={props.canLike}
                 refresh={postRefresh} submitLike={props.submitLike} />
         </div>

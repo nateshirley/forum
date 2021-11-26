@@ -23,7 +23,7 @@ export const fetchMembershipAccount = async (
 ) => {
   let [memberAddress, _bump] = await getMemberAddress(cardMint);
   try {
-    let membership = await forumProgram.account.member.fetch(memberAddress);
+    let membership = await forumProgram.account.membership.fetch(memberAddress);
     return {
       publicKey: memberAddress,
       authority: membership.authority,
@@ -48,7 +48,7 @@ export const fetchMembershipCardMintForWallet = async (
       forumProgram.programId
     );
     try {
-      let attribution = await forumProgram.account.memberAttribution.fetch(
+      let attribution = await forumProgram.account.membershipAttribution.fetch(
         address
       );
       return attribution.cardMint;
@@ -76,8 +76,8 @@ export const mintMembership = async (
     {
       accounts: {
         authority: mintConfig.authority,
-        member: mintConfig.member,
-        memberAttribution: mintConfig.memberAttribution,
+        membership: mintConfig.member,
+        membershipAttribution: mintConfig.memberAttribution,
         forum: forum,
         forumAuthority: forumAuthority,
         post: mintConfig.post,

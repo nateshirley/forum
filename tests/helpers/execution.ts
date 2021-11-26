@@ -2,7 +2,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import { Forum } from "../target/types/forum";
+import { Forum } from "../../target/types/forum";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import {
   createAssociatedTokenAccountInstruction,

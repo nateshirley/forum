@@ -6,7 +6,7 @@ use anchor_lang::{
 use anchor_spl::token;
 use borsh::BorshDeserialize;
 use std::convert::TryFrom;
-declare_id!("B3WXuTeEWq5cMRj6q8zncRGobUC1f8jFUAjGcMAppDqe");
+declare_id!("5u2hS1eFPULD9BYMxjQbSWGHajmPCcXmbGSJhGpFJ8FC");
 mod anchor_transfer;
 mod artifact_auction;
 mod bid;
@@ -18,15 +18,11 @@ use artifact_auction::{ArtifactAuction};
 use bid::Bid;
 use leaderboard::{Leaderboard, LeaderboardPost};
 /*
-add
-- generate new leaderboard data when advancing the epoch, assign it to mint for new nft
-    - add reverse attribution so [epoch, leaderboard] = nft mintkey
-- test if wallet works with svgs
+solana address -k target/deploy/forum-keypair.json
 
-done
-- add time of post
-- running total for users -- all time score
-- clear old member attribution on transfer, so i can rely on checking wallet for auth
+
+add
+- test if wallet works with svgs
 */
 
 const MEMBERSHIP_SEED: &[u8] = b"member";
@@ -36,8 +32,8 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 10; //518400
-const ARTIFACT_AUCTION_LENGTH: u64 = 5; //86400
+const SESSION_LENGTH: u64 = 120; //518400
+const ARTIFACT_AUCTION_LENGTH: u64 = 120; //86400
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 //can add a name to this to make infinite forums
@@ -68,6 +64,7 @@ pub mod forum {
 
         ctx.accounts.forum.bump = forum_bump;
         ctx.accounts.forum.epoch = 1;
+        ctx.accounts.forum.state = 0;
         ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
         ctx.accounts.forum_authority.bump = forum_authority_bump;
         ctx.accounts.artifact_auction.bump = artifact_auction_bump;
@@ -84,10 +81,11 @@ pub mod forum {
         verify::account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_init()?;
         post.card_mint = ctx.accounts.card_mint.key();
-        post.epoch = ctx.accounts.forum.epoch;
+        post.epoch = ctx.accounts.forum.epoch - 1;
         post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
 
         ctx.accounts.vote.authority_card_mint = ctx.accounts.card_mint.key();
+        ctx.accounts.vote.epoch = ctx.accounts.forum.epoch - 1;
 
         ctx.accounts.membership.authority = ctx.accounts.authority.key();
         ctx.accounts.membership.card_mint = ctx.accounts.card_mint.key();
@@ -135,7 +133,7 @@ pub mod forum {
         _artifact_attribution_bump: u8,
         artifact_bump: u8,
     ) -> ProgramResult {
-        //verify::clock::to_build_artifact(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
+        verify::clock::to_build_artifact(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
         create_ix::artifact_account(&ctx, artifact_bump)?;
         let artifact_loader: Loader<Artifact> =
             Loader::try_from_unchecked(ctx.program_id, &ctx.accounts.artifact).unwrap();
@@ -150,17 +148,18 @@ pub mod forum {
         Ok(())
     }
     pub fn start_artifact_auction(ctx: Context<StartArtifactAuction>) -> ProgramResult {
-        //let artifact = ctx.accounts.artifact.load_init()?;
-        //verify::account::artifact(
-        //     ctx.accounts.artifact.key(),
-        //     ctx.accounts.forum.epoch,
-        //     artifact.bump,
-        // )?;
+        let artifact = ctx.accounts.artifact.load_init()?;
+        verify::account::artifact(
+            ctx.accounts.artifact.key(),
+            ctx.accounts.forum.epoch,
+            artifact.bump,
+        )?;
         ctx.accounts.artifact_auction.epoch = ctx.accounts.forum.epoch;
         //force auction to begin on time even if ix is not called right away
         ctx.accounts.artifact_auction.end_timestamp =
             ctx.accounts.forum.last_dawn + SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
         ctx.accounts.artifact_auction.leading_bid = Bid::default();
+        ctx.accounts.forum.state = 1;
         Ok(())
     }
     pub fn place_bid_for_artifact(ctx: Context<PlaceBidForArtifact>, artifact_auction_house_bump: u8, amount: u64) -> ProgramResult {
@@ -180,11 +179,12 @@ pub mod forum {
     //bundled in with advancing the epoch
     //let me experiment with signing creation with the auction house
     pub fn settle_artifact_auction_and_advance_epoch(ctx: Context<SettleArtifactAuctionAndAdvanceEpoch>, _auction_house_bump: u8) -> ProgramResult {
-        //artifact_auction::clock::verify_to_settle_and_advance(&ctx)?;
+        artifact_auction::clock::verify_to_settle_and_advance(&ctx)?;
 
         let epoch_length = SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
         ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
         ctx.accounts.forum.last_dawn = ctx.accounts.forum.last_dawn + epoch_length;
+        ctx.accounts.forum.state = 0;
 
         let seeds = &[&FORUM_AUTHORITY_SEED[..], &[ctx.accounts.forum_authority.bump]];
         //mint the artifact token to the winner of the auction
@@ -197,8 +197,8 @@ pub mod forum {
         Ok(())
     }
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
-        verify::account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
-        verify::clock::to_post(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
+        //verify::account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
+        //verify::clock::to_post(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_epoch = ctx.accounts.forum.epoch;
         if true {
@@ -214,8 +214,8 @@ pub mod forum {
         }
     }
     pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
-        verify::account::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
-        verify::clock::to_vote(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
+        //verify::account::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
+        //verify::clock::to_vote(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
         verify::account::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
 
@@ -443,6 +443,10 @@ pub struct BuildArtifact<'info> {
         payer = initializer
     )]
     artifact_attribution: Account<'info, ArtifactAttribution>,
+    #[account(
+        seeds = [FORUM_SEED],
+        bump = forum.bump
+    )]
     forum: Account<'info, Forum>,
     #[account(
         seeds = [FORUM_AUTHORITY_SEED],
@@ -465,6 +469,11 @@ pub struct StartArtifactAuction<'info> {
         bump = artifact_auction.bump,
     )]
     artifact_auction: Account<'info, ArtifactAuction>,
+    #[account(
+        mut,
+        seeds = [FORUM_SEED],
+        bump = forum.bump
+    )]
     forum: Account<'info, Forum>,
 }
 
@@ -505,6 +514,7 @@ pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
     )]
     winner: AccountInfo<'info>,
     #[account(
+        mut,
         constraint = artifact_auction.epoch == forum.epoch,
         seeds = [ARTIFACT_AUCTION_SEED],
         bump = artifact_auction.bump,
@@ -516,6 +526,11 @@ pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
         bump = artifact_auction_house_bump
     )]
     artifact_auction_house: AccountInfo<'info>,
+    #[account(
+        mut,
+        seeds = [FORUM_SEED],
+        bump = forum.bump
+    )]
     forum: Account<'info, Forum>,
     #[account(
         seeds = [FORUM_AUTHORITY_SEED],
@@ -526,12 +541,16 @@ pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
     token_program: Program<'info, token::Token>,
 }
 
+
+//state 0 == session
+//state 1 == auction
 #[account]
 #[derive(Default)]
 pub struct Forum {
     membership: u32,
     epoch: u32,
     last_dawn: u64,
+    state: u8,
     bump: u8,
 }
 
@@ -552,7 +571,9 @@ pub struct Membership {
     id: u32,
     bump: u8,
 }
-
+/*
+if auction is ready to start, send to auction page
+*/
 //pda from ["memberattribution", authority.key()]
 #[account]
 #[derive(Default)]

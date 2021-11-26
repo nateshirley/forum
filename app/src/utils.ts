@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
-  "B3WXuTeEWq5cMRj6q8zncRGobUC1f8jFUAjGcMAppDqe"
+  "5u2hS1eFPULD9BYMxjQbSWGHajmPCcXmbGSJhGpFJ8FC"
 );
 
 export const toDisplayString = (
@@ -21,4 +21,8 @@ export const numberArrayToString = (rawNumber: number[]) => {
     numbers = numbers.slice(0, -1);
   }
   return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
+};
+export const getSyncedTime = () => {
+  let time = new Date().getTime() / 1000;
+  return Math.round(time - 4310210);
 };
