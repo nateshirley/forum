@@ -15,7 +15,7 @@ import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAccountAddress,
 } from "./tokenHelpers";
-import { FORUM_PROGRAM_ID } from "../../app/src/utils";
+import { FORUM_ENDPOINT, FORUM_PROGRAM_ID } from "../../app/src/utils";
 
 const getForumProgram = (wallet: any): Program<Forum> => {
   const provider = getProvider(wallet);
@@ -30,10 +30,7 @@ const getProvider = (withWallet: Keypair) => {
   return provider;
 };
 const getConnection = () => {
-  const endpoint =
-    "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
-  //"http://127.0.0.1:8899"
-  //clusterApiUrl('devnet');
+  const endpoint = FORUM_ENDPOINT;
   const commitment: Commitment = "processed";
   return new Connection(endpoint, commitment);
 };

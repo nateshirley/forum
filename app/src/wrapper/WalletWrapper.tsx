@@ -11,6 +11,7 @@ import NavigationBar from './NavigationBar';
 import Notification from './Notification';
 import ComponentSwitch from './ComponentSwitch';
 import "../index.css";
+import { FORUM_ENDPOINT } from '../utils';
 
 const WalletWrapper: FC = () => {
     const network = WalletAdapterNetwork.Devnet;
@@ -37,7 +38,7 @@ const WalletWrapper: FC = () => {
     );
     //  "http://127.0.0.1:8899"
     return (
-        <ConnectionProvider endpoint="https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/">
+        <ConnectionProvider endpoint={FORUM_ENDPOINT}>
             <WalletProvider wallets={wallets} onError={onError} autoConnect>
                 <WalletModalProvider>
                     <div className="wrapper-parent">

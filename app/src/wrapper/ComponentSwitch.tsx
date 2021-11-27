@@ -9,7 +9,7 @@ import PostDetails from '../components/PostDetails';
 import { getForumProgram } from '../api/config';
 import { getCardTokenAccount, getForumAddress, getLeaderboard } from '../api/addresses';
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../api/membership';
-import { getSyncedTime, numberArrayToString } from '../utils';
+import { getNow, numberArrayToString } from '../utils';
 import { Post } from '../components/Forum/ActivePosts';
 import { fetchedPostAccountToPostObject } from '../api/posts';
 import Session from '../components/ArtifactAuction/Session';
@@ -28,22 +28,12 @@ const ComponentSwitch: FC = () => {
     const [canPost, setCanPost] = useState(false);
     const [activeUserPost, setActiveUserPost] = useState<Post | undefined>(undefined);
     const [cardTokenAccount, setCardTokenAccount] = useState<PublicKey | undefined>(undefined);
-    const SESSION_LENGTH = 120; //518400
-    const ARTIFACT_AUCTION_LENGTH = 120; //86400
 
-
-    const getTillAuctionTimestamp = (lastDawn: BN) => {
-        let lastDawnNumber = lastDawn.toNumber();
-        let currentTime = getSyncedTime();
-        return (lastDawnNumber + SESSION_LENGTH) - currentTime
-    }
 
     useEffect(() => {
         getForumAddress().then(([forum, bump]) => {
             program.account.forum.fetch(forum).then((fetchedInfo) => {
                 console.log("setting forum info", fetchedInfo)
-                let tillArtifactAuction = getTillAuctionTimestamp(fetchedInfo.lastDawn);
-                console.log(fetchedInfo.state, "state b")
                 // if (tillArtifactAuction < 0 && fetchedInfo.state === 0) {
                 //     history.push("session")
                 // }
@@ -54,17 +44,12 @@ const ComponentSwitch: FC = () => {
                     state: fetchedInfo.state,
                     lastDawn: fetchedInfo.lastDawn,
                     bump: fetchedInfo.bump,
-                    tillArtifactAuction: tillArtifactAuction
                 })
             });
         });
         getLeaderboard().then(([leaderboard, bump]) => {
             setLeaderboard(leaderboard);
         })
-        // let time = program.provider.connection.getBlockTime(182017).then((time) => {
-        //     let now = new Date().getTime() / 1000;
-        //     console.log(now - (time ?? 0));
-        // })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 

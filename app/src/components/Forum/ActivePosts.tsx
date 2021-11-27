@@ -4,6 +4,7 @@ import { ForumInfo, Membership } from "./Home";
 import { getForumProgram, getProvider } from "../../api/config";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
+import { getNow, timeSince } from "../../utils";
 
 
 interface Props {
@@ -63,21 +64,19 @@ function ActivePosts(props: Props) {
     let postCards;
     if (activePosts) {
         postCards = activePosts.map((post, index) => {
-            let date = Date.now() / 1000;
-            let secondsSince = date - post.timestamp;
             return (
                 <div key={index} className="post-outer">
                     <div>
                         {post.body}
                     </div>
                     <div>
-                        {post.epochScore}
+                        score: {post.epochScore}
                     </div>
                     <div>
                         <a href={post.link}>{post.link}</a>
                     </div>
                     <div>
-                        {secondsSince}
+                        {timeSince(post.timestamp)}
                     </div>
                     <div>
                         {props.canLike

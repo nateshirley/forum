@@ -9,7 +9,7 @@ import { ForumInfo, Membership } from "../Forum/Home";
 import { Post } from "../Forum/ActivePosts";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority, getLeaderboard } from "../../api/addresses";
-import { getSyncedTime, numberArrayToString } from "../../utils";
+import { getNow, numberArrayToString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
 
 interface Props {
@@ -155,7 +155,7 @@ function Session(props: Props) {
                             bump: fetchedAuctionState.bump
                         }
                         setAuction(auction);
-                        let now = getSyncedTime();
+                        let now = getNow();
                         let end = auction.endTimestamp;
                         let forumEpoch = props.forumInfo?.epoch ?? -1;
                         console.log("seconds until auction ends: ", auction.endTimestamp - now);

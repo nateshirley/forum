@@ -7,6 +7,7 @@ import { getForumProgram } from '../../api/config';
 import BN from 'bn.js';
 import { PublicKey } from '@solana/web3.js';
 import "../../Global.css";
+import { artifactAuctionTime } from "../../utils";
 
 /*
 a lot of aesthetic stuff
@@ -28,7 +29,6 @@ export interface ForumInfo {
     epoch: number,
     state: number,
     lastDawn: BN,
-    tillArtifactAuction: number,
     bump: number
 }
 export interface Membership {
@@ -74,9 +74,13 @@ function Home(props: Props) {
 
     let forumStatus = (
         <div>
+            <br />
             forum status
+            <br />
             <div>epoch {props.forumInfo?.epoch}</div>
-            <div>until auction: {props.forumInfo?.tillArtifactAuction}</div>
+            <div>{artifactAuctionTime(props.forumInfo?.lastDawn)}</div>
+            <br />
+            <br />
         </div>
     )
 
