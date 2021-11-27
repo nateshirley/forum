@@ -31,7 +31,6 @@ describe("forum", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
   const authority = provider.wallet;
-
   const program = anchor.workspace.Forum as Program<Forum>;
 
   let forum = null;

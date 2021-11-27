@@ -35,9 +35,9 @@ const WalletWrapper: FC = () => {
             ),
         []
     );
-
+    //  "http://127.0.0.1:8899"
     return (
-        <ConnectionProvider endpoint="http://127.0.0.1:8899">
+        <ConnectionProvider endpoint="https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/">
             <WalletProvider wallets={wallets} onError={onError} autoConnect>
                 <WalletModalProvider>
                     <div className="wrapper-parent">
