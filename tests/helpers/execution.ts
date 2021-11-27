@@ -1,16 +1,46 @@
 import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
+import { Program, Provider } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
-import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import {
+  PublicKey,
+  Keypair,
+  SystemProgram,
+  Commitment,
+  Connection,
+} from "@solana/web3.js";
 import { Forum } from "../../target/types/forum";
+import idl from "../../target/idl/forum.json";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAccountAddress,
 } from "./tokenHelpers";
+import { FORUM_PROGRAM_ID } from "../../app/src/utils";
 
-const program = anchor.workspace.Forum as Program<Forum>;
-const provider = anchor.Provider.env();
+const getForumProgram = (wallet: any): Program<Forum> => {
+  const provider = getProvider(wallet);
+  let myIdl: any = idl;
+  return new Program(myIdl, FORUM_PROGRAM_ID, provider);
+};
+const getProvider = (withWallet: Keypair) => {
+  const commitment: Commitment = "processed";
+  let confirmOptions = { preflightCommitment: commitment };
+  let wallet: any = withWallet;
+  const provider = new Provider(getConnection(), wallet, confirmOptions);
+  return provider;
+};
+const getConnection = () => {
+  const endpoint =
+    "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
+  //"http://127.0.0.1:8899"
+  //clusterApiUrl('devnet');
+  const commitment: Commitment = "processed";
+  return new Connection(endpoint, commitment);
+};
+const envProgram = anchor.Provider.env();
+const program = getForumProgram(anchor.Provider.env().wallet);
+
+//const provider = anchor.Provider.env();
 
 interface MintConfig {
   authority: PublicKey;
@@ -104,9 +134,10 @@ export const mintMembership = async (
           fromPubkey: mintConfig.authority,
           newAccountPubkey: mintConfig.cardMint.publicKey,
           space: MintLayout.span,
-          lamports: await provider.connection.getMinimumBalanceForRentExemption(
-            MintLayout.span
-          ),
+          lamports:
+            await program.provider.connection.getMinimumBalanceForRentExemption(
+              MintLayout.span
+            ),
           programId: TOKEN_PROGRAM_ID,
         }),
         //init the mint
@@ -128,9 +159,10 @@ export const mintMembership = async (
         SystemProgram.createAccountWithSeed({
           basePubkey: mintConfig.cardMint.publicKey,
           fromPubkey: mintConfig.authority,
-          lamports: await provider.connection.getMinimumBalanceForRentExemption(
-            program.account.post.size
-          ),
+          lamports:
+            await program.provider.connection.getMinimumBalanceForRentExemption(
+              program.account.post.size
+            ),
           newAccountPubkey: mintConfig.post,
           programId: program.programId,
           seed: "post",
@@ -140,9 +172,10 @@ export const mintMembership = async (
         SystemProgram.createAccountWithSeed({
           basePubkey: mintConfig.cardMint.publicKey,
           fromPubkey: mintConfig.authority,
-          lamports: await provider.connection.getMinimumBalanceForRentExemption(
-            program.account.vote.size
-          ),
+          lamports:
+            await program.provider.connection.getMinimumBalanceForRentExemption(
+              program.account.vote.size
+            ),
           newAccountPubkey: mintConfig.vote,
           programId: program.programId,
           seed: "vote",

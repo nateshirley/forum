@@ -6,7 +6,7 @@ use anchor_lang::{
 use anchor_spl::token;
 use borsh::BorshDeserialize;
 use std::convert::TryFrom;
-declare_id!("5u2hS1eFPULD9BYMxjQbSWGHajmPCcXmbGSJhGpFJ8FC");
+declare_id!("9sNbG8rQnSZHaXVA8pMwT1TiCK8gXDgtKeEmexiyAbXp");
 mod anchor_transfer;
 mod artifact_auction;
 mod bid;
@@ -17,13 +17,7 @@ mod verify;
 use artifact_auction::{ArtifactAuction};
 use bid::Bid;
 use leaderboard::{Leaderboard, LeaderboardPost};
-/*
-solana address -k target/deploy/forum-keypair.json
-
-
-add
-- test if wallet works with svgs
-*/
+//solana address -k target/deploy/forum-keypair.json
 
 const MEMBERSHIP_SEED: &[u8] = b"member";
 const MEMBERSHIP_ATTRIBUTION_SEED: &[u8] = b"memberattribution";
@@ -35,8 +29,6 @@ const ARTIFACT_SEED: &[u8] = b"artifact";
 const SESSION_LENGTH: u64 = 120; //518400
 const ARTIFACT_AUCTION_LENGTH: u64 = 120; //86400
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
-
-//can add a name to this to make infinite forums
 
 #[program]
 pub mod forum {

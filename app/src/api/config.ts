@@ -24,7 +24,9 @@ export const getProvider = (withWallet: WalletContextState) => {
   return provider;
 };
 export const getConnection = () => {
-  const endpoint = "http://127.0.0.1:8899";
+  const endpoint =
+    "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
+  //"http://127.0.0.1:8899"
   //"https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
   //clusterApiUrl('devnet');
   const commitment: Commitment = "processed";

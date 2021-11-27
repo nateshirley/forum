@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
-  "5u2hS1eFPULD9BYMxjQbSWGHajmPCcXmbGSJhGpFJ8FC"
+  "9sNbG8rQnSZHaXVA8pMwT1TiCK8gXDgtKeEmexiyAbXp"
 );
 
 export const toDisplayString = (
