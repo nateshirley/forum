@@ -1,13 +1,13 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import MembershipHeader from './MembershipHeader';
 import ConnectWallet from './ConnectWallet';
-import ActivePosts, { Post } from './ActivePosts';
+import ActivePosts from './ActivePosts';
 import { useEffect, useState } from 'react';
 import { getForumProgram } from '../../api/config';
-import BN from 'bn.js';
 import { PublicKey } from '@solana/web3.js';
 import "../../Global.css";
 import { artifactAuctionTime } from "../../utils";
+import { ForumInfo, Membership, Post } from "../../interfaces";
 
 /*
 a lot of aesthetic stuff
@@ -23,23 +23,7 @@ done
     - need to add time to post and figure out how to decode time 
 */
 
-export interface ForumInfo {
-    publicKey: PublicKey,
-    membership: number,
-    epoch: number,
-    state: number,
-    lastDawn: BN,
-    bump: number
-}
-export interface Membership {
-    publicKey: PublicKey,
-    authority: PublicKey,
-    cardMint: PublicKey,
-    post: PublicKey,
-    vote: PublicKey,
-    id: number,
-    bump: number,
-}
+
 interface Props {
     forumInfo: ForumInfo | undefined,
     memberCardMint: PublicKey | undefined,
@@ -54,7 +38,7 @@ interface Props {
     submitLike: (post: PublicKey) => Promise<string | undefined>
 }
 
-function Home(props: Props) {
+function Forum(props: Props) {
     const wallet = useWallet();
     const [postRefresh, doPostRefresh] = useState(0);
     const program = getForumProgram(wallet);
@@ -84,13 +68,6 @@ function Home(props: Props) {
         </div>
     )
 
-
-    useEffect(() => {
-        // program.provider.connection.getBlockTime(137368).then((time) => {
-        //     console.log(time, "TIME")
-        // });
-    })
-
     return (
         <div className="component-parent">
             {header}
@@ -100,4 +77,4 @@ function Home(props: Props) {
         </div>
     );
 }
-export default Home;
+export default Forum;

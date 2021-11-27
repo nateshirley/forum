@@ -3,7 +3,6 @@ import { Program } from "@project-serum/anchor";
 import { Forum } from "./ForumType";
 import * as BufferLayout from "@solana/buffer-layout";
 import { numberArrayToString } from "../utils";
-import { Post } from "../components/Forum/ActivePosts";
 
 const base58 = require("base58-encode");
 

@@ -4,10 +4,10 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useHistory } from "react-router";
 import qs from "qs";
 import { getForumProgram } from "../api/config";
-import { Post } from "./Forum/ActivePosts";
 import { numberArrayToString } from "../utils";
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from "../api/membership";
 import { fetchedPostAccountToPostObject } from "../api/posts";
+import { Post } from "../interfaces";
 
 interface Props {
     canLike: boolean,

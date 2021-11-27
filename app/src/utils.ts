@@ -75,3 +75,11 @@ export const artifactAuctionTime = (lastDawn: BN | undefined) => {
   }
   return "";
 };
+export const isSessionActive = (lastDawn: BN | undefined) => {
+  if (lastDawn) {
+    const now = new Date().getTime() / 1000;
+    const auction = lastDawn.toNumber() + SESSION_LENGTH;
+    return auction - now > 0;
+  }
+  return true;
+};

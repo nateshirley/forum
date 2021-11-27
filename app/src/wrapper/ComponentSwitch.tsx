@@ -3,17 +3,18 @@ import { clusterApiUrl, Connection, ConfirmOptions, Commitment, PublicKey } from
 import { BN, Provider, Wallet, web3 } from '@project-serum/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Route, Switch, useHistory } from 'react-router-dom';
-import Home, { ForumInfo, Membership } from '../components/Forum/Home';
 import New from '../components/New'
 import PostDetails from '../components/PostDetails';
 import { getForumProgram } from '../api/config';
 import { getCardTokenAccount, getForumAddress, getLeaderboard } from '../api/addresses';
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../api/membership';
-import { getNow, numberArrayToString } from '../utils';
-import { Post } from '../components/Forum/ActivePosts';
+import { isSessionActive, numberArrayToString } from '../utils';
 import { fetchedPostAccountToPostObject } from '../api/posts';
-import Session from '../components/ArtifactAuction/Session';
-
+import ActiveArtifactAuction from '../components/ActiveArtifactAuction/ActiveArtifactAuction';
+import WrapSession from '../components/WrapSession';
+import Home from "../components/Home";
+import Forum from "../components/Forum/Forum"
+import { ForumInfo, Membership, Post } from '../interfaces';
 
 
 const ComponentSwitch: FC = () => {
@@ -33,10 +34,6 @@ const ComponentSwitch: FC = () => {
     useEffect(() => {
         getForumAddress().then(([forum, bump]) => {
             program.account.forum.fetch(forum).then((fetchedInfo) => {
-                console.log("setting forum info", fetchedInfo)
-                // if (tillArtifactAuction < 0 && fetchedInfo.state === 0) {
-                //     history.push("session")
-                // }
                 setForumInfo({
                     publicKey: forum,
                     membership: fetchedInfo.membership as number,
@@ -122,21 +119,25 @@ const ComponentSwitch: FC = () => {
 
     return (
         <Switch>
-            <Route path="/details">
+            <Route path="/forum/details">
                 <PostDetails canLike={false} submitLike={submitLike} />
             </Route>
-            <Route path="/session">
-                <Session forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership}
-                    leaderboard={leaderboard} cardTokenAccount={cardTokenAccount} activeUserPost={activeUserPost} />
-            </Route>
-            <Route path="/new">
-                <New />
-            </Route>
-            <Route path="/" >
-                <Home forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}
+            <Route path="/forum" >
+                <Forum forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}
                     cardTokenAccount={cardTokenAccount} canPost={canPost} canLike={canLike} activeUserPost={activeUserPost} setMemberCardMint={setMemberCardMint}
                     setCanPost={setCanPost} submitLike={submitLike} />
             </Route>
+            <Route path="/active-artifact">
+                <ActiveArtifactAuction forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership}
+                    leaderboard={leaderboard} cardTokenAccount={cardTokenAccount} activeUserPost={activeUserPost} />
+            </Route>
+            <Route path="/wrap-session">
+                <WrapSession forumInfo={forumInfo} leaderboard={leaderboard} />
+            </Route>
+            <Route path="/">
+                <Home forumInfo={forumInfo} />
+            </Route>
+
         </Switch>
     );
 

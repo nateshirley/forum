@@ -3,14 +3,13 @@ import { useEffect, useState } from 'react';
 import { getForumProgram } from '../../api/config';
 import BN from 'bn.js';
 import * as web3 from "@solana/web3.js";
-import { PublicKey, Keypair, SystemProgram } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import "../../Global.css";
-import { ForumInfo, Membership } from "../Forum/Home";
-import { Post } from "../Forum/ActivePosts";
-import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
-import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority, getLeaderboard } from "../../api/addresses";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { getArtifactAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority } from "../../api/addresses";
 import { getNow, numberArrayToString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
+import { Artifact, Auction, ForumInfo, Membership, Pda, Post } from "../../interfaces";
 
 interface Props {
     forumInfo: ForumInfo | undefined,
@@ -21,40 +20,14 @@ interface Props {
     activeUserPost: Post | undefined,
 }
 
-interface Artifact {
-    address: PublicKey,
-    epoch: number,
-    cardMint: PublicKey,
-    posts: ArtifactPost[],
-    bump: number,
-}
-
-interface ArtifactPost {
-    cardMint: PublicKey,
-    body: string,
-    link: string,
-    score: number
-}
-interface Auction {
-    address: PublicKey,
-    epoch: number,
-    endTimestamp: number,
-    leadingBidder: PublicKey,
-    bidLamports: number,
-    bump: number
-}
-interface Pda {
-    address: PublicKey,
-    bump: number,
-}
 
 const AUCTION_PHASE = {
-    isActive: "isActive",                    //1
+    isActive: "isActive",                 //1
     needsSettled: "needsSettled",         //2
-    historical: "historical"                  //3
+    historical: "historical"              //3
 }
 
-function Session(props: Props) {
+function ActiveArtifactAuction(props: Props) {
     const wallet = useWallet();
     const [postRefresh, doPostRefresh] = useState(0);
     const program = getForumProgram(wallet);
@@ -189,82 +162,9 @@ function Session(props: Props) {
         // });
     }, [])
 
-    const didPressStartAuction = () => {
-        buildArtifactAndStartAuction().then((v) => {
-            console.log("started")
-            window.location.reload();
-
-        });
-    }
 
 
 
-    /*
-    so what i figured out is that the forum account wasn't marked mut so it didn't go through. but other than that we're good
-    */
-    const buildArtifactAndStartAuction = async () => {
-        if (props.forumInfo && wallet.publicKey) {
-            let forum = props.forumInfo.publicKey;
-            let _forumAccount = await program.account.forum.fetch(forum);
-            let [artifact, artifactBump] = await getArtifactAddress(
-                _forumAccount.epoch
-            );
-            console.log("art: ", artifact.toBase58());
-            let [_artifactAuction, _abump] = await getArtifactAuctionAddress();
-            let auctionState = await program.account.artifactAuction.fetch(_artifactAuction);
-            console.log(auctionState);
-            let artifactCardMint = Keypair.generate();
-            let [artifactAttribution, artifactAttributionBump] =
-                await getArtifactAttributionAddress(artifactCardMint.publicKey);
-            let [_forumAuthority, _forumAuthorityBump] = await getForumAuthority();
-            let [_leaderboard, _boardBump] = await getLeaderboard();
-            const tx = await program.rpc.startArtifactAuction({
-                accounts: {
-                    artifact: artifact,
-                    artifactAuction: _artifactAuction,
-                    forum: forum,
-                },
-                instructions: [
-                    SystemProgram.createAccount({
-                        fromPubkey: wallet.publicKey,
-                        newAccountPubkey: artifactCardMint.publicKey,
-                        space: MintLayout.span,
-                        lamports: await program.provider.connection.getMinimumBalanceForRentExemption(
-                            MintLayout.span
-                        ),
-                        programId: TOKEN_PROGRAM_ID,
-                    }),
-                    //init the mint
-                    Token.createInitMintInstruction(
-                        TOKEN_PROGRAM_ID,
-                        artifactCardMint.publicKey,
-                        0,
-                        _forumAuthority,
-                        _forumAuthority
-                    ),
-                    program.instruction.buildArtifact(
-                        artifactAttributionBump,
-                        artifactBump,
-                        {
-                            accounts: {
-                                initializer: wallet.publicKey,
-                                artifact: artifact,
-                                artifactCardMint: artifactCardMint.publicKey,
-                                artifactAttribution: artifactAttribution,
-                                forum: forum,
-                                forumAuthority: _forumAuthority,
-                                leaderboard: _leaderboard,
-                                clock: web3.SYSVAR_CLOCK_PUBKEY,
-                                systemProgram: web3.SystemProgram.programId,
-                            },
-                        }
-                    ),
-                ],
-                signers: [artifactCardMint],
-            });
-            return tx
-        }
-    }
 
 
     const didPressSettle = () => {
@@ -352,12 +252,7 @@ function Session(props: Props) {
     //2. bid
     //3. settle auction and advance epoch
 
-    let header;
-    if (props.forumInfo && props.forumInfo.state === 0) {
-        header = <button onClick={didPressStartAuction}>start auction</button>
-    } else {
-        header = <div>let me see the auction</div>
-    }
+    let header = <div>let me see the auction</div>;
 
     let settle;
     let bid = <button onClick={didPressBid}>bid</button>;
@@ -398,4 +293,4 @@ function Session(props: Props) {
         </div>
     );
 }
-export default Session;
+export default ActiveArtifactAuction;

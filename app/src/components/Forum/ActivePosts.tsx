@@ -1,10 +1,10 @@
 import { fetchAllActivePostsDecoded } from "../../api/posts";
 import { useState, useEffect } from "react";
-import { ForumInfo, Membership } from "./Home";
 import { getForumProgram, getProvider } from "../../api/config";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { getNow, timeSince } from "../../utils";
+import { ForumInfo, Post } from "../../interfaces";
 
 
 interface Props {
@@ -14,16 +14,7 @@ interface Props {
     submitLike: (post: PublicKey) => Promise<string | undefined>,
 }
 
-export interface Post {
-    publicKey: PublicKey,
-    cardMint: PublicKey,
-    body: string,
-    link: string,
-    timestamp: number,
-    epoch: number,
-    epochScore: number,
-    allTimeScore: number
-}
+
 
 function ActivePosts(props: Props) {
     const wallet = useWallet()

@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 import { PublicKey, Keypair, SYSVAR_CLOCK_PUBKEY } from "@solana/web3.js";
 import { Provider, Program, utils } from '@project-serum/anchor';
 import { useWallet } from "@solana/wallet-adapter-react";
-import { fetchMembershipCardMintForWallet } from "../../api/membership";
-import { getForumProgram, getProvider, getMintConfig } from '../../api/config'
+import { fetchMembershipCardMintForWallet, getMintConfig } from "../../api/membership";
+import { getForumProgram, getProvider } from '../../api/config'
 import { mintMembership } from "../../api/membership";
 import { toDisplayString } from "../../utils"
-import { ForumInfo, Membership } from "./Home";
-import { Post } from "./ActivePosts";
+import { ForumInfo, Membership, Post } from "../../interfaces";
+
 /*
 if member {
     - show welcome
