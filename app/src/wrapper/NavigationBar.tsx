@@ -31,7 +31,7 @@ const NavigationBar: FC = () => {
         }
     }
 
-    let shouldShowConnect = location.pathname === "/details" || wallet.connected;
+    let shouldShowConnect = location.pathname !== "/forum" || wallet.connected;
 
 
     return (

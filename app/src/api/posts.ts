@@ -27,7 +27,6 @@ export const getProgramAccountsForActivePosts = async (
   connection: Connection,
   forumProgram: Program<Forum>
 ) => {
-  console.log(forumProgram.account.post.size);
   let toArrayLike = new Int32Array([epoch]).buffer;
   let toUint8 = new Uint8Array(toArrayLike);
   let byteString: string = base58(toUint8);
@@ -48,7 +47,6 @@ export const getProgramAccountsForActivePosts = async (
     forumProgram.programId,
     config
   );
-  console.log(accounts.length);
   return accounts;
 };
 

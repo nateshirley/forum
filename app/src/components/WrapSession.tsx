@@ -36,8 +36,9 @@ function WrapSession(props: Props) {
         }
     }, [props.forumInfo])
 
-    const didPressStartAuction = () => {
+    const didPressStartAuction = async () => {
         if (props.forumInfo && wallet.publicKey && artifact && artifactAuction && props.leaderboard) {
+            //TODO: add loading indicator. look into making it cheaper
             buildArtifactAndStartAuction(
                 wallet.publicKey,
                 props.forumInfo.publicKey,
@@ -46,23 +47,30 @@ function WrapSession(props: Props) {
                 artifactAuction.address,
                 props.leaderboard,
             ).then((sig) => {
-                console.log("started")
-                history.push("active-artifact");
+                if (sig.length > 1) {
+                    history.push("session-auction")
+                    console.log("tx sig: ", sig)
+                } else {
+                    console.log("an error occured with the artifact build");
+                }
             });
         }
 
     }
-    const buildArtifactAndStartAuction = async (payer: PublicKey, forum: PublicKey, artifact: PublicKey, artifactBump: number, artifactAuction: PublicKey, leaderboard: PublicKey) => {
+    const buildArtifactAndStartAuction = async (payer: PublicKey, forum: PublicKey, artifact: PublicKey, artifactBump: number, artifactAuction: PublicKey, leaderboard: PublicKey): Promise<string> => {
         let artifactCardMint = Keypair.generate();
         //let [artifactAttribution, artifactAttributionBump]
-        const attr = await getArtifactAttributionAddress(artifactCardMint.publicKey);
+        const attr = getArtifactAttributionAddress(artifactCardMint.publicKey);
         //let [_forumAuthority, _forumAuthorityBump]
-        const auth = await getForumAuthority();
-        Promise.all([attr, auth]).then(async (values) => {
+        const auth = getForumAuthority();
+        const mintRent = program.provider.connection.getMinimumBalanceForRentExemption(
+            MintLayout.span
+        );
+        let response = await Promise.all([attr, auth, mintRent]).then(async (values) => {
             let artifactAttribution = values[0][0];
             let artifactAttributionBump = values[0][1];
             let forumAuthority = values[1][0]
-            const tx = await program.rpc.startArtifactAuction({
+            return await program.rpc.startArtifactAuction({
                 accounts: {
                     artifact: artifact,
                     artifactAuction: artifactAuction,
@@ -73,9 +81,7 @@ function WrapSession(props: Props) {
                         fromPubkey: payer,
                         newAccountPubkey: artifactCardMint.publicKey,
                         space: MintLayout.span,
-                        lamports: await program.provider.connection.getMinimumBalanceForRentExemption(
-                            MintLayout.span
-                        ),
+                        lamports: values[2],
                         programId: TOKEN_PROGRAM_ID,
                     }),
                     //init the mint
@@ -105,9 +111,11 @@ function WrapSession(props: Props) {
                     ),
                 ],
                 signers: [artifactCardMint],
-            });
-            return tx
+            })
+        }).catch((e) => {
+            return "e"
         })
+        return response
     }
 
 
