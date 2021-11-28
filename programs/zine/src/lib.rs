@@ -123,7 +123,6 @@ pub mod forum {
             .close(ctx.accounts.authority.to_account_info())?;
         Ok(())
     }
-
     pub fn build_artifact(
         ctx: Context<BuildArtifact>,
         _artifact_attribution_bump: u8,
@@ -147,7 +146,6 @@ pub mod forum {
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
         Ok(())
     }
-
     pub fn wrap_session_and_advance(
         ctx: Context<WrapSessionAndAdvance>,
         _artifact_auction_house_bump: u8,
@@ -182,7 +180,6 @@ pub mod forum {
         ctx.accounts.artifact_auction.leading_bid = Bid::default();
         Ok(())
     }
-
     pub fn place_bid_for_artifact(
         ctx: Context<PlaceBidForArtifact>,
         artifact_auction_house_bump: u8,
@@ -338,68 +335,6 @@ pub struct MintMembership<'info> {
     token_program: Program<'info, token::Token>,
     clock: Sysvar<'info, Clock>,
 }
-
-#[derive(Accounts)]
-pub struct NewPost<'info> {
-    authority: Signer<'info>,
-    //will force u to revoke ownership on transfer
-    #[account(
-        constraint = membership.authority == authority.key()
-    )]
-    membership: Account<'info, Membership>,
-    #[account(
-        seeds = [FORUM_SEED],
-        bump = forum.bump
-    )]
-    forum: Account<'info, Forum>,
-    #[account(mut)]
-    post: Loader<'info, Post>,
-    #[account(
-        constraint = card_mint.key() == membership.card_mint,
-    )]
-    card_mint: Account<'info, token::Mint>,
-    #[account(
-        constraint = card_token_account.mint == card_mint.key(),
-        constraint = card_token_account.amount >= 1,
-        constraint = card_token_account.owner == authority.key()
-    )]
-    card_token_account: Account<'info, token::TokenAccount>,
-    clock: Sysvar<'info, Clock>,
-}
-
-#[derive(Accounts)]
-pub struct SubmitVote<'info> {
-    authority: Signer<'info>,
-    #[account(
-        constraint = membership.authority == authority.key()
-    )]
-    membership: Account<'info, Membership>,
-    #[account(
-        seeds = [FORUM_SEED],
-        bump = forum.bump
-    )]
-    forum: Account<'info, Forum>,
-    #[account(mut)]
-    leaderboard: Loader<'info, Leaderboard>,
-    #[account(mut)]
-    post: Loader<'info, Post>,
-    #[account(mut)]
-    vote: Account<'info, Vote>,
-    #[account(
-        constraint = card_mint.key() == membership.card_mint,
-    )]
-    card_mint: Account<'info, token::Mint>,
-    #[account(
-        constraint = card_token_account.mint == card_mint.key(),
-        constraint = card_token_account.amount >= 1,
-        constraint = card_token_account.owner == authority.key()
-    )]
-    card_token_account: Account<'info, token::TokenAccount>,
-    clock: Sysvar<'info, Clock>,
-}
-
-//can do a different one for reclaiming, if u already have a member attribution account. just the same func
-//could technically build it in to the posts. but probably won't. whatever
 #[derive(Accounts)]
 #[instruction(member_attribution_bump: u8)]
 pub struct ClaimMembershipAuthority<'info> {
@@ -430,24 +365,6 @@ pub struct ClaimMembershipAuthority<'info> {
     //add someth here that gets rid of old member attribution
     system_program: Program<'info, System>,
 }
-
-#[derive(Accounts)]
-#[instruction(artifact_auction_house_bump: u8)]
-pub struct PlaceBidForArtifact<'info> {
-    bidder: Signer<'info>,
-    #[account(mut)]
-    newest_loser: AccountInfo<'info>,
-    artifact_auction: Account<'info, ArtifactAuction>,
-    #[account(
-        mut,
-        seeds = [A_AUX_HOUSE_SEED],
-        bump = artifact_auction_house_bump
-    )]
-    artifact_auction_house: AccountInfo<'info>,
-    clock: Sysvar<'info, Clock>,
-    system_program: Program<'info, System>,
-}
-
 //leaving this as separate ix so i can make sure discriminator gets set
 #[derive(Accounts)]
 #[instruction(artifact_attribution_bump: u8)]
@@ -536,6 +453,79 @@ pub struct WrapSessionAndAdvance<'info> {
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,
 }
+#[derive(Accounts)]
+#[instruction(artifact_auction_house_bump: u8)]
+pub struct PlaceBidForArtifact<'info> {
+    bidder: Signer<'info>,
+    #[account(mut)]
+    newest_loser: AccountInfo<'info>,
+    artifact_auction: Account<'info, ArtifactAuction>,
+    #[account(
+        mut,
+        seeds = [A_AUX_HOUSE_SEED],
+        bump = artifact_auction_house_bump
+    )]
+    artifact_auction_house: AccountInfo<'info>,
+    clock: Sysvar<'info, Clock>,
+    system_program: Program<'info, System>,
+}
+#[derive(Accounts)]
+pub struct NewPost<'info> {
+    authority: Signer<'info>,
+    //will force u to revoke ownership on transfer
+    #[account(
+        constraint = membership.authority == authority.key()
+    )]
+    membership: Account<'info, Membership>,
+    #[account(
+        seeds = [FORUM_SEED],
+        bump = forum.bump
+    )]
+    forum: Account<'info, Forum>,
+    #[account(mut)]
+    post: Loader<'info, Post>,
+    #[account(
+        constraint = card_mint.key() == membership.card_mint,
+    )]
+    card_mint: Account<'info, token::Mint>,
+    #[account(
+        constraint = card_token_account.mint == card_mint.key(),
+        constraint = card_token_account.amount >= 1,
+        constraint = card_token_account.owner == authority.key()
+    )]
+    card_token_account: Account<'info, token::TokenAccount>,
+    clock: Sysvar<'info, Clock>,
+}
+#[derive(Accounts)]
+pub struct SubmitVote<'info> {
+    authority: Signer<'info>,
+    #[account(
+        constraint = membership.authority == authority.key()
+    )]
+    membership: Account<'info, Membership>,
+    #[account(
+        seeds = [FORUM_SEED],
+        bump = forum.bump
+    )]
+    forum: Account<'info, Forum>,
+    #[account(mut)]
+    leaderboard: Loader<'info, Leaderboard>,
+    #[account(mut)]
+    post: Loader<'info, Post>,
+    #[account(mut)]
+    vote: Account<'info, Vote>,
+    #[account(
+        constraint = card_mint.key() == membership.card_mint,
+    )]
+    card_mint: Account<'info, token::Mint>,
+    #[account(
+        constraint = card_token_account.mint == card_mint.key(),
+        constraint = card_token_account.amount >= 1,
+        constraint = card_token_account.owner == authority.key()
+    )]
+    card_token_account: Account<'info, token::TokenAccount>,
+    clock: Sysvar<'info, Clock>,
+}
 
 #[account]
 #[derive(Default)]
@@ -545,13 +535,11 @@ pub struct Forum {
     last_dawn: u64,
     bump: u8,
 }
-
 #[account]
 #[derive(Default)]
 pub struct ForumAuthority {
     bump: u8,
 }
-
 //pda from ["member", card_mint.key()]
 #[account]
 #[derive(Default)]
