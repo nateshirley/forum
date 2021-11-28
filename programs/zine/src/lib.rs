@@ -14,7 +14,7 @@ mod create_ix;
 mod leaderboard;
 mod string_helper;
 mod verify;
-use artifact_auction::{ArtifactAuction};
+use artifact_auction::ArtifactAuction;
 use bid::Bid;
 use leaderboard::{Leaderboard, LeaderboardPost};
 //solana address -k target/deploy/forum-keypair.json
@@ -26,8 +26,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 120; //518400
-const ARTIFACT_AUCTION_LENGTH: u64 = 120; //86400
+const EPOCH_LENGTH: u64 = 100;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]
@@ -59,6 +58,10 @@ pub mod forum {
         ctx.accounts.forum.state = 0;
         ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
         ctx.accounts.forum_authority.bump = forum_authority_bump;
+
+        ctx.accounts.artifact_auction.epoch = 1;
+        ctx.accounts.artifact_auction.end_timestamp = ctx.accounts.forum.last_dawn + EPOCH_LENGTH;
+        ctx.accounts.artifact_auction.leading_bid = Bid::default();
         ctx.accounts.artifact_auction.bump = artifact_auction_bump;
 
         leaderboard.posts = [LeaderboardPost::default(); 10];
@@ -92,7 +95,10 @@ pub mod forum {
 
         ctx.accounts.forum.membership = ctx.accounts.forum.membership + 1;
 
-        let seeds = &[&FORUM_AUTHORITY_SEED[..], &[ctx.accounts.forum_authority.bump]];
+        let seeds = &[
+            &FORUM_AUTHORITY_SEED[..],
+            &[ctx.accounts.forum_authority.bump],
+        ];
         //mint one subscription token to the subscriber
         token::mint_to(
             ctx.accounts
@@ -100,7 +106,6 @@ pub mod forum {
                 .with_signer(&[&seeds[..]]),
             1,
         )?;
-
         //add something that creates metadata for the membership card
         Ok(())
     }
@@ -125,7 +130,7 @@ pub mod forum {
         _artifact_attribution_bump: u8,
         artifact_bump: u8,
     ) -> ProgramResult {
-        verify::clock::to_build_artifact(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
+        //verify::clock::to_build_artifact(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
         create_ix::artifact_account(&ctx, artifact_bump)?;
         let artifact_loader: Loader<Artifact> =
             Loader::try_from_unchecked(ctx.program_id, &ctx.accounts.artifact).unwrap();
@@ -139,46 +144,23 @@ pub mod forum {
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
         Ok(())
     }
-    pub fn start_artifact_auction(ctx: Context<StartArtifactAuction>) -> ProgramResult {
+
+    pub fn advance_epoch(
+        ctx: Context<AdvanceEpoch>,
+        _artifact_auction_house_bump: u8,
+    ) -> ProgramResult {
+        //artifact_auction::clock::verify_to_advance(&ctx)?;
         let artifact = ctx.accounts.artifact.load_init()?;
         verify::account::artifact(
             ctx.accounts.artifact.key(),
             ctx.accounts.forum.epoch,
             artifact.bump,
         )?;
-        ctx.accounts.artifact_auction.epoch = ctx.accounts.forum.epoch;
-        //force auction to begin on time even if ix is not called right away
-        ctx.accounts.artifact_auction.end_timestamp =
-            ctx.accounts.forum.last_dawn + SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
-        ctx.accounts.artifact_auction.leading_bid = Bid::default();
-        ctx.accounts.forum.state = 1;
-        Ok(())
-    }
-    pub fn place_bid_for_artifact(ctx: Context<PlaceBidForArtifact>, artifact_auction_house_bump: u8, amount: u64) -> ProgramResult {
-        artifact_auction::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
-        artifact_auction::clock::verify_to_bid(&ctx)?;
-        anchor_transfer::transfer_from_signer(
-            ctx.accounts.into_receive_artifact_bid_context(),
-            amount,
-        )?;
-        let losing_bid = ctx.accounts.artifact_auction.leading_bid;
-        artifact_auction::return_lamps_to_newest_loser(&ctx, losing_bid, artifact_auction_house_bump)?;
-        ctx.accounts.artifact_auction.leading_bid.bidder = ctx.accounts.bidder.key();
-        ctx.accounts.artifact_auction.leading_bid.lamports = amount;
-        artifact_auction::adjust_end_timestamp(ctx)?;
-        Ok(())
-    }
-    //bundled in with advancing the epoch
-    //let me experiment with signing creation with the auction house?
-    pub fn settle_artifact_auction_and_advance_epoch(ctx: Context<SettleArtifactAuctionAndAdvanceEpoch>, _auction_house_bump: u8) -> ProgramResult {
-        artifact_auction::clock::verify_to_settle_and_advance(&ctx)?;
-
-        let epoch_length = SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
-        ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
-        ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();//ctx.accounts.forum.last_dawn + epoch_length;
-        ctx.accounts.forum.state = 0;
-
-        let seeds = &[&FORUM_AUTHORITY_SEED[..], &[ctx.accounts.forum_authority.bump]];
+        //verify that artifact epoch equals the forum epoch? or does clock force it? not sure
+        let seeds = &[
+            &FORUM_AUTHORITY_SEED[..],
+            &[ctx.accounts.forum_authority.bump],
+        ];
         //mint the artifact token to the winner of the auction
         token::mint_to(
             ctx.accounts
@@ -186,8 +168,41 @@ pub mod forum {
                 .with_signer(&[&seeds[..]]),
             1,
         )?;
+
+        //advance epoch
+        ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
+        ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap(); //ctx.accounts.forum.last_dawn + EPOCH_LENGTH;
+
+        //sync auction account
+        ctx.accounts.artifact_auction.epoch = ctx.accounts.forum.epoch;
+        ctx.accounts.artifact_auction.end_timestamp = ctx.accounts.forum.last_dawn + EPOCH_LENGTH;
+        ctx.accounts.artifact_auction.leading_bid = Bid::default();
         Ok(())
     }
+
+    pub fn place_bid_for_artifact(
+        ctx: Context<PlaceBidForArtifact>,
+        artifact_auction_house_bump: u8,
+        amount: u64,
+    ) -> ProgramResult {
+        artifact_auction::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
+        //artifact_auction::clock::verify_to_bid(&ctx)?;
+        anchor_transfer::transfer_from_signer(
+            ctx.accounts.into_receive_artifact_bid_context(),
+            amount,
+        )?;
+        let losing_bid = ctx.accounts.artifact_auction.leading_bid;
+        artifact_auction::return_lamps_to_newest_loser(
+            &ctx,
+            losing_bid,
+            artifact_auction_house_bump,
+        )?;
+        ctx.accounts.artifact_auction.leading_bid.bidder = ctx.accounts.bidder.key();
+        ctx.accounts.artifact_auction.leading_bid.lamports = amount;
+        artifact_auction::adjust_end_timestamp(ctx)?;
+        Ok(())
+    }
+
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
         //verify::account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         //verify::clock::to_post(&ctx.accounts.clock, ctx.accounts.forum.last_dawn)?;
@@ -416,6 +431,24 @@ pub struct ClaimMembershipAuthority<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(artifact_auction_house_bump: u8)]
+pub struct PlaceBidForArtifact<'info> {
+    bidder: Signer<'info>,
+    #[account(mut)]
+    newest_loser: AccountInfo<'info>,
+    artifact_auction: Account<'info, ArtifactAuction>,
+    #[account(
+        mut,
+        seeds = [A_AUX_HOUSE_SEED],
+        bump = artifact_auction_house_bump
+    )]
+    artifact_auction_house: AccountInfo<'info>,
+    clock: Sysvar<'info, Clock>,
+    system_program: Program<'info, System>,
+}
+
+//leaving this as separate ix so i can make sure discriminator gets set
+#[derive(Accounts)]
 #[instruction(artifact_attribution_bump: u8)]
 pub struct BuildArtifact<'info> {
     initializer: Signer<'info>,
@@ -449,46 +482,10 @@ pub struct BuildArtifact<'info> {
     clock: Sysvar<'info, Clock>,
     system_program: Program<'info, System>,
 }
-
 #[derive(Accounts)]
-pub struct StartArtifactAuction<'info> {
+#[instruction(artifact_auction_house_bump: u8)]
+pub struct AdvanceEpoch<'info> {
     #[account(zero)]
-    artifact: Loader<'info, Artifact>,
-    #[account(
-        mut,
-        constraint = artifact_auction.epoch < forum.epoch,
-        seeds = [ARTIFACT_AUCTION_SEED],
-        bump = artifact_auction.bump,
-    )]
-    artifact_auction: Account<'info, ArtifactAuction>,
-    #[account(
-        mut,
-        seeds = [FORUM_SEED],
-        bump = forum.bump
-    )]
-    forum: Account<'info, Forum>,
-}
-
-#[derive(Accounts)]
-#[instruction(artifact_auction_house_bump: u8)]
-pub struct PlaceBidForArtifact<'info> {
-    bidder: Signer<'info>,
-    #[account(mut)]
-    newest_loser: AccountInfo<'info>,
-    artifact_auction: Account<'info, ArtifactAuction>,
-    #[account(
-        mut, 
-        seeds = [A_AUX_HOUSE_SEED],
-        bump = artifact_auction_house_bump
-    )]
-    artifact_auction_house: AccountInfo<'info>,
-    clock: Sysvar<'info, Clock>,
-    system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
-#[instruction(artifact_auction_house_bump: u8)]
-pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
     artifact: Loader<'info, Artifact>,
     #[account(
         mut,
@@ -513,7 +510,7 @@ pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
     )]
     artifact_auction: Account<'info, ArtifactAuction>,
     #[account(
-        mut, 
+        mut,
         seeds = [A_AUX_HOUSE_SEED],
         bump = artifact_auction_house_bump
     )]
@@ -533,7 +530,6 @@ pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
     token_program: Program<'info, token::Token>,
 }
 
-
 //state 0 == session
 //state 1 == auction
 #[account]
@@ -549,7 +545,7 @@ pub struct Forum {
 #[account]
 #[derive(Default)]
 pub struct ForumAuthority {
-    bump: u8
+    bump: u8,
 }
 
 //pda from ["member", card_mint.key()]
@@ -604,8 +600,6 @@ pub struct Vote {
     epoch: u32,
 }
 
-
-
 #[account(zero_copy)]
 #[derive(Default)]
 pub struct Artifact {
@@ -659,7 +653,7 @@ pub enum ErrorCode {
     #[msg("u are trying to bid on an auction that has expired")]
     BidOnExpiredAuction,
     #[msg("u are trying to settle an auction that's still open for bidding")]
-    SettleActiveAuction
+    SettleActiveAuction,
 }
 /*
 
@@ -713,3 +707,83 @@ pub struct BigBoop {
     // )]
     // big_boop: Account<'info, BigBoop>,
 */
+
+// pub fn start_artifact_auction(ctx: Context<StartArtifactAuction>) -> ProgramResult {
+//     let artifact = ctx.accounts.artifact.load_init()?;
+//     verify::account::artifact(
+//         ctx.accounts.artifact.key(),
+//         ctx.accounts.forum.epoch,
+//         artifact.bump,
+//     )?;
+//     ctx.accounts.artifact_auction.epoch = ctx.accounts.forum.epoch;
+//     //force auction to begin on time even if ix is not called right away
+//     ctx.accounts.artifact_auction.end_timestamp =
+//         ctx.accounts.forum.last_dawn + SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
+//     ctx.accounts.artifact_auction.leading_bid = Bid::default();
+//     ctx.accounts.forum.state = 1;
+//     Ok(())
+// }
+// #[derive(Accounts)]
+// pub struct StartArtifactAuction<'info> {
+//     #[account(zero)]
+//     artifact: Loader<'info, Artifact>,
+//     #[account(
+//         mut,
+//         constraint = artifact_auction.epoch < forum.epoch,
+//         seeds = [ARTIFACT_AUCTION_SEED],
+//         bump = artifact_auction.bump,
+//     )]
+//     artifact_auction: Account<'info, ArtifactAuction>,
+//     #[account(
+//         mut,
+//         seeds = [FORUM_SEED],
+//         bump = forum.bump
+//     )]
+//     forum: Account<'info, Forum>,
+// }
+// #[derive(Accounts)]
+// #[instruction(artifact_auction_house_bump: u8)]
+// pub struct SettleArtifactAuctionAndAdvanceEpoch<'info> {
+//     artifact: Loader<'info, Artifact>,
+//     #[account(
+//         mut,
+//         constraint = artifact_card_mint.supply == 0
+//     )]
+//     artifact_card_mint: Account<'info, token::Mint>,
+//     #[account(
+//         mut,
+//         constraint = artifact_token_account.owner == winner.key(),
+//         constraint = artifact_token_account.mint == artifact_card_mint.key()
+//     )]
+//     artifact_token_account: Account<'info, token::TokenAccount>,
+//     #[account(
+//         constraint = winner.key() == artifact_auction.leading_bid.bidder
+//     )]
+//     winner: AccountInfo<'info>,
+//     #[account(
+//         mut,
+//         constraint = artifact_auction.epoch == forum.epoch,
+//         seeds = [ARTIFACT_AUCTION_SEED],
+//         bump = artifact_auction.bump,
+//     )]
+//     artifact_auction: Account<'info, ArtifactAuction>,
+//     #[account(
+//         mut,
+//         seeds = [A_AUX_HOUSE_SEED],
+//         bump = artifact_auction_house_bump
+//     )]
+//     artifact_auction_house: AccountInfo<'info>,
+//     #[account(
+//         mut,
+//         seeds = [FORUM_SEED],
+//         bump = forum.bump
+//     )]
+//     forum: Account<'info, Forum>,
+//     #[account(
+//         seeds = [FORUM_AUTHORITY_SEED],
+//         bump = forum_authority.bump,
+//     )]
+//     forum_authority: Account<'info, ForumAuthority>,
+//     clock: Sysvar<'info, Clock>,
+//     token_program: Program<'info, token::Token>,
+// }

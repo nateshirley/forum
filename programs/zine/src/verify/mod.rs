@@ -37,7 +37,7 @@ pub mod account {
 }
 
 pub mod clock {
-    use crate::{ErrorCode, ARTIFACT_AUCTION_LENGTH, SESSION_LENGTH};
+    use crate::{ErrorCode, EPOCH_LENGTH};
     use anchor_lang::prelude::*;
     use std::convert::TryFrom;
 
@@ -52,7 +52,7 @@ pub mod clock {
         last_dawn: u64,
     ) -> ProgramResult {
         let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now - last_dawn < SESSION_LENGTH {
+        if now - last_dawn < EPOCH_LENGTH {
             Ok(())
         } else {
             Err(ErrorCode::SessionWindowClosed.into())
@@ -63,7 +63,7 @@ pub mod clock {
         last_dawn: u64,
     ) -> ProgramResult {
         let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now - last_dawn > SESSION_LENGTH {
+        if now - last_dawn > EPOCH_LENGTH {
             Ok(())
         } else {
             Err(ErrorCode::EpochHasNotReachedArtifactWindow.into())
