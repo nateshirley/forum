@@ -223,7 +223,7 @@ describe("forum", () => {
   it("advance epoch", async () => {
     let _forumAccount = await program.account.forum.fetch(forum);
     let [artifact, artifactBump] = await getArtifactAddress(
-      _forumAccount.epoch
+      _forumAccount.session
     );
     let auctionState = await program.account.artifactAuction.fetch(
       artifactAuction
@@ -239,7 +239,7 @@ describe("forum", () => {
     console.log(artifactCardMint.publicKey.toBase58());
     let [auctionHouse, auctionHouseBump] =
       await getArtifactAuctionHouseAddress();
-    const tx = await program.rpc.advanceEpoch(auctionHouseBump, {
+    const tx = await program.rpc.wrapSessionAndAdvance(auctionHouseBump, {
       accounts: {
         artifact: artifact,
         artifactCardMint: artifactCardMint.publicKey,
@@ -279,6 +279,7 @@ describe("forum", () => {
               artifact: artifact,
               artifactCardMint: artifactCardMint.publicKey,
               artifactAttribution: artifactAttribution,
+              artifactAuction: artifactAuction,
               forum: forum,
               forumAuthority: forumAuthority,
               leaderboard: leaderboard,

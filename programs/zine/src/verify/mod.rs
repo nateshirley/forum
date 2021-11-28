@@ -1,4 +1,4 @@
-pub mod account {
+pub mod address {
     use crate::{id, ErrorCode, ARTIFACT_SEED, LEADERBOARD_SEED};
     use anchor_lang::prelude::*;
 
@@ -37,36 +37,19 @@ pub mod account {
 }
 
 pub mod clock {
-    use crate::{ErrorCode, EPOCH_LENGTH};
+    use crate::ErrorCode;
     use anchor_lang::prelude::*;
     use std::convert::TryFrom;
 
-    pub fn to_post(clock: &Sysvar<anchor_lang::prelude::Clock>, last_dawn: u64) -> ProgramResult {
-        to_edit_leaderboard(clock, last_dawn)
-    }
-    pub fn to_vote(clock: &Sysvar<anchor_lang::prelude::Clock>, last_dawn: u64) -> ProgramResult {
-        to_edit_leaderboard(clock, last_dawn)
-    }
-    pub fn to_edit_leaderboard(
-        clock: &Sysvar<anchor_lang::prelude::Clock>,
-        last_dawn: u64,
-    ) -> ProgramResult {
-        let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now - last_dawn < EPOCH_LENGTH {
-            Ok(())
-        } else {
-            Err(ErrorCode::SessionWindowClosed.into())
-        }
-    }
     pub fn to_build_artifact(
         clock: &Sysvar<anchor_lang::prelude::Clock>,
-        last_dawn: u64,
+        auction_end_timestamp: u64,
     ) -> ProgramResult {
         let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now - last_dawn > EPOCH_LENGTH {
-            Ok(())
+        if auction_end_timestamp < now {
+            Err(ErrorCode::SessionNotWrapped.into())
         } else {
-            Err(ErrorCode::EpochHasNotReachedArtifactWindow.into())
+            Ok(())
         }
     }
 }

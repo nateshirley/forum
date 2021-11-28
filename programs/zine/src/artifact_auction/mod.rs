@@ -1,5 +1,6 @@
 use crate::{
-    anchor_transfer, bid::Bid, AdvanceEpoch, ErrorCode, PlaceBidForArtifact, A_AUX_HOUSE_SEED,
+    anchor_transfer, bid::Bid, ErrorCode, PlaceBidForArtifact, WrapSessionAndAdvance,
+    A_AUX_HOUSE_SEED,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token;
@@ -17,7 +18,7 @@ pub const MIN_INCREMENT_PERCENTAGE: u64 = 2;
 #[account]
 #[derive(Default)]
 pub struct ArtifactAuction {
-    pub epoch: u32,
+    pub session: u32,
     pub end_timestamp: u64,
     pub leading_bid: Bid,
     pub bump: u8,
@@ -104,7 +105,7 @@ impl<'info> PlaceBidForArtifact<'info> {
     }
 }
 
-impl<'info> AdvanceEpoch<'info> {
+impl<'info> WrapSessionAndAdvance<'info> {
     pub fn into_mint_artifact_context(
         &self,
     ) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
@@ -119,7 +120,7 @@ impl<'info> AdvanceEpoch<'info> {
 }
 
 pub mod clock {
-    use crate::{AdvanceEpoch, ErrorCode, PlaceBidForArtifact};
+    use crate::{ErrorCode, PlaceBidForArtifact, WrapSessionAndAdvance};
     use anchor_lang::prelude::*;
     use std::convert::TryFrom;
 
@@ -132,7 +133,7 @@ pub mod clock {
             Err(ErrorCode::BidOnExpiredAuction.into())
         }
     }
-    pub fn verify_to_advance(ctx: &Context<AdvanceEpoch>) -> ProgramResult {
+    pub fn verify_to_advance(ctx: &Context<WrapSessionAndAdvance>) -> ProgramResult {
         if u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap()
             > ctx.accounts.artifact_auction.end_timestamp
         {

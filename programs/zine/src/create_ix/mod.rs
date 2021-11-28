@@ -4,7 +4,7 @@ use anchor_lang::{prelude::*, solana_program::system_instruction};
 pub fn artifact_account(ctx: &Context<BuildArtifact>, artifact_bump: u8) -> ProgramResult {
     let seeds = &[
         ARTIFACT_SEED,
-        &ctx.accounts.forum.epoch.to_le_bytes(),
+        &ctx.accounts.forum.session.to_le_bytes(),
         &[artifact_bump],
     ];
     let _artifact = Pubkey::create_program_address(seeds, ctx.program_id).unwrap();

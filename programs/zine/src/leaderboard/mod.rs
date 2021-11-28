@@ -24,7 +24,7 @@ pub fn get_updated_posts_vec(
     let mut insert_marker = lowest_scoring_index; //last index in leaderboard
                                                   //wraparound check
     while (insert_marker < 100)
-        && (newly_voted_post.epoch_score > leading_posts[insert_marker].score)
+        && (newly_voted_post.session_score > leading_posts[insert_marker].score)
     {
         if newly_voted_post
             .card_mint
@@ -48,7 +48,7 @@ pub fn get_updated_posts_vec(
 
 #[account(zero_copy)]
 pub struct Leaderboard {
-    pub epoch: u32,
+    pub session: u32,
     pub posts: [LeaderboardPost; 10],
     pub bump: u8,
 }
