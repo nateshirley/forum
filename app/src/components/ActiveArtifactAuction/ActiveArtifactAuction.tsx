@@ -131,8 +131,7 @@ function ActiveArtifactAuction(props: Props) {
                         let now = getNow();
                         let end = auction.endTimestamp;
                         let forumEpoch = props.forumInfo?.epoch ?? -1;
-                        console.log("seconds until auction ends: ", auction.endTimestamp - now);
-                        console.log(auctionPhase);
+                        console.log("minutes until auction ends: ", (auction.endTimestamp - now) / 60);
                         if (fetchedAuctionState.epoch === forumEpoch) { //dealing with present auction
                             if (now - end > 0) {
                                 console.log("auction needs to be settled");
@@ -156,19 +155,10 @@ function ActiveArtifactAuction(props: Props) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.forumInfo]);
 
-    useEffect(() => {
-        // program.provider.connection.getBlockTime(137368).then((time) => {
-        //     console.log(time, "TIME")
-        // });
-    }, [])
-
-
-
-
 
 
     const didPressSettle = () => {
-        if (props.forumInfo && auction && artifact && auctionHouse && winnerTokenAccount && forumAuthority) {
+        if (wallet.publicKey && props.forumInfo && auction && artifact && auctionHouse && winnerTokenAccount && forumAuthority) {
             settleAndAdvance(
                 props.forumInfo.publicKey,
                 artifact.address,
@@ -180,7 +170,9 @@ function ActiveArtifactAuction(props: Props) {
                 auctionHouse.bump,
                 forumAuthority.address
             ).then((sig) => {
-                //not sure if this is best
+                //should be sending you to an artifact details page? 
+                //need a way to show the price history for certain bids. later
+                console.log("successful settle")
                 window.location.reload();
             })
         }

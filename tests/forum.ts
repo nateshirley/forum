@@ -64,7 +64,7 @@ describe("forum", () => {
     artifactAuctionBump = _abump;
     console.log(program.account.post.size);
   });
-
+  /*
   //can put init and leaderboard into one later on
   it("initialize forum", async () => {
     const tx = await program.rpc.initializeForum(
@@ -139,7 +139,7 @@ describe("forum", () => {
     }
     return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
   };
-  /*
+  
   
   it("mint dif", async () => {
     let wallet = Keypair.generate();

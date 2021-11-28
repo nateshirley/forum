@@ -169,13 +169,13 @@ pub mod forum {
         Ok(())
     }
     //bundled in with advancing the epoch
-    //let me experiment with signing creation with the auction house
+    //let me experiment with signing creation with the auction house?
     pub fn settle_artifact_auction_and_advance_epoch(ctx: Context<SettleArtifactAuctionAndAdvanceEpoch>, _auction_house_bump: u8) -> ProgramResult {
         artifact_auction::clock::verify_to_settle_and_advance(&ctx)?;
 
         let epoch_length = SESSION_LENGTH + ARTIFACT_AUCTION_LENGTH;
         ctx.accounts.forum.epoch = ctx.accounts.forum.epoch + 1;
-        ctx.accounts.forum.last_dawn = ctx.accounts.forum.last_dawn + epoch_length;
+        ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();//ctx.accounts.forum.last_dawn + epoch_length;
         ctx.accounts.forum.state = 0;
 
         let seeds = &[&FORUM_AUTHORITY_SEED[..], &[ctx.accounts.forum_authority.bump]];

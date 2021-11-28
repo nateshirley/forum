@@ -22,7 +22,7 @@ function Home(props: Props) {
                 history.push("wrap-session")
             } else {
                 //send it to the active auction component
-                history.push("active-artifact")
+                history.push("session-auction")
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -15,6 +15,7 @@ import WrapSession from '../components/WrapSession';
 import Home from "../components/Home";
 import Forum from "../components/Forum/Forum"
 import { ForumInfo, Membership, Post } from '../interfaces';
+import Artifact from '../components/Artifact/Artifact';
 
 
 const ComponentSwitch: FC = () => {
@@ -127,9 +128,12 @@ const ComponentSwitch: FC = () => {
                     cardTokenAccount={cardTokenAccount} canPost={canPost} canLike={canLike} activeUserPost={activeUserPost} setMemberCardMint={setMemberCardMint}
                     setCanPost={setCanPost} submitLike={submitLike} />
             </Route>
-            <Route path="/active-artifact">
+            <Route path="/session-auction">
                 <ActiveArtifactAuction forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership}
                     leaderboard={leaderboard} cardTokenAccount={cardTokenAccount} activeUserPost={activeUserPost} />
+            </Route>
+            <Route path="/session">
+                <Artifact />
             </Route>
             <Route path="/wrap-session">
                 <WrapSession forumInfo={forumInfo} leaderboard={leaderboard} />
