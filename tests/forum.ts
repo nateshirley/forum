@@ -220,6 +220,84 @@ describe("forum", () => {
     );
   });
 
+  it("build", async () => {
+    let _forumAccount = await program.account.forum.fetch(forum);
+    let [artifact, artifactBump] = await getArtifactAddress(
+      _forumAccount.session
+    );
+    let auctionState = await program.account.artifactAuction.fetch(
+      artifactAuction
+    );
+    let winner = auctionState.leadingBid.bidder;
+    let artifactTokenAccount = await getAssociatedTokenAccountAddress(
+      winner,
+      artifactCardMint.publicKey
+    );
+    let [artifactAttribution, artifactAttributionBump] =
+      await getArtifactAttributionAddress(artifactCardMint.publicKey);
+
+    console.log(artifactCardMint.publicKey.toBase58());
+    let [auctionHouse, auctionHouseBump] =
+      await getArtifactAuctionHouseAddress();
+    const tx = await program.rpc.buildArtifact(
+      artifactAttributionBump,
+      artifactBump,
+      {
+        accounts: {
+          initializer: authority.publicKey,
+          artifact: artifact,
+          artifactCardMint: artifactCardMint.publicKey,
+          artifactAttribution: artifactAttribution,
+          artifactAuction: artifactAuction,
+          forum: forum,
+          forumAuthority: forumAuthority,
+          leaderboard: leaderboard,
+          clock: web3.SYSVAR_CLOCK_PUBKEY,
+          forumProgram: program.programId,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        instructions: [
+          SystemProgram.createAccount({
+            fromPubkey: authority.publicKey,
+            newAccountPubkey: artifactCardMint.publicKey,
+            space: MintLayout.span,
+            lamports:
+              await provider.connection.getMinimumBalanceForRentExemption(
+                MintLayout.span
+              ),
+            programId: TOKEN_PROGRAM_ID,
+          }),
+          //init the mint
+          Token.createInitMintInstruction(
+            TOKEN_PROGRAM_ID,
+            artifactCardMint.publicKey,
+            0,
+            forumAuthority,
+            forumAuthority
+          ),
+          createAssociatedTokenAccountInstruction(
+            artifactCardMint.publicKey,
+            artifactTokenAccount,
+            winner,
+            authority.publicKey
+          ),
+        ],
+        signers: [artifactCardMint],
+      }
+    );
+
+    // console.log("built");
+    // const ttx = await program.rpc.testArtifact({
+    //   accounts: {
+    //     initializer: authority.publicKey,
+    //     artifact: artifact,
+    //   },
+    // });
+
+    let result = await provider.connection.getAccountInfo(artifact);
+    console.log(result);
+  });
+  /*
   it("advance epoch", async () => {
     let _forumAccount = await program.account.forum.fetch(forum);
     let [artifact, artifactBump] = await getArtifactAddress(
@@ -298,7 +376,7 @@ describe("forum", () => {
       signers: [artifactCardMint],
     });
   });
-  /*
+ 
   it("build artifact + start auction", async () => {
     let _forumAccount = await program.account.forum.fetch(forum);
     let [artifact, artifactBump] = await getArtifactAddress(

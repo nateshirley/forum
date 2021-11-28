@@ -1,6 +1,6 @@
 use crate::{
-    anchor_transfer, bid::Bid, ErrorCode, PlaceBidForArtifact, WrapSessionAndAdvance,
-    A_AUX_HOUSE_SEED,
+    anchor_transfer, bid::Bid, BuildArtifact, ErrorCode, PlaceBidForArtifact,
+    WrapSessionAndAdvance, A_AUX_HOUSE_SEED,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token;
@@ -118,6 +118,20 @@ impl<'info> WrapSessionAndAdvance<'info> {
         CpiContext::new(cpi_program, cpi_accounts)
     }
 }
+
+// impl<'info> BuildArtifact<'info> {
+//     pub fn into_wrap_session_context(
+//         &self,
+//     ) -> CpiContext<'_, '_, '_, 'info, WrapSessionAndAdvance<'info>> {
+//         let cpi_program = self.forum_program.to_account_info();
+//         let cpi_accounts = WrapSessionAndAdvance {
+//             mint: self.artifact_card_mint.to_account_info(),
+//             to: self.artifact_token_account.to_account_info(),
+//             authority: self.forum_authority.to_account_info(),
+//         };
+//         CpiContext::new(cpi_program, cpi_accounts)
+//     }
+// }
 
 pub mod clock {
     use crate::{ErrorCode, PlaceBidForArtifact, WrapSessionAndAdvance};
