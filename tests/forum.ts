@@ -253,7 +253,9 @@ describe("forum", () => {
           forumAuthority: forumAuthority,
           leaderboard: leaderboard,
           clock: web3.SYSVAR_CLOCK_PUBKEY,
-          forumProgram: program.programId,
+          testProgram: new PublicKey(
+            "8vXenx89QUMAyDTXvkFAbRu88Pv5pYrjAYcji5n2o2fT"
+          ),
           systemProgram: web3.SystemProgram.programId,
         },
         instructions: [

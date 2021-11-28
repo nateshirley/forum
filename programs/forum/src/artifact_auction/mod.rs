@@ -5,6 +5,7 @@ use crate::{
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 use std::convert::TryFrom;
+use testartifact::cpi::accounts::TestArtifact;
 /*
 1. create artifact auction
 2. place bid
@@ -119,19 +120,15 @@ impl<'info> WrapSessionAndAdvance<'info> {
     }
 }
 
-// impl<'info> BuildArtifact<'info> {
-//     pub fn into_wrap_session_context(
-//         &self,
-//     ) -> CpiContext<'_, '_, '_, 'info, WrapSessionAndAdvance<'info>> {
-//         let cpi_program = self.forum_program.to_account_info();
-//         let cpi_accounts = WrapSessionAndAdvance {
-//             mint: self.artifact_card_mint.to_account_info(),
-//             to: self.artifact_token_account.to_account_info(),
-//             authority: self.forum_authority.to_account_info(),
-//         };
-//         CpiContext::new(cpi_program, cpi_accounts)
-//     }
-// }
+impl<'info> BuildArtifact<'info> {
+    pub fn into_test_context(&self) -> CpiContext<'_, '_, '_, 'info, TestArtifact<'info>> {
+        let cpi_program = self.test_program.to_account_info();
+        let cpi_accounts = TestArtifact {
+            initializer: self.initializer.to_account_info(),
+        };
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
+}
 
 pub mod clock {
     use crate::{ErrorCode, PlaceBidForArtifact, WrapSessionAndAdvance};

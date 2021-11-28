@@ -17,6 +17,7 @@ mod verify;
 use artifact_auction::ArtifactAuction;
 use bid::Bid;
 use leaderboard::{Leaderboard, LeaderboardPost};
+use testartifact;
 //solana address -k target/deploy/forum-keypair.json
 
 const MEMBERSHIP_SEED: &[u8] = b"member";
@@ -124,29 +125,6 @@ pub mod forum {
         Ok(())
     }
 
-    /*
-    pub fn initialize_budget(ctx: Context<InitializeBudget>, args: BudgetArgs) -> ProgramResult {
-        let ix = instruction::InitializeDistributor {
-            args: args.distributor_args,
-        };
-
-        let mut remaining_accounts = ctx.accounts.to_account_infos().as_slice();
-
-        let accounts = InitializeDistributor::try_accounts(
-            ctx.program_id,
-            &mut remaining_accounts,
-            ix.data(),
-        )?;
-
-        let ctx = Context::new(ctx.program_id, &mut accounts, remaining_accounts);
-        initialize_distributor(ctx, args.distributor_args)
-    }
-    pub fn initialize_distributor(
-        ctx: Context<InitializeDistributor>,
-        args: DistributorArgs,
-    ) -> ProgramResult {
-        */
-
     pub fn build_artifact(
         ctx: Context<BuildArtifact>,
         _artifact_attribution_bump: u8,
@@ -170,27 +148,13 @@ pub mod forum {
 
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
 
-        let ix = instruction::TestArtifact {
-            _artifact_attribution_bump: _artifact_attribution_bump,
-            artifact_bump: artifact_bump,
+        let cpi_program = ctx.accounts.test_program.to_account_info();
+        let cpi_accounts = testartifact::cpi::accounts::TestArtifact {
+            initializer: ctx.accounts.initializer.to_account_info(),
         };
-        let mut accounts = ctx.accounts.to_account_infos();
-        accounts.insert(1, artifact_loader.to_account_info());
-        accounts.remove(2);
-        //
-        let mut remaining_accounts = accounts.as_slice();
-        let mut accounts =
-            TestArtifact::try_accounts(ctx.program_id, &mut remaining_accounts, &ix.data())?;
-        let ctx = Context::new(ctx.program_id, &mut accounts, remaining_accounts);
-        test_artifact(ctx, _artifact_attribution_bump, artifact_bump)?;
-        Ok(())
-    }
-    pub fn test_artifact(
-        ctx: Context<TestArtifact>,
-        _artifact_attribution_bump: u8,
-        artifact_bump: u8,
-    ) -> ProgramResult {
-        let artifact = ctx.accounts.artifact.load_init()?;
+        let ctx = CpiContext::new(cpi_program, cpi_accounts);
+        testartifact::cpi::test_artifact(ctx)?;
+
         Ok(())
     }
     pub fn pass_try(ctx: Context<PassTry>) -> ProgramResult {
@@ -296,45 +260,44 @@ pub mod forum {
     }
 }
 
-#[derive(Accounts)]
-#[instruction(artifact_attribution_bump: u8)]
-pub struct TestArtifact<'info> {
-    initializer: AccountInfo<'info>,
-    #[account(zero)]
-    artifact: Loader<'info, Artifact>,
-    // #[account(
-    //     constraint = artifact_card_mint.decimals == 0,
-    //     constraint = artifact_card_mint.supply == 0,
-    //     constraint = artifact_card_mint.freeze_authority.unwrap() == forum_authority.key(),
-    //     constraint = artifact_card_mint.mint_authority.unwrap() == forum_authority.key(),
-    // )]
-    // artifact_card_mint: Account<'info, token::Mint>,
-    // #[account(
-    //     seeds = [ARTIFACT_SEED, artifact_card_mint.key().as_ref()],
-    //     bump = artifact_attribution_bump,
-    // )]
-    // artifact_attribution: Account<'info, ArtifactAttribution>,
-    // #[account(
-    //     constraint = artifact_auction.session == forum.session,
-    //     seeds = [ARTIFACT_AUCTION_SEED],
-    //     bump = artifact_auction.bump,
-    // )]
-    // artifact_auction: Account<'info, ArtifactAuction>,
-    // #[account(
-    //     seeds = [FORUM_SEED],
-    //     bump = forum.bump
-    // )]
-    // forum: Account<'info, Forum>,
-    // #[account(
-    //     seeds = [FORUM_AUTHORITY_SEED],
-    //     bump = forum_authority.bump,
-    // )]
-    // forum_authority: Account<'info, ForumAuthority>,
-    // leaderboard: Loader<'info, Leaderboard>,
-    // clock: Sysvar<'info, Clock>,
-    // forum_program: AccountInfo<'info>,
-    // system_program: Program<'info, System>,
-}
+// #[derive(Accounts)]
+// pub struct TestArtifact<'info> {
+//     initializer: AccountInfo<'info>,
+// #[account(zero)]
+// artifact: Loader<'info, Artifact>,
+// #[account(
+//     constraint = artifact_card_mint.decimals == 0,
+//     constraint = artifact_card_mint.supply == 0,
+//     constraint = artifact_card_mint.freeze_authority.unwrap() == forum_authority.key(),
+//     constraint = artifact_card_mint.mint_authority.unwrap() == forum_authority.key(),
+// )]
+// artifact_card_mint: Account<'info, token::Mint>,
+// #[account(
+//     seeds = [ARTIFACT_SEED, artifact_card_mint.key().as_ref()],
+//     bump = artifact_attribution_bump,
+// )]
+// artifact_attribution: Account<'info, ArtifactAttribution>,
+// #[account(
+//     constraint = artifact_auction.session == forum.session,
+//     seeds = [ARTIFACT_AUCTION_SEED],
+//     bump = artifact_auction.bump,
+// )]
+// artifact_auction: Account<'info, ArtifactAuction>,
+// #[account(
+//     seeds = [FORUM_SEED],
+//     bump = forum.bump
+// )]
+// forum: Account<'info, Forum>,
+// #[account(
+//     seeds = [FORUM_AUTHORITY_SEED],
+//     bump = forum_authority.bump,
+// )]
+// forum_authority: Account<'info, ForumAuthority>,
+// leaderboard: Loader<'info, Leaderboard>,
+// clock: Sysvar<'info, Clock>,
+// forum_program: AccountInfo<'info>,
+// system_program: Program<'info, System>,
+// }
 #[derive(Accounts)]
 pub struct PassTry<'info> {
     initializer: Signer<'info>,
@@ -379,7 +342,7 @@ pub struct BuildArtifact<'info> {
     forum_authority: Account<'info, ForumAuthority>,
     leaderboard: Loader<'info, Leaderboard>,
     clock: Sysvar<'info, Clock>,
-    forum_program: AccountInfo<'info>,
+    test_program: AccountInfo<'info>,
     system_program: Program<'info, System>,
 }
 #[derive(Accounts)]

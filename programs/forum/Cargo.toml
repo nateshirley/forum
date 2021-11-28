@@ -18,3 +18,4 @@ default = []
 anchor-lang = "0.18.2"
 anchor-spl = "0.18.2"
 borsh = { version = "0.9.1", features = ["const-generics"] }
+testartifact = { path = "../testartifact", features = ["cpi"] }
