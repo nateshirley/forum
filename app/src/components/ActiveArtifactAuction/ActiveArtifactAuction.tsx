@@ -13,6 +13,7 @@ import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 
 interface Props {
     forumInfo: ForumInfo | undefined,
+    artifactAuction: ArtifactAuction | undefined,
     memberCardMint: PublicKey | undefined,
     membership: Membership | undefined,
     leaderboard: PublicKey | undefined,
@@ -32,20 +33,11 @@ function ActiveArtifactAuction(props: Props) {
     const wallet = useWallet();
     const [postRefresh, doPostRefresh] = useState(0);
     const program = getForumProgram(wallet);
-    const [auction, setAuction] = useState<ArtifactAuction | undefined>(undefined);
     const [auctionPhase, setAuctionPhase] = useState<string | undefined>(undefined);
     const [auctionHouse, setAuctionHouse] = useState<Pda | undefined>(undefined);
     const [forumAuthority, setForumAuthority] = useState<Pda | undefined>(undefined);
-    const [secondsRemaining, setSecondsRemaining] = useState(0);
-    // const [countdownTimer, setCountdownTimer] = useState<NodeJS.Timeout | undefined>(undefined);
-    const [counter, setCounter] = useState(60);
-
-    useEffect(() => {
-        fetchAuction().then((artifactAuction) => {
-            setAuction(artifactAuction);
-        })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    const [secondsRemaining, setSecondsRemaining] = useState<number | undefined>(undefined);
+    let auction = props.artifactAuction;
 
 
 
@@ -82,7 +74,7 @@ function ActiveArtifactAuction(props: Props) {
         return () => clearInterval(timerId);
     });
     const tick = () => {
-        if (secondsRemaining > 0) {
+        if (secondsRemaining && secondsRemaining > 0) {
             setSecondsRemaining(secondsRemaining - 1);
         }
     }
@@ -280,7 +272,7 @@ function ActiveArtifactAuction(props: Props) {
         <div>
             artifact auction
             <div>{header}</div>
-            <div>{displayCountdown(secondsRemaining)}</div>
+            <div>{secondsRemaining && displayCountdown(secondsRemaining)}</div>
             <div>{actionButton}</div>
             {/* <div>{bid}</div> */}
             <br />

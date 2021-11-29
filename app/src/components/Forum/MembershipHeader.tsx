@@ -7,7 +7,7 @@ import { fetchMembershipCardMintForWallet, getMintConfig } from "../../api/membe
 import { getForumProgram, getProvider } from '../../api/config'
 import { mintMembership } from "../../api/membership";
 import { toDisplayString } from "../../utils"
-import { ForumInfo, Membership, Post } from "../../interfaces";
+import { ArtifactAuction, ForumInfo, Membership, Post } from "../../interfaces";
 
 /*
 if member {
@@ -22,11 +22,12 @@ if member {
 */
 
 interface Props {
+    forumInfo: ForumInfo | undefined,
+    artifactAuction: ArtifactAuction | undefined,
     memberCardMint: PublicKey | undefined,
     setMemberCardMint: (cardMint: PublicKey | undefined) => void,
     canPost: boolean,
     membership: Membership | undefined,
-    forumInfo: ForumInfo | undefined,
     cardTokenAccount: PublicKey | undefined,
     didSubmitNewPost: () => void,
     activeUserPost: Post | undefined,
@@ -39,13 +40,14 @@ function MembershipHeader(props: Props) {
     const [postLink, setPostLink] = useState('');
 
     const didPressNewPost = async () => {
-        if (wallet.publicKey && props.memberCardMint && props.membership && props.forumInfo && props.cardTokenAccount) {
+        if (wallet.publicKey && props.memberCardMint && props.membership && props.forumInfo && props.cardTokenAccount && props.artifactAuction) {
             let program = getForumProgram(wallet);
             const tx = await program.rpc.newPost(postBody, postLink, {
                 accounts: {
                     authority: wallet.publicKey,
                     membership: props.membership.publicKey,
                     forum: props.forumInfo.publicKey,
+                    artifactAuction: props.artifactAuction.address,
                     post: props.membership.post,
                     cardMint: props.membership.cardMint,
                     cardTokenAccount: props.cardTokenAccount,
@@ -59,6 +61,7 @@ function MembershipHeader(props: Props) {
         }
     }
 
+
     const didPressMintMembership = () => {
         if (wallet.publicKey) {
             getMintConfig(wallet.publicKey).then((mintConfig) => {
@@ -69,6 +72,11 @@ function MembershipHeader(props: Props) {
                     })
                 })
             });
+        }
+    }
+    const onLinkKeyPress = (event: any) => {
+        if (event.key === "Enter") {
+            didPressNewPost()
         }
     }
 
@@ -95,6 +103,7 @@ function MembershipHeader(props: Props) {
                                 placeholder="add link"
                                 onChange={e => setPostLink(e.target.value)}
                                 value={postLink}
+                                onKeyPress={onLinkKeyPress}
                                 className="default-input"
                             />
                         </div>

@@ -7,7 +7,7 @@ import { getForumProgram } from '../../api/config';
 import { PublicKey } from '@solana/web3.js';
 import "../../Global.css";
 import { artifactAuctionTime } from "../../utils";
-import { ForumInfo, Membership, Post } from "../../interfaces";
+import { ArtifactAuction, ForumInfo, Membership, Post } from "../../interfaces";
 
 /*
 a lot of aesthetic stuff
@@ -26,6 +26,7 @@ done
 
 interface Props {
     forumInfo: ForumInfo | undefined,
+    artifactAuction: ArtifactAuction | undefined,
     memberCardMint: PublicKey | undefined,
     membership: Membership | undefined,
     leaderboard: PublicKey | undefined,
@@ -53,7 +54,8 @@ function Forum(props: Props) {
         header = <ConnectWallet />
     } else {
         header = <MembershipHeader memberCardMint={props.memberCardMint} setMemberCardMint={props.setMemberCardMint} canPost={props.canPost}
-            membership={props.membership} forumInfo={props.forumInfo} cardTokenAccount={props.cardTokenAccount} didSubmitNewPost={didSubmitNewPost} activeUserPost={props.activeUserPost} />
+            membership={props.membership} forumInfo={props.forumInfo} cardTokenAccount={props.cardTokenAccount} didSubmitNewPost={didSubmitNewPost}
+            activeUserPost={props.activeUserPost} artifactAuction={props.artifactAuction} />
     }
 
     let forumStatus = (

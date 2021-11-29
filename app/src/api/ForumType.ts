@@ -367,6 +367,11 @@ export type Forum = {
           "isSigner": false
         },
         {
+          "name": "artifactAuction",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "post",
           "isMut": true,
           "isSigner": false
@@ -419,6 +424,11 @@ export type Forum = {
         {
           "name": "leaderboard",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -772,13 +782,13 @@ export type Forum = {
     },
     {
       "code": 302,
-      "name": "SinglePostPerEpoch",
-      "msg": "post account has already submitted this epoch"
+      "name": "SinglePostPerSession",
+      "msg": "post account has already submitted this session"
     },
     {
       "code": 303,
-      "name": "SingleVotePerEpoch",
-      "msg": "vote account has already voted this epoch"
+      "name": "SingleVotePerSession",
+      "msg": "vote account has already voted this session"
     },
     {
       "code": 304,
@@ -788,7 +798,7 @@ export type Forum = {
     {
       "code": 305,
       "name": "UnauthorizedArtifactAccount",
-      "msg": "artifact account does not match expected, pda seed: 'artifact', epoch"
+      "msg": "artifact account does not match expected, pda seed: 'artifact', session"
     },
     {
       "code": 306,
@@ -1182,6 +1192,11 @@ export const IDL: Forum = {
           "isSigner": false
         },
         {
+          "name": "artifactAuction",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "post",
           "isMut": true,
           "isSigner": false
@@ -1234,6 +1249,11 @@ export const IDL: Forum = {
         {
           "name": "leaderboard",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1587,13 +1607,13 @@ export const IDL: Forum = {
     },
     {
       "code": 302,
-      "name": "SinglePostPerEpoch",
-      "msg": "post account has already submitted this epoch"
+      "name": "SinglePostPerSession",
+      "msg": "post account has already submitted this session"
     },
     {
       "code": 303,
-      "name": "SingleVotePerEpoch",
-      "msg": "vote account has already voted this epoch"
+      "name": "SingleVotePerSession",
+      "msg": "vote account has already voted this session"
     },
     {
       "code": 304,
@@ -1603,7 +1623,7 @@ export const IDL: Forum = {
     {
       "code": 305,
       "name": "UnauthorizedArtifactAccount",
-      "msg": "artifact account does not match expected, pda seed: 'artifact', epoch"
+      "msg": "artifact account does not match expected, pda seed: 'artifact', session"
     },
     {
       "code": 306,
