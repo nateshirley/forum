@@ -1,6 +1,9 @@
+use crate::{id, ErrorCode, PlaceBidForArtifact, WrapSession, ARTIFACT_SEED, LEADERBOARD_SEED};
+use anchor_lang::prelude::*;
+use std::convert::TryFrom;
+
 pub mod address {
-    use crate::{id, ErrorCode, ARTIFACT_SEED, LEADERBOARD_SEED};
-    use anchor_lang::prelude::*;
+    use super::*;
 
     pub fn post(post_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
         if post_address.eq(&Pubkey::create_with_seed(&card_mint, "post", &id())?) {
@@ -37,10 +40,19 @@ pub mod address {
 }
 
 pub mod clock {
-    use crate::ErrorCode;
-    use anchor_lang::prelude::*;
-    use std::convert::TryFrom;
-
+    use super::*;
+    // i dont think i need this anymore, should be able to go straight off the forum
+    pub fn to_place_bid(
+        clock: &Sysvar<anchor_lang::prelude::Clock>,
+        auction_end_timestamp: u64,
+    ) -> ProgramResult {
+        let now = u64::try_from(clock.unix_timestamp).unwrap();
+        if now < auction_end_timestamp {
+            Ok(())
+        } else {
+            Err(ErrorCode::BidOnExpiredAuction.into())
+        }
+    }
     pub fn to_build_artifact(
         clock: &Sysvar<anchor_lang::prelude::Clock>,
         auction_end_timestamp: u64,
@@ -50,6 +62,17 @@ pub mod clock {
             Err(ErrorCode::SessionNotWrapped.into())
         } else {
             Ok(())
+        }
+    }
+    pub fn to_wrap_session(
+        clock: &Sysvar<anchor_lang::prelude::Clock>,
+        auction_end_timestamp: u64,
+    ) -> ProgramResult {
+        let now = u64::try_from(clock.unix_timestamp).unwrap();
+        if now > auction_end_timestamp {
+            Ok(())
+        } else {
+            Err(ErrorCode::SettleActiveAuction.into())
         }
     }
 }

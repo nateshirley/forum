@@ -239,20 +239,12 @@ describe("forum", () => {
     console.log(artifactCardMint.publicKey.toBase58());
     let [auctionHouse, auctionHouseBump] =
       await getArtifactAuctionHouseAddress();
-    const tx = await program.rpc.wrapSessionAndAdvance(auctionHouseBump, {
+    const tx = await program.rpc.assertArtifactDiscriminator({
       accounts: {
         artifact: artifact,
-        artifactCardMint: artifactCardMint.publicKey,
-        artifactTokenAccount: artifactTokenAccount,
-        winner: winner,
-        artifactAuction: artifactAuction,
-        artifactAuctionHouse: auctionHouse,
-        forum: forum,
-        forumAuthority: forumAuthority,
-        clock: web3.SYSVAR_CLOCK_PUBKEY,
-        tokenProgram: TOKEN_PROGRAM_ID,
       },
       instructions: [
+        //create artifact mint
         SystemProgram.createAccount({
           fromPubkey: authority.publicKey,
           newAccountPubkey: artifactCardMint.publicKey,
@@ -270,7 +262,15 @@ describe("forum", () => {
           forumAuthority,
           forumAuthority
         ),
-        program.instruction.buildArtifact(
+        //create token account for winner
+        createAssociatedTokenAccountInstruction(
+          artifactCardMint.publicKey,
+          artifactTokenAccount,
+          winner,
+          authority.publicKey
+        ),
+        program.instruction.wrapSession(
+          auctionHouseBump,
           artifactAttributionBump,
           artifactBump,
           {
@@ -278,56 +278,28 @@ describe("forum", () => {
               initializer: authority.publicKey,
               artifact: artifact,
               artifactCardMint: artifactCardMint.publicKey,
-              artifactAttribution: artifactAttribution,
+              artifactTokenAccount: artifactTokenAccount,
+              winner: winner,
               artifactAuction: artifactAuction,
+              artifactAttribution: artifactAttribution,
+              artifactAuctionHouse: auctionHouse,
               forum: forum,
               forumAuthority: forumAuthority,
               leaderboard: leaderboard,
               clock: web3.SYSVAR_CLOCK_PUBKEY,
-              systemProgram: web3.SystemProgram.programId,
+              tokenProgram: TOKEN_PROGRAM_ID,
+              systemProgram: SystemProgram.programId,
             },
           }
         ),
-        createAssociatedTokenAccountInstruction(
-          artifactCardMint.publicKey,
-          artifactTokenAccount,
-          winner,
-          authority.publicKey
-        ),
       ],
       signers: [artifactCardMint],
     });
+    // let raw = await provider.connection.getAccountInfo(artifact);
+    // console.log(raw);
+    // let art = await program.account.artifact.fetch(artifact);
+    // console.log(art);
   });
-  /*
-  it("build artifact + start auction", async () => {
-    let _forumAccount = await program.account.forum.fetch(forum);
-    let [artifact, artifactBump] = await getArtifactAddress(
-      _forumAccount.epoch
-    );
-    let [artifactAttribution, artifactAttributionBump] =
-      await getArtifactAttributionAddress(artifactCardMint.publicKey);
-
-    let tx = await program.rpc.startArtifactAuction({
-      accounts: {
-        artifact: artifact,
-        artifactAuction: artifactAuction,
-        forum: forum,
-      },
-      instructions: [
-       
-      ],
-      signers: [artifactCardMint],
-    });
-
-    let art = await program.account.artifact.fetch(artifact);
-    console.log(art);
-  });
-
-
- 
-
-  
-   */
 
   /*
   it("fetch all posts", async () => {
@@ -379,21 +351,6 @@ describe("forum", () => {
   */
 });
 
-/*
-  it("advance epoch", async () => {
-    setTimeout(async () => {
-      const tx = await program.rpc.advanceEpoch({
-        accounts: {
-          forum: forum,
-          clock: web3.SYSVAR_CLOCK_PUBKEY,
-        },
-      });
-
-      let _forum = await program.account.forum.fetch(forum);
-      console.log(_forum);
-    }, 2000);
-  });
-  */
 /*
   it("claim membership auth", async () => {
     let cardTokenAccount = await getCardTokenAccount();
