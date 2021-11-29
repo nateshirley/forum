@@ -25,7 +25,7 @@ export interface ArtifactPost {
   link: string;
   score: number;
 }
-export interface Auction {
+export interface ArtifactAuction {
   address: PublicKey;
   session: number;
   endTimestamp: number;

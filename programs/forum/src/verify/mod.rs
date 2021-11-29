@@ -58,10 +58,21 @@ pub mod clock {
         auction_end_timestamp: u64,
     ) -> ProgramResult {
         let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if auction_end_timestamp < now {
-            Err(ErrorCode::SessionNotWrapped.into())
-        } else {
+        if now > auction_end_timestamp {
             Ok(())
+        } else {
+            Err(ErrorCode::SessionNotWrapped.into())
+        }
+    }
+    pub fn to_edit_leaderboard(
+        clock: &Sysvar<anchor_lang::prelude::Clock>,
+        auction_end_timestamp: u64,
+    ) -> ProgramResult {
+        let now = u64::try_from(clock.unix_timestamp).unwrap();
+        if now < auction_end_timestamp {
+            Ok(())
+        } else {
+            Err(ErrorCode::SessionNotWrapped.into())
         }
     }
     pub fn to_wrap_session(

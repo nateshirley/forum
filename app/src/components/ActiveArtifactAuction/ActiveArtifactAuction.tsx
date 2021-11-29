@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 import { getForumProgram } from '../../api/config';
 import BN from 'bn.js';
 import * as web3 from "@solana/web3.js";
-import { PublicKey } from '@solana/web3.js';
+import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import "../../Global.css";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { getArtifactAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority } from "../../api/addresses";
-import { getNow, numberArrayToString } from "../../utils";
+import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority } from "../../api/addresses";
+import { displayCountdown, getNow, numberArrayToString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
-import { Artifact, Auction, ForumInfo, Membership, Pda, Post } from "../../interfaces";
+import { Artifact, ArtifactAuction, ForumInfo, Membership, Pda, Post } from "../../interfaces";
+import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 
 interface Props {
     forumInfo: ForumInfo | undefined,
@@ -21,48 +21,104 @@ interface Props {
 }
 
 
+//only showing active or needs settled
 const AUCTION_PHASE = {
     isActive: "isActive",                 //1
     needsSettled: "needsSettled",         //2
     historical: "historical"              //3
 }
-
+//.0196 approx tx fee to settle the auction from the house pda
 function ActiveArtifactAuction(props: Props) {
     const wallet = useWallet();
     const [postRefresh, doPostRefresh] = useState(0);
     const program = getForumProgram(wallet);
-    const [artifact, setArtifact] = useState<Artifact | undefined>(undefined);
-    const [auction, setAuction] = useState<Auction | undefined>(undefined);
+    const [auction, setAuction] = useState<ArtifactAuction | undefined>(undefined);
     const [auctionPhase, setAuctionPhase] = useState<string | undefined>(undefined);
     const [auctionHouse, setAuctionHouse] = useState<Pda | undefined>(undefined);
     const [forumAuthority, setForumAuthority] = useState<Pda | undefined>(undefined);
-    const [winnerTokenAccount, setWinnerTokenAccount] = useState<PublicKey | undefined>(undefined);
+    const [secondsRemaining, setSecondsRemaining] = useState(0);
+    // const [countdownTimer, setCountdownTimer] = useState<NodeJS.Timeout | undefined>(undefined);
+    const [counter, setCounter] = useState(60);
+
+    useEffect(() => {
+        fetchAuction().then((artifactAuction) => {
+            setAuction(artifactAuction);
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+
+
+    useEffect(() => {
+        if (auction && props.forumInfo) {
+            //need a countdown from this
+            determineAuctionPhase(auction.session, auction.endTimestamp, props.forumInfo.session);
+            determineCountdownSeconds(auction.endTimestamp)
+        }
+    }, [auction, props.forumInfo])
+
+    const fetchAuction = async (): Promise<ArtifactAuction> => {
+        return getArtifactAuctionAddress().then(([auctionAddress, bump]) => {
+            return program.account.artifactAuction.fetch(auctionAddress).then((response) => {
+                return {
+                    address: auctionAddress,
+                    session: response.session,
+                    endTimestamp: response.endTimestamp.toNumber(),
+                    leadingBidder: response.leadingBid.bidder,
+                    bidLamports: response.leadingBid.lamports.toNumber(),
+                    bump: response.bump
+                };
+            });
+        });
+    }
+
+    const determineCountdownSeconds = (endTimestamp: number) => {
+        const now = getNow();
+        let secondsRemaining = endTimestamp - now;
+        setSecondsRemaining(secondsRemaining)
+    }
+    useEffect(() => {
+        const timerId = setInterval(() => tick(), 1000);
+        return () => clearInterval(timerId);
+    });
+    const tick = () => {
+        if (secondsRemaining > 0) {
+            setSecondsRemaining(secondsRemaining - 1);
+        }
+    }
+
+    const determineAuctionPhase = (auctionSession: number, endTimestamp: number, forumSession: number) => {
+        const now = getNow();
+        if (auctionSession === forumSession) {
+            if (now - endTimestamp > 0) {
+                setAuctionPhase(AUCTION_PHASE.needsSettled);
+            } else if (now - endTimestamp < 0) {
+                setAuctionPhase(AUCTION_PHASE.isActive);
+            }
+        } else if (auctionSession < forumSession) {
+            setAuctionPhase(AUCTION_PHASE.historical);
+        }
+    }
+
     useEffect(() => {
         if (auctionPhase === AUCTION_PHASE.needsSettled || auctionPhase === AUCTION_PHASE.isActive) {
             getArtifactAuctionHouseAddress().then(([auctionHouse, auctionHouseBump]) => {
+                console.log("houuuuse", auctionHouse.toBase58());
                 setAuctionHouse({
                     address: auctionHouse,
                     bump: auctionHouseBump
                 });
             });
         }
-        if (auctionPhase === AUCTION_PHASE.needsSettled && auction?.leadingBidder && artifact?.cardMint) {
-            getAssociatedTokenAccountAddress(
-                auction?.leadingBidder,
-                artifact?.cardMint
-            ).then((address) => {
-                setWinnerTokenAccount(address);
-            });
+        if (auctionPhase === AUCTION_PHASE.needsSettled && auction?.leadingBidder) {
             getForumAuthority().then(([authority, bump]) => {
                 setForumAuthority({
                     address: authority,
                     bump: bump
                 })
             })
-        } else {
-            setWinnerTokenAccount(undefined);
         }
-    }, [artifact?.cardMint, auction?.leadingBidder, auctionPhase])
+    }, [auction?.leadingBidder, auctionPhase])
 
     //show historical sessions on same page
     /*
@@ -73,151 +129,116 @@ function ActiveArtifactAuction(props: Props) {
     - advance epoch
     */
 
-    //get the artifact object
-    //will move this to historical ones. don't need it here
-    useEffect(() => {
-        if (props.forumInfo) {
-            getArtifactAddress(
-                props.forumInfo.session
-            ).then(([artifactAddress, bump]) => {
-                console.log(artifactAddress.toBase58())
-                program.account.artifact.fetch(artifactAddress).then((fetchedArtifact) => {
-                    let posts: any = fetchedArtifact.posts;
-                    let artifactPosts = posts.map((post: any) => {
-                        return {
-                            cardMint: post.cardMint,
-                            body: numberArrayToString(post.body),
-                            link: numberArrayToString(post.link),
-                            score: post.score
-                        }
-                    });
-                    setArtifact({
-                        address: artifactAddress,
-                        session: fetchedArtifact.session,
-                        cardMint: fetchedArtifact.cardMint,
-                        posts: artifactPosts,
-                        bump: fetchedArtifact.bump
-                    })
-                    console.log({
-                        address: artifactAddress,
-                        session: fetchedArtifact.session,
-                        cardMint: fetchedArtifact.cardMint,
-                        posts: artifactPosts,
-                        bump: fetchedArtifact.bump
-                    });
-                }).catch((e) => {
-                    console.log("failed to get the artifact object")
-                })
-            });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.forumInfo])
 
-
-    //get the artifact auction details
-    useEffect(() => {
-        if (props.forumInfo) {
-            getArtifactAuctionAddress().then(([artifactAuctionAddress, bump]) => {
-                try {
-                    program.account.artifactAuction.fetch(artifactAuctionAddress).then((fetchedAuctionState) => {
-                        let auction = {
-                            address: artifactAuctionAddress,
-                            session: fetchedAuctionState.session,
-                            endTimestamp: fetchedAuctionState.endTimestamp.toNumber(),
-                            leadingBidder: fetchedAuctionState.leadingBid.bidder,
-                            bidLamports: fetchedAuctionState.leadingBid.lamports.toNumber(),
-                            bump: fetchedAuctionState.bump
-                        }
-                        setAuction(auction);
-                        let now = getNow();
-                        let end = auction.endTimestamp;
-                        let forumSession = props.forumInfo?.session ?? -1;
-                        console.log("minutes until auction ends: ", (auction.endTimestamp - now) / 60);
-                        if (fetchedAuctionState.session === forumSession) { //dealing with present auction
-                            if (now - end > 0) {
-                                console.log("auction needs to be settled");
-                                setAuctionPhase(AUCTION_PHASE.needsSettled);
-                            } else if (now - end < 0) {
-                                console.log("auction is active");
-                                setAuctionPhase(AUCTION_PHASE.isActive);
-                            }
-                        } else if (fetchedAuctionState.session < forumSession) { //dealing with an auction that has already ended
-                            console.log("historical auction")
-                            setAuctionPhase(AUCTION_PHASE.historical);
-                        }
-
-                    })
-                } catch (e) {
-                    console.log("failed to fetch artifact auction ")
-                }
-
-            })
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.forumInfo]);
-
-
-
-    const didPressSettle = () => {
-        if (wallet.publicKey && props.forumInfo && auction && artifact && auctionHouse && winnerTokenAccount && forumAuthority) {
-            /*
-            settleAndAdvance(
+    const didPressWrapSession = async () => {
+        if (props.forumInfo && wallet.publicKey && auction && props.leaderboard && auctionHouse) {
+            //TODO: add loading indicator. look into making it cheaper
+            executeWrapSession(
+                wallet.publicKey,
                 props.forumInfo.publicKey,
-                artifact.address,
                 auction.address,
-                artifact.cardMint,
-                winnerTokenAccount,
+                auctionHouse,
                 auction.leadingBidder,
-                auctionHouse.address,
-                auctionHouse.bump,
-                forumAuthority.address
+                props.leaderboard,
+                props.forumInfo.session
             ).then((sig) => {
-                //should be sending you to an artifact details page? 
-                //need a way to show the price history for certain bids. later
-                console.log("successful settle")
-                window.location.reload();
-            })
-            */
+                if (sig.length > 1) {
+                    console.log("tx sig: ", sig)
+                    window.location.reload();
+                } else {
+                    console.log("an error occured with the artifact build");
+                }
+            });
+
         }
-        //add stuff to update ui
-
     }
-
-    /*
-    const settleAndAdvance = async (forumAddress: PublicKey, artifactAddress: PublicKey, artifactAuctionAddress: PublicKey, artifactCardMint: PublicKey,
-        artifactTokenAccount: PublicKey, winner: PublicKey, auctionHouse: PublicKey, auctionHouseBump: number, forumAuthority: PublicKey) => {
-        const program = getForumProgram(wallet);
-        const tx = await program.rpc.settleArtifactAuctionAndAdvanceEpoch(
-            auctionHouseBump,
-            {
+    const executeWrapSession = async (payer: PublicKey, forum: PublicKey, artifactAuction:
+        PublicKey, artifactAuctionHouse: Pda, winner: PublicKey, leaderboard: PublicKey, session: number): Promise<string> => {
+        let artifactCardMint = Keypair.generate();
+        //let [artifactAttribution, artifactAttributionBump]
+        const attr = getArtifactAttributionAddress(artifactCardMint.publicKey);
+        //let [_forumAuthority, _forumAuthorityBump]
+        const auth = getForumAuthority();
+        const mintRent = program.provider.connection.getMinimumBalanceForRentExemption(
+            MintLayout.span
+        );
+        const winnerTokenAccount = getAssociatedTokenAccountAddress(
+            winner,
+            artifactCardMint.publicKey
+        )
+        const fetchArtifact = getArtifactAddress(session);
+        let response = await Promise.all([attr, auth, mintRent, winnerTokenAccount, fetchArtifact]).then(async (values) => {
+            let artifactAttribution = values[0][0];
+            let artifactAttributionBump = values[0][1];
+            let forumAuthority = values[1][0]
+            let mintRent = values[2];
+            let winnerTokenAccount = values[3]
+            let artifact = {
+                address: values[4][0],
+                bump: values[4][1]
+            }
+            return await program.rpc.assertArtifactDiscriminator({
                 accounts: {
-                    artifact: artifactAddress,
-                    artifactCardMint: artifactCardMint,
-                    artifactTokenAccount: artifactTokenAccount,
-                    winner: winner,
-                    artifactAuction: artifactAuctionAddress,
-                    artifactAuctionHouse: auctionHouse,
-                    forum: forumAddress,
-                    forumAuthority: forumAuthority,
-                    clock: web3.SYSVAR_CLOCK_PUBKEY,
-                    tokenProgram: TOKEN_PROGRAM_ID,
+                    artifact: artifact.address,
                 },
                 instructions: [
+                    //create artifact mint
+                    SystemProgram.createAccount({
+                        fromPubkey: payer,
+                        newAccountPubkey: artifactCardMint.publicKey,
+                        space: MintLayout.span,
+                        lamports: mintRent,
+                        programId: TOKEN_PROGRAM_ID,
+                    }),
+                    //init the mint
+                    Token.createInitMintInstruction(
+                        TOKEN_PROGRAM_ID,
+                        artifactCardMint.publicKey,
+                        0,
+                        forumAuthority,
+                        forumAuthority
+                    ),
+                    //create token account for winner
                     createAssociatedTokenAccountInstruction(
-                        artifactCardMint,
-                        artifactTokenAccount,
+                        artifactCardMint.publicKey,
+                        winnerTokenAccount,
                         winner,
-                        program.provider.wallet.publicKey
+                        payer
+                    ),
+                    program.instruction.wrapSession(
+                        artifactAuctionHouse.bump,
+                        artifactAttributionBump,
+                        artifact.bump,
+                        {
+                            accounts: {
+                                initializer: payer,
+                                artifact: artifact.address,
+                                artifactCardMint: artifactCardMint.publicKey,
+                                artifactTokenAccount: winnerTokenAccount,
+                                winner: winner,
+                                artifactAuction: artifactAuction,
+                                artifactAttribution: artifactAttribution,
+                                artifactAuctionHouse: artifactAuctionHouse.address,
+                                forum: forum,
+                                forumAuthority: forumAuthority,
+                                leaderboard: leaderboard,
+                                clock: web3.SYSVAR_CLOCK_PUBKEY,
+                                tokenProgram: TOKEN_PROGRAM_ID,
+                                systemProgram: SystemProgram.programId,
+                            },
+                        }
                     ),
                 ],
-            }
-        );
-        return tx
+                signers: [artifactCardMint],
+            });
+        }).catch((e) => {
+            return "e"
+        })
+        return response
     }
-    */
 
     const didPressBid = () => {
-        if (wallet.publicKey && props.forumInfo && auction && artifact && auctionHouse) {
+        if (wallet.publicKey && props.forumInfo && auction && auctionHouse) {
             placeBidForArtifact(
                 wallet.publicKey,
                 auction.leadingBidder,
@@ -245,49 +266,26 @@ function ActiveArtifactAuction(props: Props) {
         );
     }
 
-    //should def kick start auction to a different component and just use this for active/historical
-    //1. start auction
-    //2. bid
-    //3. settle auction and advance epoch
-
     let header = <div>let me see the auction</div>;
 
-    let settle;
+    let actionButton;
     let bid = <button onClick={didPressBid}>bid</button>;
     if (auctionPhase === AUCTION_PHASE.needsSettled) {
-        settle = <button onClick={didPressSettle}>settle it</button>
+        actionButton = <button onClick={didPressWrapSession}>wrap session</button>
     } else if (auctionPhase === AUCTION_PHASE.isActive) {
-        bid = <button onClick={didPressBid}>bid</button>;
-    }
-
-    let artifactElement;
-    if (artifact) {
-        artifactElement = (
-            <div>
-                this is the artifact
-                <div>
-                    session: {artifact.session}
-                </div>
-                <div>
-                    top post
-                    <div>
-                        body: {artifact.posts[0].body}
-                    </div>
-                    <div>
-                        score: {artifact.posts[0].score}
-                    </div>
-                </div>
-            </div>
-        )
+        actionButton = <button onClick={didPressBid}>bid</button>;
     }
 
     return (
-        <div className="component-parent">
+        <div>
             artifact auction
             <div>{header}</div>
-            <div>{artifactElement}</div>
-            <div>{settle}</div>
-            <div>{bid}</div>
+            <div>{displayCountdown(secondsRemaining)}</div>
+            <div>{actionButton}</div>
+            {/* <div>{bid}</div> */}
+            <br />
+            <br />
+            <br />
         </div>
     );
 }

@@ -190,11 +190,15 @@ pub mod forum {
         )?;
         ctx.accounts.artifact_auction.leading_bid.bidder = ctx.accounts.bidder.key();
         ctx.accounts.artifact_auction.leading_bid.lamports = amount;
-        artifact::auction::adjust_end_timestamp(ctx)?;
+        //artifact::auction::adjust_end_timestamp(ctx)?;
         Ok(())
     }
 
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
+        // verify::clock::to_edit_leaderboard(
+        //     &ctx.accounts.clock,
+        //     ctx.accounts.artifact_auction.end_timestamp,
+        // )?;
         //verify::account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_session = ctx.accounts.forum.session;
@@ -211,6 +215,10 @@ pub mod forum {
         }
     }
     pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
+        // verify::clock::to_edit_leaderboard(
+        //     &ctx.accounts.clock,
+        //     ctx.accounts.artifact_auction.end_timestamp,
+        // )?;
         //verify::account::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
         verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
@@ -424,6 +432,10 @@ pub struct PlaceBidForArtifact<'info> {
     bidder: Signer<'info>,
     #[account(mut)]
     newest_loser: AccountInfo<'info>,
+    #[account(
+        seeds = [ARTIFACT_AUCTION_SEED],
+        bump = artifact_auction.bump,
+    )]
     artifact_auction: Account<'info, artifact::ArtifactAuction>,
     #[account(
         mut,
@@ -447,6 +459,11 @@ pub struct NewPost<'info> {
         bump = forum.bump
     )]
     forum: Account<'info, Forum>,
+    #[account(
+        seeds = [ARTIFACT_AUCTION_SEED],
+        bump = artifact_auction.bump,
+    )]
+    artifact_auction: Account<'info, artifact::ArtifactAuction>,
     #[account(mut)]
     post: Loader<'info, Post>,
     #[account(
@@ -475,6 +492,11 @@ pub struct SubmitVote<'info> {
     forum: Account<'info, Forum>,
     #[account(mut)]
     leaderboard: Loader<'info, Leaderboard>,
+    #[account(
+        seeds = [ARTIFACT_AUCTION_SEED],
+        bump = artifact_auction.bump,
+    )]
+    artifact_auction: Account<'info, artifact::ArtifactAuction>,
     #[account(mut)]
     post: Loader<'info, Post>,
     #[account(mut)]

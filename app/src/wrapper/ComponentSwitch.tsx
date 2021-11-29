@@ -118,26 +118,16 @@ const ComponentSwitch: FC = () => {
 
     return (
         <Switch>
-            <Route path="/forum/details">
+            <Route path="/post">
                 <PostDetails canLike={false} submitLike={submitLike} />
-            </Route>
-            <Route path="/forum" >
-                <Forum forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}
-                    cardTokenAccount={cardTokenAccount} canPost={canPost} canLike={canLike} activeUserPost={activeUserPost} setMemberCardMint={setMemberCardMint}
-                    setCanPost={setCanPost} submitLike={submitLike} />
-            </Route>
-            <Route path="/session-auction">
-                <ActiveArtifactAuction forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership}
-                    leaderboard={leaderboard} cardTokenAccount={cardTokenAccount} activeUserPost={activeUserPost} />
             </Route>
             <Route path="/session">
                 <Artifact />
             </Route>
-            <Route path="/wrap-session">
-                <WrapSession forumInfo={forumInfo} leaderboard={leaderboard} />
-            </Route>
             <Route path="/">
-                <Home forumInfo={forumInfo} />
+                <Home forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}
+                    cardTokenAccount={cardTokenAccount} canPost={canPost} canLike={canLike} activeUserPost={activeUserPost} setMemberCardMint={setMemberCardMint}
+                    setCanPost={setCanPost} submitLike={submitLike} />
             </Route>
 
         </Switch>

@@ -212,6 +212,8 @@ export const newPost = async (
     authority,
     memberAttribution.cardMint
   );
+  let [artifactAuction, aBump] = await getArtifactAuctionAddress();
+
   let post = await getPostAddress(memberAttribution.cardMint);
   let signers = signer ? [signer] : [];
   const tx = await program.rpc.newPost(newBody, newLink, {
@@ -219,6 +221,7 @@ export const newPost = async (
       authority: authority,
       membership: memberAttribution.membership,
       forum: forum,
+      artifactAuction: artifactAuction,
       post: post,
       cardMint: memberAttribution.cardMint,
       cardTokenAccount: cardTokenAccount,
@@ -240,6 +243,7 @@ export const submitVote = async (
     authority,
     memberAttribution.cardMint
   );
+  let [artifactAuction, aBump] = await getArtifactAuctionAddress();
   let vote = await getVoteAddress(memberAttribution.cardMint);
   let signers = signer ? [signer] : [];
   const tx = await program.rpc.submitVote(amount, {
@@ -248,6 +252,7 @@ export const submitVote = async (
       membership: memberAttribution.membership,
       forum: forum,
       leaderboard: leaderboard,
+      artifactAuction: artifactAuction,
       post: forPost,
       vote: vote,
       cardMint: memberAttribution.cardMint,

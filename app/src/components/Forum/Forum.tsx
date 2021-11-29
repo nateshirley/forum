@@ -69,7 +69,7 @@ function Forum(props: Props) {
     )
 
     return (
-        <div className="component-parent">
+        <div >
             {header}
             {forumStatus}
             <ActivePosts forumInfo={props.forumInfo} canLike={props.canLike}
