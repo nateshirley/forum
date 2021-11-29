@@ -1,11 +1,11 @@
 [programs.localnet]
-forum = "9sNbG8rQnSZHaXVA8pMwT1TiCK8gXDgtKeEmexiyAbXp"
+forum = "8TfXSaFPXA8hUgzk45w4gJfsyJ6RGjEFcbCesnk8WKsD"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/"
 wallet = "/Users/nathanshirley/.config/solana/id.json"
 
 [scripts]

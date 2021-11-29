@@ -74,10 +74,11 @@ function ActiveArtifactAuction(props: Props) {
     */
 
     //get the artifact object
+    //will move this to historical ones. don't need it here
     useEffect(() => {
         if (props.forumInfo) {
             getArtifactAddress(
-                props.forumInfo.epoch
+                props.forumInfo.session
             ).then(([artifactAddress, bump]) => {
                 console.log(artifactAddress.toBase58())
                 program.account.artifact.fetch(artifactAddress).then((fetchedArtifact) => {
@@ -92,14 +93,14 @@ function ActiveArtifactAuction(props: Props) {
                     });
                     setArtifact({
                         address: artifactAddress,
-                        epoch: fetchedArtifact.epoch,
+                        session: fetchedArtifact.session,
                         cardMint: fetchedArtifact.cardMint,
                         posts: artifactPosts,
                         bump: fetchedArtifact.bump
                     })
                     console.log({
                         address: artifactAddress,
-                        epoch: fetchedArtifact.epoch,
+                        session: fetchedArtifact.session,
                         cardMint: fetchedArtifact.cardMint,
                         posts: artifactPosts,
                         bump: fetchedArtifact.bump
@@ -121,7 +122,7 @@ function ActiveArtifactAuction(props: Props) {
                     program.account.artifactAuction.fetch(artifactAuctionAddress).then((fetchedAuctionState) => {
                         let auction = {
                             address: artifactAuctionAddress,
-                            epoch: fetchedAuctionState.epoch,
+                            session: fetchedAuctionState.session,
                             endTimestamp: fetchedAuctionState.endTimestamp.toNumber(),
                             leadingBidder: fetchedAuctionState.leadingBid.bidder,
                             bidLamports: fetchedAuctionState.leadingBid.lamports.toNumber(),
@@ -130,9 +131,9 @@ function ActiveArtifactAuction(props: Props) {
                         setAuction(auction);
                         let now = getNow();
                         let end = auction.endTimestamp;
-                        let forumEpoch = props.forumInfo?.epoch ?? -1;
+                        let forumSession = props.forumInfo?.session ?? -1;
                         console.log("minutes until auction ends: ", (auction.endTimestamp - now) / 60);
-                        if (fetchedAuctionState.epoch === forumEpoch) { //dealing with present auction
+                        if (fetchedAuctionState.session === forumSession) { //dealing with present auction
                             if (now - end > 0) {
                                 console.log("auction needs to be settled");
                                 setAuctionPhase(AUCTION_PHASE.needsSettled);
@@ -140,7 +141,7 @@ function ActiveArtifactAuction(props: Props) {
                                 console.log("auction is active");
                                 setAuctionPhase(AUCTION_PHASE.isActive);
                             }
-                        } else if (fetchedAuctionState.state < forumEpoch) { //dealing with an auction that has already ended
+                        } else if (fetchedAuctionState.session < forumSession) { //dealing with an auction that has already ended
                             console.log("historical auction")
                             setAuctionPhase(AUCTION_PHASE.historical);
                         }
@@ -159,6 +160,7 @@ function ActiveArtifactAuction(props: Props) {
 
     const didPressSettle = () => {
         if (wallet.publicKey && props.forumInfo && auction && artifact && auctionHouse && winnerTokenAccount && forumAuthority) {
+            /*
             settleAndAdvance(
                 props.forumInfo.publicKey,
                 artifact.address,
@@ -175,10 +177,13 @@ function ActiveArtifactAuction(props: Props) {
                 console.log("successful settle")
                 window.location.reload();
             })
+            */
         }
         //add stuff to update ui
 
     }
+
+    /*
     const settleAndAdvance = async (forumAddress: PublicKey, artifactAddress: PublicKey, artifactAuctionAddress: PublicKey, artifactCardMint: PublicKey,
         artifactTokenAccount: PublicKey, winner: PublicKey, auctionHouse: PublicKey, auctionHouseBump: number, forumAuthority: PublicKey) => {
         const program = getForumProgram(wallet);
@@ -209,6 +214,7 @@ function ActiveArtifactAuction(props: Props) {
         );
         return tx
     }
+    */
 
     const didPressBid = () => {
         if (wallet.publicKey && props.forumInfo && auction && artifact && auctionHouse) {
@@ -260,7 +266,7 @@ function ActiveArtifactAuction(props: Props) {
             <div>
                 this is the artifact
                 <div>
-                    epoch: {artifact.epoch}
+                    session: {artifact.session}
                 </div>
                 <div>
                     top post

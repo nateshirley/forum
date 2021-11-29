@@ -2,12 +2,11 @@ import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
-  "9sNbG8rQnSZHaXVA8pMwT1TiCK8gXDgtKeEmexiyAbXp"
+  "8TfXSaFPXA8hUgzk45w4gJfsyJ6RGjEFcbCesnk8WKsD"
 );
 export const FORUM_ENDPOINT =
   "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
 //"http://127.0.0.1:8899"
-//"https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
 //clusterApiUrl('devnet');
 export const SESSION_LENGTH = 120; //518400
 export const ARTIFACT_AUCTION_LENGTH = 120; //86400
@@ -74,12 +73,4 @@ export const artifactAuctionTime = (lastDawn: BN | undefined) => {
     }
   }
   return "";
-};
-export const isSessionActive = (lastDawn: BN | undefined) => {
-  if (lastDawn) {
-    const now = new Date().getTime() / 1000;
-    const auction = lastDawn.toNumber() + SESSION_LENGTH;
-    return auction - now > 0;
-  }
-  return true;
 };

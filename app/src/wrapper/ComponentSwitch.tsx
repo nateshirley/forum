@@ -1,5 +1,5 @@
 import React, { FC, useState, useEffect } from 'react';
-import { clusterApiUrl, Connection, ConfirmOptions, Commitment, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 import { BN, Provider, Wallet, web3 } from '@project-serum/anchor';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Route, Switch, useHistory } from 'react-router-dom';
@@ -8,7 +8,6 @@ import PostDetails from '../components/PostDetails';
 import { getForumProgram } from '../api/config';
 import { getCardTokenAccount, getForumAddress, getLeaderboard } from '../api/addresses';
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../api/membership';
-import { isSessionActive, numberArrayToString } from '../utils';
 import { fetchedPostAccountToPostObject } from '../api/posts';
 import ActiveArtifactAuction from '../components/ActiveArtifactAuction/ActiveArtifactAuction';
 import WrapSession from '../components/WrapSession';
@@ -38,8 +37,7 @@ const ComponentSwitch: FC = () => {
                 setForumInfo({
                     publicKey: forum,
                     membership: fetchedInfo.membership as number,
-                    epoch: fetchedInfo.epoch,
-                    state: fetchedInfo.state,
+                    session: fetchedInfo.session,
                     lastDawn: fetchedInfo.lastDawn,
                     bump: fetchedInfo.bump,
                 })
@@ -79,13 +77,13 @@ const ComponentSwitch: FC = () => {
 
     useEffect(() => {
         if (forumInfo && membership) {
-            let activeEpoch = forumInfo?.epoch ?? 0;
+            let activeSession = forumInfo?.session ?? 0;
             program.account.vote.fetch(membership.vote).then((likeAccount) => {
-                setCanLike(likeAccount.epoch < activeEpoch);
+                setCanLike(likeAccount.session < activeSession);
             });
             program.account.post.fetch(membership.post).then((postAccount) => {
-                setCanPost(postAccount.epoch < activeEpoch);
-                if (postAccount.epoch >= activeEpoch && membership) { //they already posted, set the post
+                setCanPost(postAccount.session < activeSession);
+                if (postAccount.session >= activeSession && membership) { //they already posted, set the post
                     //console.log(membership.post.toBase58(), " jjjjjjjjj")
                     setActiveUserPost(fetchedPostAccountToPostObject(postAccount, membership.post));
                 }

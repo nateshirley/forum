@@ -21,7 +21,7 @@ function WrapSession(props: Props) {
 
     useEffect(() => {
         if (props.forumInfo) {
-            getArtifactAddress(props.forumInfo.epoch).then(([address, bump]) => {
+            getArtifactAddress(props.forumInfo.session).then(([address, bump]) => {
                 setArtifact({
                     address: address,
                     bump: bump
@@ -39,6 +39,7 @@ function WrapSession(props: Props) {
     const didPressStartAuction = async () => {
         if (props.forumInfo && wallet.publicKey && artifact && artifactAuction && props.leaderboard) {
             //TODO: add loading indicator. look into making it cheaper
+            /*
             buildArtifactAndStartAuction(
                 wallet.publicKey,
                 props.forumInfo.publicKey,
@@ -54,10 +55,11 @@ function WrapSession(props: Props) {
                     console.log("an error occured with the artifact build");
                 }
             });
+            */
         }
 
     }
-    const buildArtifactAndStartAuction = async (payer: PublicKey, forum: PublicKey, artifact: PublicKey, artifactBump: number, artifactAuction: PublicKey, leaderboard: PublicKey): Promise<string> => {
+    const buildArtifactAndStartAuction = async (payer: PublicKey, forum: PublicKey, artifact: PublicKey, artifactBump: number, artifactAuction: PublicKey, leaderboard: PublicKey) => { //: Promise<string>
         let artifactCardMint = Keypair.generate();
         //let [artifactAttribution, artifactAttributionBump]
         const attr = getArtifactAttributionAddress(artifactCardMint.publicKey);
@@ -66,6 +68,7 @@ function WrapSession(props: Props) {
         const mintRent = program.provider.connection.getMinimumBalanceForRentExemption(
             MintLayout.span
         );
+        /*
         let response = await Promise.all([attr, auth, mintRent]).then(async (values) => {
             let artifactAttribution = values[0][0];
             let artifactAttributionBump = values[0][1];
@@ -116,6 +119,7 @@ function WrapSession(props: Props) {
             return "e"
         })
         return response
+         */
     }
 
 

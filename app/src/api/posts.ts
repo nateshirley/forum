@@ -17,17 +17,17 @@ const PostLayout = BufferLayout.struct([
   BufferLayout.seq(BufferLayout.u8(), 88, "link"),
   BufferLayout.u32("timestamp"),
   BufferLayout.blob(4, "timeBuffer"),
-  BufferLayout.u32("epoch"),
-  BufferLayout.u32("epochScore"),
+  BufferLayout.u32("session"),
+  BufferLayout.u32("sessionScore"),
   BufferLayout.u32("allTimeScore"),
 ]);
 
 export const getProgramAccountsForActivePosts = async (
-  epoch: number,
+  session: number,
   connection: Connection,
   forumProgram: Program<Forum>
 ) => {
-  let toArrayLike = new Int32Array([epoch]).buffer;
+  let toArrayLike = new Int32Array([session]).buffer;
   let toUint8 = new Uint8Array(toArrayLike);
   let byteString: string = base58(toUint8);
   let config = {
@@ -60,19 +60,19 @@ export const fetchedPostAccountToPostObject = (
     body: numberArrayToString(postAccount.body),
     link: numberArrayToString(postAccount.link),
     timestamp: postAccount.timestamp.toNumber(),
-    epoch: postAccount.epoch,
-    epochScore: postAccount.epochScore,
+    session: postAccount.session,
+    sessionScore: postAccount.sessionScore,
     allTimeScore: postAccount.allTimeScore,
   };
 };
 
 export const fetchAllActivePostsDecoded = async (
-  epoch: number,
+  session: number,
   connection: Connection,
   forumProgram: Program<Forum>
 ) => {
   let accounts = await getProgramAccountsForActivePosts(
-    epoch,
+    session,
     connection,
     forumProgram
   );
@@ -84,8 +84,8 @@ export const fetchAllActivePostsDecoded = async (
       body: numberArrayToString(decoded.body),
       link: numberArrayToString(decoded.link),
       timestamp: decoded.timestamp,
-      epoch: decoded.epoch,
-      epochScore: decoded.epochScore,
+      session: decoded.session,
+      sessionScore: decoded.sessionScore,
       allTimeScore: decoded.allTimeScore,
     };
   });

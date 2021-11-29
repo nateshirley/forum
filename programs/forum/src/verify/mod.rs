@@ -28,8 +28,8 @@ pub mod address {
             Err(ErrorCode::UnauthorizedVoteAccount.into())
         }
     }
-    pub fn artifact(artifact_address: Pubkey, epoch: u32, bump: u8) -> ProgramResult {
-        let seeds = &[ARTIFACT_SEED, &epoch.to_le_bytes(), &[bump]];
+    pub fn artifact(artifact_address: Pubkey, session: u32, bump: u8) -> ProgramResult {
+        let seeds = &[ARTIFACT_SEED, &session.to_le_bytes(), &[bump]];
         let _artifact = Pubkey::create_program_address(seeds, &id())?;
         if _artifact.eq(&artifact_address) {
             Ok(())

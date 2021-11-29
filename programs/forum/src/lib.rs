@@ -1,12 +1,7 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{program_option, system_instruction},
-    AccountsClose,
-};
+use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
-use borsh::BorshDeserialize;
 use std::convert::TryFrom;
-declare_id!("9sNbG8rQnSZHaXVA8pMwT1TiCK8gXDgtKeEmexiyAbXp");
+declare_id!("8TfXSaFPXA8hUgzk45w4gJfsyJ6RGjEFcbCesnk8WKsD");
 mod anchor_transfer;
 mod artifact;
 mod bid;
@@ -142,12 +137,11 @@ pub mod forum {
         artifact::build_new(&ctx, artifact_bump, _artifact_auction_house_bump)?;
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
 
-        //verify that artifact session equals the forum session? or does clock force it? not sure
+        //mint the artifact token to the winner of the auction
         let seeds = &[
             &FORUM_AUTHORITY_SEED[..],
             &[ctx.accounts.forum_authority.bump],
         ];
-        //mint the artifact token to the winner of the auction
         token::mint_to(
             ctx.accounts
                 .into_mint_artifact_context()
@@ -155,9 +149,8 @@ pub mod forum {
             1,
         )?;
         //todo: create some metadata
-
         //todo: send funds to multisig,
-        //todo: set winners from the week?
+        //todo: set winners from the week for mint rewards
 
         //advance session
         ctx.accounts.forum.session = ctx.accounts.forum.session + 1;
@@ -170,7 +163,7 @@ pub mod forum {
         Ok(())
     }
     pub fn assert_artifact_discriminator(
-        ctx: Context<AssertArtifactDiscriminator>,
+        _ctx: Context<AssertArtifactDiscriminator>,
     ) -> ProgramResult {
         //let artifact = ctx.accounts.artifact.load_init()?;
         Ok(())
@@ -214,7 +207,7 @@ pub mod forum {
             post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
             Ok(())
         } else {
-            Err(ErrorCode::SinglePostPerEpoch.into())
+            Err(ErrorCode::SinglePostPerSession.into())
         }
     }
     pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
@@ -239,7 +232,7 @@ pub mod forum {
             }
             Ok(())
         } else {
-            Err(ErrorCode::SingleVotePerEpoch.into())
+            Err(ErrorCode::SingleVotePerSession.into())
         }
     }
 }
@@ -582,13 +575,13 @@ pub enum ErrorCode {
     UnauthorizedPostAccount,
     #[msg("vote account does not match expected (fromSeed): authority pubky, 'vote', programId")]
     UnauthorizedVoteAccount,
-    #[msg("post account has already submitted this epoch")]
-    SinglePostPerEpoch,
-    #[msg("vote account has already voted this epoch")]
-    SingleVotePerEpoch,
+    #[msg("post account has already submitted this session")]
+    SinglePostPerSession,
+    #[msg("vote account has already voted this session")]
+    SingleVotePerSession,
     #[msg("leaderboard account does not match expected, pda seed: 'leaderboard'")]
     UnauthorizedLeaderboardAccount,
-    #[msg("artifact account does not match expected, pda seed: 'artifact', epoch")]
+    #[msg("artifact account does not match expected, pda seed: 'artifact', session")]
     UnauthorizedArtifactAccount,
     #[msg("active session has not ended.")]
     SessionNotWrapped,

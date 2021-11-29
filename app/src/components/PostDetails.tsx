@@ -82,7 +82,7 @@ function PostDetails(props: Props) {
                     {postInfo.body}
                 </div>
                 <div>
-                    {postInfo.epochScore}
+                    {postInfo.sessionScore}
                 </div>
                 <div>
                     <a href={postInfo.link}>{postInfo.link}</a>

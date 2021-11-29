@@ -7,13 +7,13 @@ export interface Post {
   body: string;
   link: string;
   timestamp: number;
-  epoch: number;
-  epochScore: number;
+  session: number;
+  sessionScore: number;
   allTimeScore: number;
 }
 export interface Artifact {
   address: PublicKey;
-  epoch: number;
+  session: number;
   cardMint: PublicKey;
   posts: ArtifactPost[];
   bump: number;
@@ -27,7 +27,7 @@ export interface ArtifactPost {
 }
 export interface Auction {
   address: PublicKey;
-  epoch: number;
+  session: number;
   endTimestamp: number;
   leadingBidder: PublicKey;
   bidLamports: number;
@@ -40,8 +40,7 @@ export interface Pda {
 export interface ForumInfo {
   publicKey: PublicKey;
   membership: number;
-  epoch: number;
-  state: number;
+  session: number;
   lastDawn: BN;
   bump: number;
 }

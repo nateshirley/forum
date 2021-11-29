@@ -139,7 +139,7 @@ describe("forum", () => {
     }
     return new TextDecoder("utf-8").decode(new Uint8Array(numbers));
   };
-
+  /*
   it("mint dif", async () => {
     let wallet = Keypair.generate();
     await provider.connection.confirmTransaction(
@@ -300,6 +300,8 @@ describe("forum", () => {
     // let art = await program.account.artifact.fetch(artifact);
     // console.log(art);
   });
+
+  */
 
   /*
   it("fetch all posts", async () => {

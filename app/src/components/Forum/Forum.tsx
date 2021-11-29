@@ -61,7 +61,7 @@ function Forum(props: Props) {
             <br />
             forum status
             <br />
-            <div>epoch {props.forumInfo?.epoch}</div>
+            <div>session {props.forumInfo?.session}</div>
             <div>{artifactAuctionTime(props.forumInfo?.lastDawn)}</div>
             <br />
             <br />

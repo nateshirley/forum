@@ -34,12 +34,12 @@ const getConnection = () => {
   const commitment: Commitment = "processed";
   return new Connection(endpoint, commitment);
 };
-// const envProgram = anchor.Provider.env();
-// const program = getForumProgram(anchor.Provider.env().wallet);
-// const provider = anchor.Provider.env();
-
+const envProgram = anchor.Provider.env();
+const program = getForumProgram(anchor.Provider.env().wallet);
 const provider = anchor.Provider.env();
-const program = anchor.workspace.Forum as Program<Forum>;
+
+// const provider = anchor.Provider.env();
+// const program = anchor.workspace.Forum as Program<Forum>;
 
 interface MintConfig {
   authority: PublicKey;
@@ -53,11 +53,11 @@ interface MintConfig {
   vote: PublicKey;
 }
 
-export const getArtifactAddress = async (epoch: number) => {
-  let toArrayLike = new Int32Array([epoch]).buffer;
-  let epochArray = new Uint8Array(toArrayLike);
+export const getArtifactAddress = async (session: number) => {
+  let toArrayLike = new Int32Array([session]).buffer;
+  let sessionArray = new Uint8Array(toArrayLike);
   return await PublicKey.findProgramAddress(
-    [anchor.utils.bytes.utf8.encode("artifact"), epochArray], //
+    [anchor.utils.bytes.utf8.encode("artifact"), sessionArray], //
     program.programId
   );
 };

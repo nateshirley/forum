@@ -36,7 +36,7 @@ function ActivePosts(props: Props) {
 
     const performRefresh = () => {
         if (props.forumInfo) {
-            fetchAllActivePostsDecoded(props.forumInfo.epoch, provider.connection, program).then((posts) => {
+            fetchAllActivePostsDecoded(props.forumInfo.session, provider.connection, program).then((posts) => {
                 setActivePosts(posts);
             });
         }
@@ -46,7 +46,7 @@ function ActivePosts(props: Props) {
         if (activePosts && tx) {
             console.log("successful vote w/ sig: ", tx);
             const posts = [...activePosts];
-            posts[index].epochScore += 1;
+            posts[index].sessionScore += 1;
             posts[index].allTimeScore += 1;
             setActivePosts(posts);
         }
@@ -61,7 +61,7 @@ function ActivePosts(props: Props) {
                         {post.body}
                     </div>
                     <div>
-                        score: {post.epochScore}
+                        score: {post.sessionScore}
                     </div>
                     <div>
                         <a href={post.link}>{post.link}</a>

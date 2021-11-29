@@ -108,7 +108,7 @@ function MembershipHeader(props: Props) {
                             {props.activeUserPost?.body}
                         </div>
                         <div>
-                            {props.activeUserPost?.epochScore}
+                            {props.activeUserPost?.sessionScore}
                         </div>
                     </div>
                 }

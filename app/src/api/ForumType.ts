@@ -204,7 +204,7 @@ export type Forum = {
       ]
     },
     {
-      "name": "buildArtifact",
+      "name": "wrapSession",
       "accounts": [
         {
           "name": "initializer",
@@ -218,7 +218,22 @@ export type Forum = {
         },
         {
           "name": "artifactCardMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "winner",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -227,8 +242,13 @@ export type Forum = {
           "isSigner": false
         },
         {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "forum",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -247,12 +267,21 @@ export type Forum = {
           "isSigner": false
         },
         {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
         }
       ],
       "args": [
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
         {
           "name": "artifactAttributionBump",
           "type": "u8"
@@ -264,21 +293,11 @@ export type Forum = {
       ]
     },
     {
-      "name": "startArtifactAuction",
+      "name": "assertArtifactDiscriminator",
       "accounts": [
         {
           "name": "artifact",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuction",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forum",
-          "isMut": false,
           "isSigner": false
         }
       ],
@@ -326,67 +345,6 @@ export type Forum = {
         {
           "name": "amount",
           "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "settleArtifactAuctionAndAdvanceEpoch",
-      "accounts": [
-        {
-          "name": "artifact",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactCardMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactTokenAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "winner",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuction",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuctionHouse",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forum",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "forumAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "clock",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "auctionHouseBump",
-          "type": "u8"
         }
       ]
     },
@@ -504,7 +462,7 @@ export type Forum = {
         "kind": "struct",
         "fields": [
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
@@ -525,6 +483,49 @@ export type Forum = {
       }
     },
     {
+      "name": "artifact",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "u32"
+          },
+          {
+            "name": "cardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "posts",
+            "type": {
+              "array": [
+                {
+                  "defined": "LeaderboardPost"
+                },
+                10
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "artifactAttribution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "artifact",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
       "name": "forum",
       "type": {
         "kind": "struct",
@@ -534,16 +535,12 @@ export type Forum = {
             "type": "u32"
           },
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
             "name": "lastDawn",
             "type": "u64"
-          },
-          {
-            "name": "state",
-            "type": "u8"
           },
           {
             "name": "bump",
@@ -648,11 +645,11 @@ export type Forum = {
             "type": "u64"
           },
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
-            "name": "epochScore",
+            "name": "sessionScore",
             "type": "u32"
           },
           {
@@ -676,51 +673,8 @@ export type Forum = {
             "type": "publicKey"
           },
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "artifact",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "epoch",
-            "type": "u32"
-          },
-          {
-            "name": "cardMint",
-            "type": "publicKey"
-          },
-          {
-            "name": "posts",
-            "type": {
-              "array": [
-                {
-                  "defined": "LeaderboardPost"
-                },
-                10
-              ]
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "artifactAttribution",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "artifact",
-            "type": "publicKey"
           }
         ]
       }
@@ -731,7 +685,7 @@ export type Forum = {
         "kind": "struct",
         "fields": [
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
@@ -838,31 +792,21 @@ export type Forum = {
     },
     {
       "code": 306,
-      "name": "SessionWindowClosed",
-      "msg": "session window closed. no posts or votes can be submitted until the epoch reaches a new dawn"
+      "name": "SessionNotWrapped",
+      "msg": "active session has not ended."
     },
     {
       "code": 307,
-      "name": "EpochHasNotReachedArtifactWindow",
-      "msg": "artifact window not open. session is still playing out"
-    },
-    {
-      "code": 308,
-      "name": "EpochIneligbileForNewDawn",
-      "msg": "epoch has not reached new dawn"
-    },
-    {
-      "code": 309,
       "name": "LowBallBid",
       "msg": "bid does not meet minimum"
     },
     {
-      "code": 310,
+      "code": 308,
       "name": "BidOnExpiredAuction",
       "msg": "u are trying to bid on an auction that has expired"
     },
     {
-      "code": 311,
+      "code": 309,
       "name": "SettleActiveAuction",
       "msg": "u are trying to settle an auction that's still open for bidding"
     }
@@ -1075,7 +1019,7 @@ export const IDL: Forum = {
       ]
     },
     {
-      "name": "buildArtifact",
+      "name": "wrapSession",
       "accounts": [
         {
           "name": "initializer",
@@ -1089,7 +1033,22 @@ export const IDL: Forum = {
         },
         {
           "name": "artifactCardMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "winner",
           "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1098,8 +1057,13 @@ export const IDL: Forum = {
           "isSigner": false
         },
         {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "forum",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1118,12 +1082,21 @@ export const IDL: Forum = {
           "isSigner": false
         },
         {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
         }
       ],
       "args": [
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
         {
           "name": "artifactAttributionBump",
           "type": "u8"
@@ -1135,21 +1108,11 @@ export const IDL: Forum = {
       ]
     },
     {
-      "name": "startArtifactAuction",
+      "name": "assertArtifactDiscriminator",
       "accounts": [
         {
           "name": "artifact",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuction",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forum",
-          "isMut": false,
           "isSigner": false
         }
       ],
@@ -1197,67 +1160,6 @@ export const IDL: Forum = {
         {
           "name": "amount",
           "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "settleArtifactAuctionAndAdvanceEpoch",
-      "accounts": [
-        {
-          "name": "artifact",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactCardMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactTokenAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "winner",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuction",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuctionHouse",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forum",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "forumAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "clock",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "auctionHouseBump",
-          "type": "u8"
         }
       ]
     },
@@ -1375,7 +1277,7 @@ export const IDL: Forum = {
         "kind": "struct",
         "fields": [
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
@@ -1396,6 +1298,49 @@ export const IDL: Forum = {
       }
     },
     {
+      "name": "artifact",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "u32"
+          },
+          {
+            "name": "cardMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "posts",
+            "type": {
+              "array": [
+                {
+                  "defined": "LeaderboardPost"
+                },
+                10
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "artifactAttribution",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "artifact",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
       "name": "forum",
       "type": {
         "kind": "struct",
@@ -1405,16 +1350,12 @@ export const IDL: Forum = {
             "type": "u32"
           },
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
             "name": "lastDawn",
             "type": "u64"
-          },
-          {
-            "name": "state",
-            "type": "u8"
           },
           {
             "name": "bump",
@@ -1519,11 +1460,11 @@ export const IDL: Forum = {
             "type": "u64"
           },
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
-            "name": "epochScore",
+            "name": "sessionScore",
             "type": "u32"
           },
           {
@@ -1547,51 +1488,8 @@ export const IDL: Forum = {
             "type": "publicKey"
           },
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
-          }
-        ]
-      }
-    },
-    {
-      "name": "artifact",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "epoch",
-            "type": "u32"
-          },
-          {
-            "name": "cardMint",
-            "type": "publicKey"
-          },
-          {
-            "name": "posts",
-            "type": {
-              "array": [
-                {
-                  "defined": "LeaderboardPost"
-                },
-                10
-              ]
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "artifactAttribution",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "artifact",
-            "type": "publicKey"
           }
         ]
       }
@@ -1602,7 +1500,7 @@ export const IDL: Forum = {
         "kind": "struct",
         "fields": [
           {
-            "name": "epoch",
+            "name": "session",
             "type": "u32"
           },
           {
@@ -1709,31 +1607,21 @@ export const IDL: Forum = {
     },
     {
       "code": 306,
-      "name": "SessionWindowClosed",
-      "msg": "session window closed. no posts or votes can be submitted until the epoch reaches a new dawn"
+      "name": "SessionNotWrapped",
+      "msg": "active session has not ended."
     },
     {
       "code": 307,
-      "name": "EpochHasNotReachedArtifactWindow",
-      "msg": "artifact window not open. session is still playing out"
-    },
-    {
-      "code": 308,
-      "name": "EpochIneligbileForNewDawn",
-      "msg": "epoch has not reached new dawn"
-    },
-    {
-      "code": 309,
       "name": "LowBallBid",
       "msg": "bid does not meet minimum"
     },
     {
-      "code": 310,
+      "code": 308,
       "name": "BidOnExpiredAuction",
       "msg": "u are trying to bid on an auction that has expired"
     },
     {
-      "code": 311,
+      "code": 309,
       "name": "SettleActiveAuction",
       "msg": "u are trying to settle an auction that's still open for bidding"
     }
