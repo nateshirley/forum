@@ -6,10 +6,12 @@ import * as web3 from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import "../../Global.css";
 import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority } from "../../api/addresses";
-import { displayCountdown, getNow, numberArrayToString } from "../../utils";
+import { displayCountdown, getNow, minBid, numberArrayToString, toDisplayString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
-import { Artifact, ArtifactAuction, ForumInfo, Membership, Pda, Post } from "../../interfaces";
+import { Artifact, ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Pda, Post } from "../../interfaces";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
+import Countdown from "./Countdown";
+import { useHistory } from "react-router";
 
 interface Props {
     forumInfo: ForumInfo | undefined,
@@ -19,98 +21,29 @@ interface Props {
     leaderboard: PublicKey | undefined,
     cardTokenAccount: PublicKey | undefined,
     activeUserPost: Post | undefined,
+    refreshArtifactAuction: () => void,
+    auctionPhase: string | undefined,
 }
 
 
-//only showing active or needs settled
-const AUCTION_PHASE = {
-    isActive: "isActive",                 //1
-    needsSettled: "needsSettled",         //2
-    historical: "historical"              //3
-}
+
 //.0196 approx tx fee to settle the auction from the house pda
 function ActiveArtifactAuction(props: Props) {
     const wallet = useWallet();
-    const [postRefresh, doPostRefresh] = useState(0);
     const program = getForumProgram(wallet);
-    const [auctionPhase, setAuctionPhase] = useState<string | undefined>(undefined);
     const [auctionHouse, setAuctionHouse] = useState<Pda | undefined>(undefined);
-    const [forumAuthority, setForumAuthority] = useState<Pda | undefined>(undefined);
-    const [secondsRemaining, setSecondsRemaining] = useState<number | undefined>(undefined);
+    const [placeBidInput, setPlaceBidInput] = useState("");
+    const history = useHistory();
     let auction = props.artifactAuction;
 
-
-
     useEffect(() => {
-        if (auction && props.forumInfo) {
-            //need a countdown from this
-            determineAuctionPhase(auction.session, auction.endTimestamp, props.forumInfo.session);
-            determineCountdownSeconds(auction.endTimestamp)
-        }
-    }, [auction, props.forumInfo])
-
-    const fetchAuction = async (): Promise<ArtifactAuction> => {
-        return getArtifactAuctionAddress().then(([auctionAddress, bump]) => {
-            return program.account.artifactAuction.fetch(auctionAddress).then((response) => {
-                return {
-                    address: auctionAddress,
-                    session: response.session,
-                    endTimestamp: response.endTimestamp.toNumber(),
-                    leadingBidder: response.leadingBid.bidder,
-                    bidLamports: response.leadingBid.lamports.toNumber(),
-                    bump: response.bump
-                };
+        getArtifactAuctionHouseAddress().then(([auctionHouse, auctionHouseBump]) => {
+            setAuctionHouse({
+                address: auctionHouse,
+                bump: auctionHouseBump
             });
         });
-    }
-
-    const determineCountdownSeconds = (endTimestamp: number) => {
-        const now = getNow();
-        let secondsRemaining = endTimestamp - now;
-        setSecondsRemaining(secondsRemaining)
-    }
-    useEffect(() => {
-        const timerId = setInterval(() => tick(), 1000);
-        return () => clearInterval(timerId);
-    });
-    const tick = () => {
-        if (secondsRemaining && secondsRemaining > 0) {
-            setSecondsRemaining(secondsRemaining - 1);
-        }
-    }
-
-    const determineAuctionPhase = (auctionSession: number, endTimestamp: number, forumSession: number) => {
-        const now = getNow();
-        if (auctionSession === forumSession) {
-            if (now - endTimestamp > 0) {
-                setAuctionPhase(AUCTION_PHASE.needsSettled);
-            } else if (now - endTimestamp < 0) {
-                setAuctionPhase(AUCTION_PHASE.isActive);
-            }
-        } else if (auctionSession < forumSession) {
-            setAuctionPhase(AUCTION_PHASE.historical);
-        }
-    }
-
-    useEffect(() => {
-        if (auctionPhase === AUCTION_PHASE.needsSettled || auctionPhase === AUCTION_PHASE.isActive) {
-            getArtifactAuctionHouseAddress().then(([auctionHouse, auctionHouseBump]) => {
-                console.log("houuuuse", auctionHouse.toBase58());
-                setAuctionHouse({
-                    address: auctionHouse,
-                    bump: auctionHouseBump
-                });
-            });
-        }
-        if (auctionPhase === AUCTION_PHASE.needsSettled && auction?.leadingBidder) {
-            getForumAuthority().then(([authority, bump]) => {
-                setForumAuthority({
-                    address: authority,
-                    bump: bump
-                })
-            })
-        }
-    }, [auction?.leadingBidder, auctionPhase])
+    }, [auction?.leadingBidder, props.auctionPhase])
 
     //show historical sessions on same page
     /*
@@ -120,7 +53,6 @@ function ActiveArtifactAuction(props: Props) {
     - place bid
     - advance epoch
     */
-
 
     const didPressWrapSession = async () => {
         if (props.forumInfo && wallet.publicKey && auction && props.leaderboard && auctionHouse) {
@@ -231,20 +163,25 @@ function ActiveArtifactAuction(props: Props) {
 
     const didPressBid = () => {
         if (wallet.publicKey && props.forumInfo && auction && auctionHouse) {
+            let amount = parseFloat(placeBidInput);
             placeBidForArtifact(
                 wallet.publicKey,
                 auction.leadingBidder,
                 auction.address,
                 auctionHouse.address,
                 auctionHouse.bump,
-                1
-            )
+                amount
+            ).then((sig) => {
+                console.log(sig);
+                props.refreshArtifactAuction();
+            })
         }
     }
-    const placeBidForArtifact = (bidder: PublicKey, newestLoser: PublicKey, artifactAuction: PublicKey, auctionHouse: PublicKey, auctionHouseBump: number, bid: number) => {
-        const tx = program.rpc.placeBidForArtifact(
+
+    const placeBidForArtifact = (bidder: PublicKey, newestLoser: PublicKey, artifactAuction: PublicKey, auctionHouse: PublicKey, auctionHouseBump: number, amount: number) => {
+        return program.rpc.placeBidForArtifact(
             auctionHouseBump,
-            new BN(bid * web3.LAMPORTS_PER_SOL),
+            new BN(amount * web3.LAMPORTS_PER_SOL),
             {
                 accounts: {
                     bidder: bidder,
@@ -258,23 +195,74 @@ function ActiveArtifactAuction(props: Props) {
         );
     }
 
-    let header = <div>let me see the auction</div>;
 
-    let actionButton;
-    let bid = <button onClick={didPressBid}>bid</button>;
-    if (auctionPhase === AUCTION_PHASE.needsSettled) {
-        actionButton = <button onClick={didPressWrapSession}>wrap session</button>
-    } else if (auctionPhase === AUCTION_PHASE.isActive) {
-        actionButton = <button onClick={didPressBid}>bid</button>;
+    const onPlaceBidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const amount = e.target.value;
+        if (!amount || amount.match(/^\d{1,}(\.\d{0,5})?$/)) {
+            setPlaceBidInput(amount);
+        }
+    };
+
+    const clickedLeft = () => {
+        let nextArtifact = auction?.session ? auction.session - 1 : undefined
+        if (nextArtifact) {
+            history.push("/session/" + nextArtifact);
+        }
     }
+    const clickedRight = () => {
+        console.log("u can't click right")
+    }
+    let arrowButtons = (
+        <div>
+            <button onClick={clickedLeft}>←</button> <button onClick={clickedRight}>→</button>
+        </div>
+    );
+    let infoElement;
+    let newBidElement;
+    let actionElement;
+    if (auction) {
+        infoElement = (
+            <div>
+                <div>Session #{auction.session}</div>
+                <div>Current bid: {auction.bidLamports / web3.LAMPORTS_PER_SOL} SOL</div>
+                <Countdown auctionEndTimestamp={auction.endTimestamp} />
+            </div>
+        );
+        if (props.auctionPhase === AUCTION_PHASE.needsSettled) {
+            actionElement = (
+                <div>
+                    <button onClick={didPressWrapSession}>wrap session</button>
+                    <div>winner: {toDisplayString(auction.leadingBidder)}</div>
+                </div>
+            );
+        } else if (props.auctionPhase === AUCTION_PHASE.isActive) {
+            actionElement = (
+                <div>
+                    <input
+                        placeholder=""
+                        onChange={e => onPlaceBidAmountChange(e)}
+                        value={placeBidInput}
+                        className="default-input"
+                    />
+                    <button onClick={didPressBid}>bid</button>
+                    <div>leader: {toDisplayString(auction.leadingBidder)}</div>
+                </div>
+            );
+        }
+        newBidElement = (
+            <div>
+                <div>minimum bid: {minBid(auction.bidLamports)} SOL</div>
+                {actionElement}
+            </div>
+        );
+    }
+
 
     return (
         <div>
-            artifact auction
-            <div>{header}</div>
-            <div>{secondsRemaining && displayCountdown(secondsRemaining)}</div>
-            <div>{actionButton}</div>
-            {/* <div>{bid}</div> */}
+            {arrowButtons}
+            {infoElement}
+            {newBidElement}
             <br />
             <br />
             <br />

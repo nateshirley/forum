@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import * as web3 from "@solana/web3.js";
 import BN from "bn.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
@@ -87,3 +88,17 @@ export const displayCountdown = (seconds: number) => {
   var sDisplay = s >= 0 ? s + "s" : "";
   return dDisplay + hDisplay + mDisplay + sDisplay;
 };
+export const minBid = (currentBid: number) => {
+  const increment_percentage = 2;
+  const min_opening_bid = 100000000;
+  if (currentBid > 0) {
+    let increase = currentBid * (increment_percentage * 0.01);
+    return roundToTwo((currentBid + increase) / web3.LAMPORTS_PER_SOL);
+  } else {
+    return roundToTwo(min_opening_bid / web3.LAMPORTS_PER_SOL);
+  }
+};
+export function roundToTwo(num: number) {
+  let val: any = num + "e+2";
+  return +(Math.round(val) + "e-2");
+}

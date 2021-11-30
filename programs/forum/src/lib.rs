@@ -433,6 +433,7 @@ pub struct PlaceBidForArtifact<'info> {
     #[account(mut)]
     newest_loser: AccountInfo<'info>,
     #[account(
+        mut,
         seeds = [ARTIFACT_AUCTION_SEED],
         bump = artifact_auction.bump,
     )]
@@ -460,6 +461,7 @@ pub struct NewPost<'info> {
     )]
     forum: Account<'info, Forum>,
     #[account(
+        mut,
         seeds = [ARTIFACT_AUCTION_SEED],
         bump = artifact_auction.bump,
     )]

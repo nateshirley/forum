@@ -13,8 +13,11 @@ import ActiveArtifactAuction from '../components/ActiveArtifactAuction/ActiveArt
 import WrapSession from '../components/WrapSession';
 import Home from "../components/Home";
 import Forum from "../components/Forum/Forum"
-import { ArtifactAuction, ForumInfo, Membership, Post } from '../interfaces';
+import { ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Post } from '../interfaces';
 import Artifact from '../components/Artifact/Artifact';
+import { getNow } from '../utils';
+
+
 
 
 const ComponentSwitch: FC = () => {
@@ -30,6 +33,7 @@ const ComponentSwitch: FC = () => {
     const [canPost, setCanPost] = useState(false);
     const [activeUserPost, setActiveUserPost] = useState<Post | undefined>(undefined);
     const [cardTokenAccount, setCardTokenAccount] = useState<PublicKey | undefined>(undefined);
+    const [auctionPhase, setAuctionPhase] = useState<string | undefined>(undefined);
 
 
     useEffect(() => {
@@ -48,6 +52,7 @@ const ComponentSwitch: FC = () => {
             setLeaderboard(leaderboard);
         })
         fetchAuction().then((artifactAuction) => {
+            console.log("got the auction")
             setArtifactAuction(artifactAuction);
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,6 +72,26 @@ const ComponentSwitch: FC = () => {
                 };
             });
         });
+    }
+
+    useEffect(() => {
+        if (artifactAuction && forumInfo) {
+            //need a countdown from this
+            determineAuctionPhase(artifactAuction.session, artifactAuction.endTimestamp, forumInfo.session);
+        }
+    }, [artifactAuction, forumInfo])
+
+    const determineAuctionPhase = (auctionSession: number, endTimestamp: number, forumSession: number) => {
+        const now = getNow();
+        if (auctionSession === forumSession) {
+            if (now - endTimestamp > 0) {
+                setAuctionPhase(AUCTION_PHASE.needsSettled);
+            } else if (now - endTimestamp < 0) {
+                setAuctionPhase(AUCTION_PHASE.isActive);
+            }
+        } else if (auctionSession < forumSession) {
+            setAuctionPhase(AUCTION_PHASE.historical);
+        }
     }
 
     //update member status when wallet is connected/disconnected
@@ -96,13 +121,14 @@ const ComponentSwitch: FC = () => {
     }, [wallet.publicKey, memberCardMint])
 
     useEffect(() => {
-        if (forumInfo && membership) {
+        if (forumInfo && membership && auctionPhase) {
             let activeSession = forumInfo?.session ?? 0;
             program.account.vote.fetch(membership.vote).then((likeAccount) => {
-                setCanLike(likeAccount.session < activeSession);
+                setCanLike(likeAccount.session < activeSession && auctionPhase === AUCTION_PHASE.isActive);
             });
             program.account.post.fetch(membership.post).then((postAccount) => {
-                setCanPost(postAccount.session < activeSession);
+                let canPost = postAccount.session < activeSession && auctionPhase === AUCTION_PHASE.isActive;
+                setCanPost(canPost);
                 if (postAccount.session >= activeSession && membership) {
                     setActiveUserPost(fetchedPostAccountToPostObject(postAccount, membership.post));
                 }
@@ -112,7 +138,7 @@ const ComponentSwitch: FC = () => {
             setCanPost(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [membership, forumInfo]);
+    }, [membership, forumInfo, auctionPhase]);
 
     const submitLike = async (post: PublicKey) => {
         if (wallet.publicKey && forumInfo && artifactAuction && membership && cardTokenAccount && leaderboard) {
@@ -135,6 +161,12 @@ const ComponentSwitch: FC = () => {
         }
     }
 
+    const refreshArtifactAuction = () => {
+        fetchAuction().then((artifactAuction) => {
+            console.log("got the auction")
+            setArtifactAuction(artifactAuction);
+        })
+    }
 
     return (
         <Switch>
@@ -142,12 +174,13 @@ const ComponentSwitch: FC = () => {
                 <PostDetails canLike={false} submitLike={submitLike} />
             </Route>
             <Route path="/session">
-                <Artifact />
+                <Artifact artifactAuction={artifactAuction} />
             </Route>
             <Route path="/">
                 <Home forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}
                     artifactAuction={artifactAuction} cardTokenAccount={cardTokenAccount} canPost={canPost} canLike={canLike}
                     activeUserPost={activeUserPost} setMemberCardMint={setMemberCardMint} setCanPost={setCanPost} submitLike={submitLike}
+                    refreshArtifactAuction={refreshArtifactAuction} auctionPhase={auctionPhase}
                 />
             </Route>
 

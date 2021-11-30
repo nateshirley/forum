@@ -53,3 +53,9 @@ export interface Membership {
   id: number;
   bump: number;
 }
+//only showing active or needs settled
+export const AUCTION_PHASE = {
+  isActive: "isActive", //1
+  needsSettled: "needsSettled", //2
+  historical: "historical", //3
+};

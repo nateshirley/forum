@@ -13,7 +13,7 @@ use std::convert::TryFrom;
 3. settle auction // send to winner
 */
 
-pub const MINIMUM_OPENING_BID: u64 = 100;
+pub const MINIMUM_OPENING_BID: u64 = 100000000; //100,000,000 / 0.1 sol
 pub const MIN_INCREMENT_PERCENTAGE: u64 = 2;
 
 //add some functionality to store previous amounts later
@@ -45,19 +45,20 @@ pub mod auction {
         amount: u64,
         artifact_auction: &Account<ArtifactAuction>,
     ) -> ProgramResult {
-        let lamps_to_clear = if artifact_auction.leading_bid.lamports > 0 {
-            artifact_auction.leading_bid.lamports
+        let min_bid: u64;
+        if artifact_auction.leading_bid.lamports > 0 {
+            let lamps_to_clear = artifact_auction.leading_bid.lamports;
+            min_bid = lamps_to_clear
+                + lamps_to_clear
+                    .checked_mul(MIN_INCREMENT_PERCENTAGE)
+                    .unwrap()
+                    .checked_div(100)
+                    .unwrap();
+            msg!("to clear: {}, min_bid: {}", lamps_to_clear, min_bid);
         } else {
-            MINIMUM_OPENING_BID
+            min_bid = MINIMUM_OPENING_BID
         };
-        let min_bid = lamps_to_clear
-            + lamps_to_clear
-                .checked_mul(MIN_INCREMENT_PERCENTAGE)
-                .unwrap()
-                .checked_div(100)
-                .unwrap();
-        msg!("to clear: {}, min_bid: {}", lamps_to_clear, min_bid);
-        if amount > min_bid {
+        if amount >= min_bid {
             Ok(())
         } else {
             Err(ErrorCode::LowBallBid.into())
@@ -83,7 +84,7 @@ pub mod auction {
         losing_bid: Bid,
         artifact_auction_house_bump: u8,
     ) -> ProgramResult {
-        if losing_bid.lamports > MINIMUM_OPENING_BID {
+        if losing_bid.lamports >= MINIMUM_OPENING_BID {
             assert!(losing_bid.bidder.eq(ctx.accounts.newest_loser.key));
             let seeds = &[&A_AUX_HOUSE_SEED[..], &[artifact_auction_house_bump]];
             anchor_transfer::transfer_from_pda(
