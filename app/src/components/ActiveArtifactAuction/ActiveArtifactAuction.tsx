@@ -13,6 +13,8 @@ import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import Countdown from "./Countdown";
 import { useHistory } from "react-router";
 import { Row, Col, Container } from "react-bootstrap";
+import { useEasybase } from 'easybase-react';
+
 
 interface Props {
     forumInfo: ForumInfo | undefined,
@@ -37,6 +39,7 @@ function ActiveArtifactAuction(props: Props) {
     const [estText, setEstText] = useState("");
     const history = useHistory();
     let auction = props.artifactAuction;
+    const { db, useReturn } = useEasybase();
 
     useEffect(() => {
         getArtifactAuctionHouseAddress().then(([auctionHouse, auctionHouseBump]) => {
@@ -77,7 +80,16 @@ function ActiveArtifactAuction(props: Props) {
             ).then((sig) => {
                 if (sig.length > 1) {
                     console.log("tx sig: ", sig)
-                    window.location.reload();
+                    if (props.forumInfo && auction) {
+                        console.log('inserting')
+                        db("FORUMSESSIONS").insert({
+                            session: props.forumInfo.session,
+                            winningLamports: auction.bidLamports,
+                            wrapTxSignature: sig,
+                        }).one().then(() => {
+                            window.location.reload();
+                        });
+                    }
                 } else {
                     console.log("an error occured with the artifact build");
                 }
@@ -175,6 +187,7 @@ function ActiveArtifactAuction(props: Props) {
     const didPressBid = () => {
         if (wallet.publicKey && props.forumInfo && auction && auctionHouse) {
             let amount = parseFloat(placeBidInput);
+            console.log(amount)
             placeBidForArtifact(
                 wallet.publicKey,
                 auction.leadingBidder,
@@ -185,6 +198,7 @@ function ActiveArtifactAuction(props: Props) {
             ).then((sig) => {
                 console.log(sig);
                 props.refreshArtifactAuction();
+                //add bid to history
                 setPlaceBidInput("");
             })
         }

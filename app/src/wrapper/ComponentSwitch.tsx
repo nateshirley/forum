@@ -19,7 +19,6 @@ import { getNow, numberArrayToString } from '../utils';
 
 
 
-
 const ComponentSwitch: FC = () => {
     const wallet = useWallet();
     const history = useHistory();

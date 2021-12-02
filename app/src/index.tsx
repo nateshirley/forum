@@ -4,6 +4,10 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from 'react-router-dom';
 import WalletWrapper from './wrapper/WalletWrapper';
+import { EasybaseProvider, useEasybase } from 'easybase-react';
+import { useEffect } from 'react';
+import ebconfig from './ebconfig';
+
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
@@ -13,7 +17,9 @@ require('./index.css');
 ReactDOM.render(
   <StrictMode>
     <BrowserRouter>
-      <WalletWrapper />
+      <EasybaseProvider ebconfig={ebconfig}>
+        <WalletWrapper />
+      </EasybaseProvider>
     </BrowserRouter>
   </StrictMode>,
   document.getElementById('root')
