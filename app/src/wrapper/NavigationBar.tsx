@@ -35,7 +35,7 @@ const NavigationBar: FC = () => {
         history.push("/about")
     }
 
-    let shouldShowConnect = location.pathname !== "" || wallet.connected;
+    let shouldShowConnect = location.pathname !== "/" || wallet.connected;
 
 
     return (
