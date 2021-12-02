@@ -16,6 +16,7 @@ import Forum from "../components/Forum/Forum"
 import { ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Post, Like } from '../interfaces';
 import Artifact from '../components/Artifact/Artifact';
 import { getNow, numberArrayToString } from '../utils';
+import About from '../components/About';
 
 
 
@@ -194,6 +195,9 @@ const ComponentSwitch: FC = () => {
             </Route>
             <Route path="/session">
                 <Artifact artifactAuction={artifactAuction} />
+            </Route>
+            <Route path="/about">
+                <About />
             </Route>
             <Route path="/">
                 <Home forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}

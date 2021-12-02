@@ -1,5 +1,5 @@
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import { WalletDisconnectButton, WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import React, { FC } from 'react';
 import logo from "../assets/record.png"
@@ -10,6 +10,7 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 const NavigationBar: FC = () => {
     let wallet = useWallet();
     const location = useLocation();
+    const history = useHistory();
     let connectStyle = {
         color: "black",
         backgroundColor: "white",
@@ -30,14 +31,18 @@ const NavigationBar: FC = () => {
             );
         }
     }
+    const about = () => {
+        history.push("/about")
+    }
 
-    let shouldShowConnect = location.pathname !== "/forum" || wallet.connected;
+    let shouldShowConnect = location.pathname !== "/" || wallet.connected;
 
 
     return (
         <nav className="navbar">
             <Link to="/"><img src={logo} alt="home" className="logo" /></Link>
             <button onClick={airdrop}>airdrop</button>
+            <button onClick={about} className="about">about</button>
             <div >
                 {/* <Link to="/make">+make</Link> */}
                 {shouldShowConnect && (
