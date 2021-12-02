@@ -1,9 +1,34 @@
 
 import { useEffect, useState } from 'react';
-import { displayCountdown, getNow } from '../../utils';
+import { getNow } from '../../utils';
 
 interface Props {
     auctionEndTimestamp: number | undefined
+}
+
+const displayCountdown = (seconds: number) => {
+    seconds = Number(seconds);
+    var d = Math.floor(seconds / (3600 * 24));
+    var h = Math.floor((seconds % (3600 * 24)) / 3600);
+    var m = Math.floor((seconds % 3600) / 60);
+    var s = Math.floor(seconds % 60);
+
+    var dEl = timeElement(d, "d");
+    var hEl = timeElement(h, "h");
+    var mEl = timeElement(m, "m");
+    var sEl = timeElement(s, "s");
+    //return dDisplay + hDisplay + mDisplay + sDisplay;
+    if (d > 0) {
+        return [dEl, hEl, mEl]
+    } else {
+        return [hEl, mEl, sEl]
+    }
+};
+
+const timeElement = (number: number, letter: string) => {
+    return (
+        <span className="auction-number" key={letter}>{number}<span className="auction-secondary-element">{letter}&nbsp;&nbsp;</span></span>
+    )
 }
 
 function Countdown(props: Props) {
@@ -29,7 +54,7 @@ function Countdown(props: Props) {
     }
 
     return (
-        <div>{displayCountdown(secondsRemaining)} left</div>
+        <div className="auction-number">{displayCountdown(secondsRemaining)}</div>
     )
 }
 export default Countdown;

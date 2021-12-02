@@ -20,7 +20,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 100;
+const SESSION_LENGTH: u64 = 1500;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]
@@ -150,11 +150,17 @@ pub mod forum {
         )?;
         //todo: create some metadata
         //todo: send funds to multisig,
+        //todo: treasury cut
         //todo: set winners from the week for mint rewards
 
         //advance session
         ctx.accounts.forum.session = ctx.accounts.forum.session + 1;
         ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap(); //ctx.accounts.forum.last_dawn + session_LENGTH;
+
+        //clear the leaderboard
+        let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
+        leaderboard.session = ctx.accounts.forum.session;
+        leaderboard.posts = [leaderboard::LeaderboardPost::default(); 10];
 
         //sync auction account
         ctx.accounts.artifact_auction.session = ctx.accounts.forum.session;
@@ -416,6 +422,7 @@ pub struct WrapSession<'info> {
         bump = forum_authority.bump,
     )]
     forum_authority: Account<'info, ForumAuthority>,
+    #[account(mut)]
     leaderboard: Loader<'info, Leaderboard>,
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,

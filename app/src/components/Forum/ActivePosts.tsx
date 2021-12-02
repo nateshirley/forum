@@ -1,14 +1,16 @@
-import { fetchAllActivePostsDecoded } from "../../api/posts";
+import { fetchAllActivePostsSortedByScore } from "../../api/posts";
 import { useState, useEffect } from "react";
 import { getForumProgram, getProvider } from "../../api/config";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { getNow, timeSince } from "../../utils";
+import { getNow, posterLink, timeSince, toDisplayString } from "../../utils";
 import { ForumInfo, Post } from "../../interfaces";
-
+import likeIcon from "../../assets/likeIcon.svg"
+import toast, { Toaster } from "react-hot-toast";
 
 interface Props {
-    forumInfo: ForumInfo | undefined
+    forumInfo: ForumInfo | undefined,
+    memberCardMint: PublicKey | undefined,
     canLike: boolean,
     refresh: number,
     submitLike: (post: PublicKey) => Promise<string | undefined>,
@@ -36,44 +38,63 @@ function ActivePosts(props: Props) {
 
     const performRefresh = () => {
         if (props.forumInfo) {
-            fetchAllActivePostsDecoded(props.forumInfo.session, provider.connection, program).then((posts) => {
+            fetchAllActivePostsSortedByScore(props.forumInfo.session, provider.connection, program).then((posts) => {
                 setActivePosts(posts);
             });
         }
     }
     const didPressLike = async (post: PublicKey, index: number) => {
-        const tx = await props.submitLike(post);
-        if (activePosts && tx) {
-            console.log("successful vote w/ sig: ", tx);
-            const posts = [...activePosts];
-            posts[index].sessionScore += 1;
-            posts[index].allTimeScore += 1;
-            setActivePosts(posts);
+        if (props.canLike) {
+            const tx = await props.submitLike(post);
+            if (activePosts && tx) {
+                console.log("successful vote w/ sig: ", tx);
+                const posts = [...activePosts];
+                posts[index].sessionScore += 1;
+                posts[index].allTimeScore += 1;
+                setActivePosts(posts);
+            }
+        } else if (!wallet.connected) {
+            toast('wallet not connected', {
+                icon: '🪙',
+            });
+        } else if (!props.memberCardMint) {
+            toast('only members can like', {
+                icon: '🤷‍♂️',
+            });
+        } else {
+            toast('u already submitted a like this session', {
+                icon: '👀',
+            });
         }
+
     }
+
+
 
     let postCards;
     if (activePosts) {
         postCards = activePosts.map((post, index) => {
             return (
                 <div key={index} className="post-outer">
-                    <div>
-                        {post.body}
+                    <div >
+                        <a
+                            href={posterLink(post.cardMint)}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="poster-card"
+                        >
+                            {toDisplayString(post.cardMint, 3)}
+                        </a>
+                        <span className="dot-time"> · {timeSince(post.timestamp)}</span>
                     </div>
-                    <div>
-                        score: {post.sessionScore}
+                    <div className="post-body">
+                        {post.body}
                     </div>
                     <div>
                         <a href={post.link}>{post.link}</a>
                     </div>
-                    <div>
-                        {timeSince(post.timestamp)}
-                    </div>
-                    <div>
-                        {props.canLike
-                            ? <button onClick={() => didPressLike(post.publicKey, index)}>like</button>
-                            : <div>already liked</div>
-                        }
+                    <div >
+                        <button className="like-button" onClick={() => didPressLike(post.publicKey, index)}><img src={likeIcon} className="like-icon" alt="like" /> {post.sessionScore}</button>
                     </div>
                 </div>
             )
@@ -83,6 +104,7 @@ function ActivePosts(props: Props) {
 
     return (
         <div >
+            <div><Toaster /></div>
             {postCards}
         </div>
     );

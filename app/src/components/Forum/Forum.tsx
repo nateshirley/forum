@@ -7,7 +7,7 @@ import { getForumProgram } from '../../api/config';
 import { PublicKey } from '@solana/web3.js';
 import "../../Global.css";
 import { artifactAuctionTime } from "../../utils";
-import { ArtifactAuction, ForumInfo, Membership, Post } from "../../interfaces";
+import { ArtifactAuction, ForumInfo, Like, Membership, Post } from "../../interfaces";
 
 /*
 a lot of aesthetic stuff
@@ -34,6 +34,7 @@ interface Props {
     canPost: boolean,
     canLike: boolean,
     activeUserPost: Post | undefined,
+    activeUserLike: Like | undefined,
     setMemberCardMint: (mint: PublicKey | undefined) => void,
     setCanPost: (value: boolean) => void,
     submitLike: (post: PublicKey) => Promise<string | undefined>
@@ -53,29 +54,18 @@ function Forum(props: Props) {
     if (!wallet.connected) {
         header = <ConnectWallet />
     } else {
-        header = <MembershipHeader memberCardMint={props.memberCardMint} setMemberCardMint={props.setMemberCardMint} canPost={props.canPost}
+        header = <MembershipHeader memberCardMint={props.memberCardMint} setMemberCardMint={props.setMemberCardMint} canPost={props.canPost} canLike={props.canLike}
             membership={props.membership} forumInfo={props.forumInfo} cardTokenAccount={props.cardTokenAccount} didSubmitNewPost={didSubmitNewPost}
-            activeUserPost={props.activeUserPost} artifactAuction={props.artifactAuction} />
+            activeUserPost={props.activeUserPost} activeUserLike={props.activeUserLike} artifactAuction={props.artifactAuction} />
     }
 
-    let forumStatus = (
-        <div>
-            <br />
-            forum status
-            <br />
-            <div>session {props.forumInfo?.session}</div>
-            <div>{artifactAuctionTime(props.forumInfo?.lastDawn)}</div>
-            <br />
-            <br />
-        </div>
-    )
 
     return (
         <div >
             {header}
-            {forumStatus}
+            <div className="posts-header">POSTS</div>
             <ActivePosts forumInfo={props.forumInfo} canLike={props.canLike}
-                refresh={postRefresh} submitLike={props.submitLike} />
+                refresh={postRefresh} submitLike={props.submitLike} memberCardMint={props.memberCardMint} />
         </div>
     );
 }

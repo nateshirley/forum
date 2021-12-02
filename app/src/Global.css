@@ -6,4 +6,192 @@
   max-width: 540px;
   margin-bottom: 150px;
   color: black;
+  font-family: "IBM Plex Sans";
+}
+:root {
+  --gray-text: #b3b3b3;
+}
+.session-date {
+  margin-top: 10px;
+  color: var(--gray-text);
+  font-size: 13px;
+}
+.session-header {
+  font-size: 52px;
+  font-weight: 600;
+  line-height: 47px;
+}
+.accent-text {
+  font-size: 13px;
+  color: var(--gray-text);
+}
+.auction-number {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 24px;
+}
+.auction-secondary-element {
+  font-size: 13px;
+  font-weight: 600;
+}
+.time-remaining {
+  padding-left: 18px;
+}
+.auction-info-row {
+  margin-top: 20px;
+}
+.bid-element {
+  border: 1px solid black;
+  border-radius: 8px;
+  margin-top: 30px;
+  max-width: 380px;
+}
+.bid-content {
+  padding-top: 15px;
+  padding-left: 20px;
+  padding-bottom: 18px;
+  padding-right: 20px;
+}
+.minimum-bid {
+  color: var(--gray-text);
+  font-size: 13px;
+  margin-top: 24px;
+  margin-bottom: 2px;
+}
+.action-element {
+  margin-left: 4px;
+}
+.bid-action {
+  width: 100%;
+  height: 32px;
+  margin-bottom: 40px;
+}
+.bid-input {
+  width: 75%;
+  border: 1px solid black;
+}
+.bid-button {
+  margin-left: 8px;
+  width: 20%;
+  background-color: #293eff;
+  border: none;
+  color: white;
+  font-weight: 800;
+}
+.bid-leader {
+  background-color: #ededed;
+  height: 30px;
+  width: 97%;
+  margin-top: 9px;
+  padding-left: 8px;
+  padding-right: -8px;
+  line-height: 30px;
+}
+.session-nav-button {
+  font-size: 34px;
+  line-height: 54px;
+  background-color: rgba(255, 255, 255, 0);
+  border: none;
+  width: 32px;
+}
+.session-nav-button.left {
+  margin-left: 22px;
+  padding: 0px;
+}
+.session-nav-button.right {
+  padding: 0px;
+}
+.wrap-session {
+  width: 99%;
+  height: 32px;
+  background-color: #3106f1;
+  border: none;
+  color: white;
+  font-weight: 800;
+}
+.friend-card-mint {
+  color: var(--gray-text);
+}
+.member-greeting {
+  font-weight: 500;
+}
+.post-input {
+  border: 1px solid #f0f0f0;
+  margin-top: 7px;
+  padding: 7px;
+}
+.post-input:focus {
+  outline: none !important;
+  border-color: #66edff;
+}
+.post-input.body {
+  height: 70px;
+  width: 100%;
+}
+.post-input.link {
+  margin-top: 2px;
+  height: 32px;
+  width: 100%;
+}
+.forum-button {
+  font-family: "Ubuntu Mono";
+}
+.forum-button.post {
+  margin-top: 7px;
+  margin-right: 2px;
+  margin-left: auto;
+  display: block;
+  width: 70px;
+  height: 30px;
+  background-color: #0bbaff;
+  color: white;
+  font-weight: 700;
+  border: none;
+  font-size: 16px;
+}
+.your-activity {
+  background-color: white;
+  text-decoration: underline;
+  color: blue;
+  border: none;
+}
+.posts-header {
+  margin-top: 80px;
+  font-size: 16px;
+  font-weight: 700;
+  color: rgb(206, 206, 206);
+}
+
+.post-outer {
+  margin-top: 15px;
+  margin-bottom: 50px;
+}
+.dot-time {
+  color: var(--gray-text);
+}
+.poster-card {
+  color: black;
+  font-weight: 500;
+  text-decoration: none;
+}
+.post-body {
+  margin-top: 0px;
+}
+.like-icon {
+  width: 14px;
+}
+.like-button {
+  background-color: #f5f5f5;
+  border: none;
+  border-radius: 13px;
+  height: 26px;
+  font-weight: 500;
+  line-height: 26px;
+  font-size: 13px;
+  color: #707070;
+  width: 60px;
+  margin-top: 9px;
+}
+.likes-remaining {
+  color: var(--gray-text);
 }

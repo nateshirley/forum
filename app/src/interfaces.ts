@@ -11,6 +11,12 @@ export interface Post {
   sessionScore: number;
   allTimeScore: number;
 }
+export interface Like {
+  publicKey: PublicKey;
+  authorityCardMint: PublicKey;
+  votedForCardMint: PublicKey;
+  session: number;
+}
 export interface Artifact {
   address: PublicKey;
   session: number;

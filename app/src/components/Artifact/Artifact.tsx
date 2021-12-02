@@ -5,9 +5,10 @@ import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAd
 import { useWallet } from "@solana/wallet-adapter-react";
 import { getForumProgram } from "../../api/config";
 import { useHistory, useLocation } from "react-router";
-import { Artifact as ArtifactInterface, ArtifactAuction, Pda } from "../../interfaces";
+import { Artifact as ArtifactInterface, ArtifactAuction, Pda, ArtifactPost } from "../../interfaces";
 import qs from "qs";
-import { numberArrayToString } from "../../utils";
+import { numberArrayToString, posterLink, toDisplayString } from "../../utils";
+import likeIcon from "../../assets/likeIcon.svg"
 
 interface Props {
     artifactAuction: ArtifactAuction | undefined,
@@ -18,7 +19,7 @@ function Artifact(props: Props) {
     const [session, setSession] = useState<undefined | number>(undefined);
     const location = useLocation();
     const history = useHistory();
-    const artifactAuction = props.artifactAuction;
+    const auction = props.artifactAuction;
     const wallet = useWallet()
     const program = getForumProgram(wallet);
 
@@ -39,16 +40,21 @@ function Artifact(props: Props) {
             getArtifactAddress(
                 session
             ).then(([artifactAddress, bump]) => {
-                console.log(artifactAddress.toBase58())
                 program.account.artifact.fetch(artifactAddress).then((fetchedArtifact) => {
                     let posts: any = fetchedArtifact.posts;
-                    let artifactPosts = posts.map((post: any) => {
-                        return {
-                            cardMint: post.cardMint,
-                            body: numberArrayToString(post.body),
-                            link: numberArrayToString(post.link),
-                            score: post.score
+                    let artifactPosts: ArtifactPost[] = [];
+                    posts.forEach((post: any) => {
+                        if (!post.cardMint.equals(SystemProgram.programId)) {
+                            artifactPosts.push({
+                                cardMint: post.cardMint,
+                                body: numberArrayToString(post.body),
+                                link: numberArrayToString(post.link),
+                                score: post.score
+                            });
                         }
+                    });
+                    artifactPosts.sort((a, b) => {
+                        return b.score - a.score;
                     });
                     setArtifactObject({
                         address: artifactAddress,
@@ -71,26 +77,9 @@ function Artifact(props: Props) {
         }
     }
 
-    let artifactElement;
-    if (artifactObject) {
-        artifactElement = (
-            <div>
-                this is the artifact
-                <div>
-                    session: {artifactObject.session}
-                </div>
-                <div>
-                    top post
-                    <div>
-                        body: {artifactObject.posts[0].body}
-                    </div>
-                    <div>
-                        score: {artifactObject.posts[0].score}
-                    </div>
-                </div>
-            </div>
-        )
-    }
+
+
+
 
     const clickedLeft = () => {
         if (session && session > 1) {
@@ -98,26 +87,62 @@ function Artifact(props: Props) {
         }
     }
     const clickedRight = () => {
-        if (session && artifactAuction) {
-            if (session + 1 < artifactAuction.session) {
+        if (session && auction) {
+            if (session + 1 < auction.session) {
                 history.push("/session/" + (session + 1));
             } else {
                 history.push("");
             }
         }
     }
-    let arrowButtons = (
-        <div>
-            <button onClick={clickedLeft}>←</button> <button onClick={clickedRight}>→</button>
-        </div>
-    );
+
+
+    let headerElement;
+    if (artifactObject && auction) {
+        headerElement = (
+            <div>
+                <div className="accent-text session-date">{auction.session - artifactObject.session} weeks ago</div>
+                <div className="session-header">
+                    Session #{artifactObject.session}
+                    <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button onClick={clickedRight} className="session-nav-button right">→</button>
+                </div>
+            </div>
+        );
+    }
+
+    let postCards;
+    if (artifactObject) {
+        postCards = artifactObject.posts.map((post, index) => {
+            return (
+                <div key={index} className="post-outer">
+                    <div >
+                        <a
+                            href={posterLink(post.cardMint)}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                            className="poster-card"
+                        >
+                            {toDisplayString(post.cardMint, 3)}
+                        </a>
+                    </div>
+                    <div className="post-body">
+                        {post.body}
+                    </div>
+                    <div>
+                        <a href={post.link}>{post.link}</a>
+                    </div>
+                    <div >
+                        <button className="like-button" ><img src={likeIcon} className="like-icon" alt="like" /> {post.score}</button>
+                    </div>
+                </div>
+            )
+        })
+    }
 
     return (
         <div className="component-parent">
-            {arrowButtons}
-            <div>Session {session}</div>
-            <div>old artifact</div>
-            <div>{artifactElement}</div>
+            {headerElement}
+            {postCards}
         </div>
 
     )

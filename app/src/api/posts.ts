@@ -3,6 +3,7 @@ import { Program } from "@project-serum/anchor";
 import { Forum } from "./ForumType";
 import * as BufferLayout from "@solana/buffer-layout";
 import { numberArrayToString } from "../utils";
+import { Post } from "../interfaces";
 
 const base58 = require("base58-encode");
 
@@ -70,7 +71,7 @@ export const fetchAllActivePostsDecoded = async (
   session: number,
   connection: Connection,
   forumProgram: Program<Forum>
-) => {
+): Promise<Post[]> => {
   let accounts = await getProgramAccountsForActivePosts(
     session,
     connection,
@@ -88,6 +89,26 @@ export const fetchAllActivePostsDecoded = async (
       sessionScore: decoded.sessionScore,
       allTimeScore: decoded.allTimeScore,
     };
+  });
+};
+
+export const fetchAllActivePostsSortedByScore = async (
+  session: number,
+  connection: Connection,
+  forumProgram: Program<Forum>
+) => {
+  let posts = await fetchAllActivePostsDecoded(
+    session,
+    connection,
+    forumProgram
+  );
+  return posts.sort((a, b) => {
+    return b.sessionScore - a.sessionScore;
+  });
+};
+export const sortByTime = (posts: Post[]) => {
+  return posts.sort((a, b) => {
+    return b.timestamp - a.timestamp;
   });
 };
 

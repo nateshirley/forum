@@ -7,7 +7,8 @@ import { fetchMembershipCardMintForWallet, getMintConfig } from "../../api/membe
 import { getForumProgram, getProvider } from '../../api/config'
 import { mintMembership } from "../../api/membership";
 import { toDisplayString } from "../../utils"
-import { ArtifactAuction, ForumInfo, Membership, Post } from "../../interfaces";
+import { ArtifactAuction, ForumInfo, Like, Membership, Post } from "../../interfaces";
+import { useHistory } from "react-router";
 
 /*
 if member {
@@ -27,14 +28,17 @@ interface Props {
     memberCardMint: PublicKey | undefined,
     setMemberCardMint: (cardMint: PublicKey | undefined) => void,
     canPost: boolean,
+    canLike: boolean,
     membership: Membership | undefined,
     cardTokenAccount: PublicKey | undefined,
     didSubmitNewPost: () => void,
     activeUserPost: Post | undefined,
+    activeUserLike: Like | undefined,
 }
 
 function MembershipHeader(props: Props) {
     const wallet = useWallet();
+    const history = useHistory();
     let program = getForumProgram(wallet);
     const [postBody, setPostBody] = useState('');
     const [postLink, setPostLink] = useState('');
@@ -81,46 +85,85 @@ function MembershipHeader(props: Props) {
     }
 
 
+    const membershipExplorerLink = (toPubkey: PublicKey, className: string, sliceLength?: number) => {
+        //https://explorer.solana.com/address/Fs95oxtjcUdVqo6Zg1JJZ8orq3eGF8qF8cxdKeunD7U1?cluster=devnet
+        let slice = sliceLength ? sliceLength : 3
+        let link = `https://solscan.io/token/${toPubkey.toBase58()}`
+        return (
+            <a href={link} target="_blank" rel="noreferrer noopener" className={className}>({toDisplayString(toPubkey, slice)})</a>
+        )
+    }
+
+
+    const didPressYourPost = () => {
+        if (props.activeUserPost) {
+            history.push("/post/" + props.activeUserPost.publicKey.toBase58());
+        }
+    }
+    const didPressYourLike = () => {
+        if (props.activeUserLike) {
+            history.push("/post/" + props.activeUserLike.votedForCardMint.toBase58());
+        }
+    }
+
+
+
+    //need to trigger post reload when i post, not working rn
     if (props.memberCardMint) {
+        let postElement;
+        if (props.canPost) {
+            postElement = (
+                <div>
+                    <div>
+                        <textarea
+                            placeholder="what's up..."
+                            onChange={e => setPostBody(e.target.value)}
+                            value={postBody}
+                            className="post-input body"
+                        />
+                    </div>
+                    <div>
+                        <input
+                            placeholder="add link"
+                            onChange={e => setPostLink(e.target.value)}
+                            value={postLink}
+                            onKeyPress={onLinkKeyPress}
+                            className="post-input link"
+                        />
+                    </div>
+                    <div>
+                        <button onClick={didPressNewPost} className="forum-button post">post</button>
+                    </div>
+                </div>
+            );
+        } else {
+            postElement = (
+                <div>
+                    <button onClick={didPressYourPost} className="your-activity">your post →</button>
+                </div>
+            )
+        }
+        let likeElement;
+        if (props.canLike) {
+            likeElement = (
+                <div className="likes-remaining">(1 like remaining)</div>
+            )
+
+        } else {
+            likeElement = (
+                <div>
+                    <button onClick={didPressYourLike} className="your-activity">your like →</button>
+
+                </div>
+            )
+        }
         return (
             <div>
-                <div>
-                    Hello, friend {toDisplayString(props.memberCardMint)}
+                <div className="member-greeting">
+                    Hello, friend {membershipExplorerLink(props.memberCardMint, "friend-card-mint")}
                 </div>
-                {props.canPost
-                    ? <div>
-                        u can post
-                        <div>
-                            <input
-                                placeholder="new post"
-                                onChange={e => setPostBody(e.target.value)}
-                                value={postBody}
-                                className="default-input"
-                            />
-                        </div>
-                        <div>
-                            <input
-                                placeholder="add link"
-                                onChange={e => setPostLink(e.target.value)}
-                                value={postLink}
-                                onKeyPress={onLinkKeyPress}
-                                className="default-input"
-                            />
-                        </div>
-                        <div>
-                            <button onClick={didPressNewPost}>post</button>
-                        </div>
-                    </div>
-                    : <div>
-                        u can't post
-                        <div>
-                            {props.activeUserPost?.body}
-                        </div>
-                        <div>
-                            {props.activeUserPost?.sessionScore}
-                        </div>
-                    </div>
-                }
+                {postElement}
+                {likeElement}
             </div>
         )
     } else {

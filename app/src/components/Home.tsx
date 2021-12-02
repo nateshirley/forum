@@ -2,7 +2,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Keypair, SystemProgram } from '@solana/web3.js';
 import { useEffect, useState } from "react";
 import { useHistory } from "react-router";
-import { ArtifactAuction, ForumInfo, Membership, Post } from "../interfaces";
+import { ArtifactAuction, ForumInfo, Like, Membership, Post } from "../interfaces";
 import Forum from "../components/Forum/Forum";
 import ActiveArtifactAuction from '../components/ActiveArtifactAuction/ActiveArtifactAuction';
 import { getNow } from "../utils";
@@ -18,6 +18,7 @@ interface Props {
     canPost: boolean,
     canLike: boolean,
     activeUserPost: Post | undefined,
+    activeUserLike: Like | undefined,
     refreshArtifactAuction: () => void,
     setMemberCardMint: (mint: PublicKey | undefined) => void,
     setCanPost: (value: boolean) => void,
@@ -58,7 +59,7 @@ function Home(props: Props) {
             </div>
             <div>
                 <Forum forumInfo={props.forumInfo} memberCardMint={props.memberCardMint} membership={props.membership} leaderboard={props.leaderboard}
-                    cardTokenAccount={props.cardTokenAccount} canPost={props.canPost} canLike={props.canLike} activeUserPost={props.activeUserPost} setMemberCardMint={props.setMemberCardMint}
+                    cardTokenAccount={props.cardTokenAccount} canPost={props.canPost} canLike={props.canLike} activeUserPost={props.activeUserPost} activeUserLike={props.activeUserLike} setMemberCardMint={props.setMemberCardMint}
                     setCanPost={props.setCanPost} submitLike={props.submitLike} artifactAuction={props.artifactAuction} />
             </div>
 

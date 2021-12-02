@@ -9,8 +9,7 @@ export const FORUM_ENDPOINT =
   "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
 //"http://127.0.0.1:8899"
 //clusterApiUrl('devnet');
-export const SESSION_LENGTH = 120; //518400
-export const ARTIFACT_AUCTION_LENGTH = 120; //86400
+export const SESSION_LENGTH = 1500; //518400
 export const toDisplayString = (
   publicKey: PublicKey,
   sliceLength: number = 4
@@ -75,18 +74,9 @@ export const artifactAuctionTime = (lastDawn: BN | undefined) => {
   }
   return "";
 };
-export const displayCountdown = (seconds: number) => {
-  seconds = Number(seconds);
-  var d = Math.floor(seconds / (3600 * 24));
-  var h = Math.floor((seconds % (3600 * 24)) / 3600);
-  var m = Math.floor((seconds % 3600) / 60);
-  var s = Math.floor(seconds % 60);
-
-  var dDisplay = d > 0 ? d + "d" : "";
-  var hDisplay = h > 0 ? h + "h" : "";
-  var mDisplay = m > 0 ? m + "m" : "";
-  var sDisplay = s >= 0 ? s + "s" : "";
-  return dDisplay + hDisplay + mDisplay + sDisplay;
+export const posterLink = (toPubkey: PublicKey) => {
+  //https://explorer.solana.com/address/Fs95oxtjcUdVqo6Zg1JJZ8orq3eGF8qF8cxdKeunD7U1?cluster=devnet
+  return `https://solscan.io/token/${toPubkey.toBase58()}`;
 };
 export const minBid = (currentBid: number) => {
   const increment_percentage = 2;
@@ -102,3 +92,35 @@ export function roundToTwo(num: number) {
   let val: any = num + "e+2";
   return +(Math.round(val) + "e-2");
 }
+export const establishedTextFor = (date: Date) => {
+  let month = abbreviatedMonthFor(date.getMonth());
+  return "est. " + month + " " + date.getDate() + ", " + date.getFullYear();
+};
+const abbreviatedMonthFor = (number: number) => {
+  if (number === 0) {
+    return "Jan";
+  } else if (number === 1) {
+    return "Feb";
+  } else if (number === 2) {
+    return "Mar";
+  } else if (number === 3) {
+    return "Apr";
+  } else if (number === 4) {
+    return "May";
+  } else if (number === 5) {
+    return "Jun";
+  } else if (number === 6) {
+    return "Jul";
+  } else if (number === 7) {
+    return "Aug";
+  } else if (number === 8) {
+    return "Sep";
+  } else if (number === 9) {
+    return "Oct";
+  } else if (number === 10) {
+    return "Nov";
+  } else if (number === 11) {
+    return "Dec";
+  }
+  return "";
+};

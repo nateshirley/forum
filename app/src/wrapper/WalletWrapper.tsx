@@ -28,12 +28,9 @@ const WalletWrapper: FC = () => {
 
     const onError = useCallback(
         (error: WalletError) =>
-            toast.custom(
-                <Notification
-                    message={error.message ? `${error.name}: ${error.message}` : error.name}
-                    variant="error"
-                />
-            ),
+            toast('wallet request rejected', {
+                icon: '🧨',
+            }),
         []
     );
     //  "http://127.0.0.1:8899"
@@ -46,7 +43,7 @@ const WalletWrapper: FC = () => {
                         <ComponentSwitch />
                     </div>
                 </WalletModalProvider>
-                <Toaster position="bottom-left" reverseOrder={false} />
+                {/* <Toaster position="bottom-left" reverseOrder={false} /> */}
             </WalletProvider>
         </ConnectionProvider>
     );

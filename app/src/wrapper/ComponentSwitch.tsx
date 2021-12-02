@@ -6,16 +6,16 @@ import { Route, Switch, useHistory } from 'react-router-dom';
 import New from '../components/New'
 import PostDetails from '../components/PostDetails';
 import { getForumProgram } from '../api/config';
-import { getArtifactAuctionAddress, getCardTokenAccount, getForumAddress, getLeaderboard } from '../api/addresses';
+import { getArtifactAddress, getArtifactAuctionAddress, getCardTokenAccount, getForumAddress, getLeaderboard } from '../api/addresses';
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../api/membership';
 import { fetchedPostAccountToPostObject } from '../api/posts';
 import ActiveArtifactAuction from '../components/ActiveArtifactAuction/ActiveArtifactAuction';
 import WrapSession from '../components/WrapSession';
 import Home from "../components/Home";
 import Forum from "../components/Forum/Forum"
-import { ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Post } from '../interfaces';
+import { ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Post, Like } from '../interfaces';
 import Artifact from '../components/Artifact/Artifact';
-import { getNow } from '../utils';
+import { getNow, numberArrayToString } from '../utils';
 
 
 
@@ -30,6 +30,7 @@ const ComponentSwitch: FC = () => {
     const [membership, setMembership] = useState<Membership | undefined>(undefined);
     const [memberCardMint, setMemberCardMint] = useState<PublicKey | undefined>(undefined);
     const [canLike, setCanLike] = useState(false);
+    const [activeUserLike, setActiveUserLike] = useState<Like | undefined>(undefined);
     const [canPost, setCanPost] = useState(false);
     const [activeUserPost, setActiveUserPost] = useState<Post | undefined>(undefined);
     const [cardTokenAccount, setCardTokenAccount] = useState<PublicKey | undefined>(undefined);
@@ -50,6 +51,7 @@ const ComponentSwitch: FC = () => {
         });
         getLeaderboard().then(([leaderboard, bump]) => {
             setLeaderboard(leaderboard);
+            fetchLeaderboard(leaderboard);
         })
         fetchAuction().then((artifactAuction) => {
             console.log("got the auction")
@@ -58,6 +60,42 @@ const ComponentSwitch: FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    const fetchLeaderboard = (address: PublicKey) => {
+        program.account.leaderboard.fetch(address).then((account: any) => {
+            account.posts = account.posts.map((post: any) => {
+                post.body = numberArrayToString(post.body)
+                return post
+            })
+            console.log("LEADERBOARD: ", account);
+        })
+    }
+    const fetchArtifactForSession = (session: number) => {
+        getArtifactAddress(
+            session
+        ).then(([artifactAddress, bump]) => {
+            console.log("ADDDY", artifactAddress.toBase58())
+            program.account.artifact.fetch(artifactAddress).then((fetchedArtifact) => {
+                let posts: any = fetchedArtifact.posts;
+                let artifactPosts = posts.map((post: any) => {
+                    return {
+                        cardMint: post.cardMint,
+                        body: numberArrayToString(post.body),
+                        link: numberArrayToString(post.link),
+                        score: post.score
+                    }
+                });
+                console.log({
+                    address: artifactAddress,
+                    session: fetchedArtifact.session,
+                    cardMint: fetchedArtifact.cardMint,
+                    posts: artifactPosts,
+                    bump: fetchedArtifact.bump
+                });
+            }).catch((e) => {
+                console.log("failed to get the artifact object")
+            })
+        });
+    }
 
     const fetchAuction = async (): Promise<ArtifactAuction> => {
         return getArtifactAuctionAddress().then(([auctionAddress, bump]) => {
@@ -120,11 +158,19 @@ const ComponentSwitch: FC = () => {
         }
     }, [wallet.publicKey, memberCardMint])
 
+    //TODO: make sure the like account is getting updated when a new like goes through
     useEffect(() => {
         if (forumInfo && membership && auctionPhase) {
             let activeSession = forumInfo?.session ?? 0;
             program.account.vote.fetch(membership.vote).then((likeAccount) => {
                 setCanLike(likeAccount.session < activeSession && auctionPhase === AUCTION_PHASE.isActive);
+                console.log("found a like", likeAccount.votedForCardMint.toBase58())
+                setActiveUserLike({
+                    publicKey: membership.vote,
+                    authorityCardMint: likeAccount.authorityCardMint,
+                    votedForCardMint: likeAccount.votedForCardMint,
+                    session: likeAccount.session,
+                })
             });
             program.account.post.fetch(membership.post).then((postAccount) => {
                 let canPost = postAccount.session < activeSession && auctionPhase === AUCTION_PHASE.isActive;
@@ -171,7 +217,7 @@ const ComponentSwitch: FC = () => {
     return (
         <Switch>
             <Route path="/post">
-                <PostDetails canLike={false} submitLike={submitLike} />
+                <PostDetails canLike={canLike} submitLike={submitLike} />
             </Route>
             <Route path="/session">
                 <Artifact artifactAuction={artifactAuction} />
@@ -180,7 +226,7 @@ const ComponentSwitch: FC = () => {
                 <Home forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}
                     artifactAuction={artifactAuction} cardTokenAccount={cardTokenAccount} canPost={canPost} canLike={canLike}
                     activeUserPost={activeUserPost} setMemberCardMint={setMemberCardMint} setCanPost={setCanPost} submitLike={submitLike}
-                    refreshArtifactAuction={refreshArtifactAuction} auctionPhase={auctionPhase}
+                    refreshArtifactAuction={refreshArtifactAuction} auctionPhase={auctionPhase} activeUserLike={activeUserLike}
                 />
             </Route>
 

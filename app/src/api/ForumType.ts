@@ -258,7 +258,7 @@ export type Forum = {
         },
         {
           "name": "leaderboard",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -318,7 +318,7 @@ export type Forum = {
         },
         {
           "name": "artifactAuction",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -368,7 +368,7 @@ export type Forum = {
         },
         {
           "name": "artifactAuction",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1083,7 +1083,7 @@ export const IDL: Forum = {
         },
         {
           "name": "leaderboard",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1143,7 +1143,7 @@ export const IDL: Forum = {
         },
         {
           "name": "artifactAuction",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1193,7 +1193,7 @@ export const IDL: Forum = {
         },
         {
           "name": "artifactAuction",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {

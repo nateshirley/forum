@@ -8,6 +8,7 @@ import { numberArrayToString } from "../utils";
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from "../api/membership";
 import { fetchedPostAccountToPostObject } from "../api/posts";
 import { Post } from "../interfaces";
+import { useLocation } from "react-router-dom";
 
 interface Props {
     canLike: boolean,
@@ -19,24 +20,30 @@ function PostDetails(props: Props) {
     const program = getForumProgram(wallet)
     const history = useHistory();
     const [postInfo, setPostInfo] = useState<Post | undefined>(undefined);
+    const location = useLocation();
 
     //look up any post account 
     //this parses the url on first render and does a search if it finds a valid key in url params
+
     useEffect(() => {
-        const filterParams = history.location.search.substr(1);
-        const filtersFromParams = qs.parse(filterParams);
-        if (filtersFromParams.key) {
-            parseUri(decodeURI(String(filtersFromParams.key)));
+        let postAccount = location.pathname.split("/post/")
+        if (postAccount.length === 2) {
+            parseUri(postAccount[1]);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [location])
 
     const parseUri = (uri: String) => {
         try {
             let publicKey = new PublicKey(uri);
+            console.log("making a q")
             queryForPostAtAddress(publicKey).then((result) => {
                 if (!result) {
-                    queryForPostFromWallet(publicKey);
+                    queryForPostFromCardMint(publicKey).then((result) => {
+                        if (!result) {
+                            queryForPostFromWallet(publicKey);
+                        }
+                    });
                 }
             })
         } catch (e) {
@@ -54,12 +61,22 @@ function PostDetails(props: Props) {
         }
     }
 
+    const queryForPostFromCardMint = async (cardMint: PublicKey): Promise<boolean> => {
+        return fetchMembershipAccount(program, cardMint).then((membership) => {
+            if (membership) {
+                return queryForPostAtAddress(membership.post);
+            } else {
+                return false;
+            }
+        }).catch((e) => {
+            return false;
+        });
+    }
     const queryForPostFromWallet = async (address: PublicKey) => {
         fetchMembershipCardMintForWallet(program, address).then((cardMint) => {
             if (cardMint) {
                 fetchMembershipAccount(program, cardMint).then((membership) => {
                     if (membership) {
-                        console.log("member post ", membership.post)
                         queryForPostAtAddress(membership.post);
                     }
                 })
