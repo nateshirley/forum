@@ -195,3 +195,8 @@
 .likes-remaining {
   color: var(--gray-text);
 }
+.about {
+  background-color: white;
+  border: none;
+  text-decoration: underline;
+}
