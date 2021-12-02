@@ -252,6 +252,14 @@ function ActiveArtifactAuction(props: Props) {
         console.log("u can't click right")
     }
 
+    const testDb = () => {
+        db("FORUMSESSIONS").insert({
+            session: 999999999,
+            winningLamports: 101010101010,
+            wrapTxSignature: "injection",
+        }).one();
+    }
+
     let headerElement;
     let bidElement;
     let actionElement;
@@ -263,6 +271,7 @@ function ActiveArtifactAuction(props: Props) {
                     Session #{auction.session}
                     <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button onClick={clickedRight} className="session-nav-button right">→</button>
                 </div>
+                <button onClick={testDb}>dbtest</button>
             </div>
         );
         if (props.auctionPhase === AUCTION_PHASE.needsSettled) {
