@@ -72,10 +72,10 @@ pub mod auction {
             .end_timestamp
             .checked_sub(u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap())
             .unwrap()
-            < 500
+            < 300
         {
             ctx.accounts.artifact_auction.end_timestamp =
-                ctx.accounts.artifact_auction.end_timestamp + 500;
+                ctx.accounts.artifact_auction.end_timestamp + 300;
         }
         Ok(())
     }

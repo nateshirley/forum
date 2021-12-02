@@ -68,33 +68,7 @@ const ComponentSwitch: FC = () => {
             console.log("LEADERBOARD: ", account);
         })
     }
-    const fetchArtifactForSession = (session: number) => {
-        getArtifactAddress(
-            session
-        ).then(([artifactAddress, bump]) => {
-            console.log("ADDDY", artifactAddress.toBase58())
-            program.account.artifact.fetch(artifactAddress).then((fetchedArtifact) => {
-                let posts: any = fetchedArtifact.posts;
-                let artifactPosts = posts.map((post: any) => {
-                    return {
-                        cardMint: post.cardMint,
-                        body: numberArrayToString(post.body),
-                        link: numberArrayToString(post.link),
-                        score: post.score
-                    }
-                });
-                console.log({
-                    address: artifactAddress,
-                    session: fetchedArtifact.session,
-                    cardMint: fetchedArtifact.cardMint,
-                    posts: artifactPosts,
-                    bump: fetchedArtifact.bump
-                });
-            }).catch((e) => {
-                console.log("failed to get the artifact object")
-            })
-        });
-    }
+
 
     const fetchAuction = async (): Promise<ArtifactAuction> => {
         return getArtifactAuctionAddress().then(([auctionAddress, bump]) => {

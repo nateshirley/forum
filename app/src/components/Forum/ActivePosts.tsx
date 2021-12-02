@@ -91,7 +91,8 @@ function ActivePosts(props: Props) {
                         {post.body}
                     </div>
                     <div>
-                        <a href={post.link}>{post.link}</a>
+                        <a href={"http://" + post.link} target="_blank"
+                            rel="noreferrer noopener">{post.link}</a>
                     </div>
                     <div >
                         <button className="like-button" onClick={() => didPressLike(post.publicKey, index)}><img src={likeIcon} className="like-icon" alt="like" /> {post.sessionScore}</button>
