@@ -41,7 +41,6 @@ pub mod address {
 
 pub mod clock {
     use super::*;
-    // i dont think i need this anymore, should be able to go straight off the forum
     pub fn to_place_bid(
         clock: &Sysvar<anchor_lang::prelude::Clock>,
         auction_end_timestamp: u64,

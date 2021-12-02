@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
 use std::convert::TryFrom;
-declare_id!("8TfXSaFPXA8hUgzk45w4gJfsyJ6RGjEFcbCesnk8WKsD");
+declare_id!("7LBXh2RuSNFrLrmX9iq3ZGunuqL94s5ZsXE8Ku3HgKAx");
 mod anchor_transfer;
 mod artifact;
 mod bid;
@@ -20,7 +20,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 1500;
+const SESSION_LENGTH: u64 = 86400;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]
@@ -123,10 +123,10 @@ pub mod forum {
         _artifact_attribution_bump: u8,
         artifact_bump: u8,
     ) -> ProgramResult {
-        // verify::clock::to_wrap_session(
-        //     &ctx.accounts.clock,
-        //     ctx.accounts.artifact_auction.end_timestamp,
-        // )?;
+        verify::clock::to_wrap_session(
+            &ctx.accounts.clock,
+            ctx.accounts.artifact_auction.end_timestamp,
+        )?;
         verify::address::artifact(
             ctx.accounts.artifact.key(),
             ctx.accounts.forum.session,
@@ -171,7 +171,6 @@ pub mod forum {
     pub fn assert_artifact_discriminator(
         _ctx: Context<AssertArtifactDiscriminator>,
     ) -> ProgramResult {
-        //let artifact = ctx.accounts.artifact.load_init()?;
         Ok(())
     }
     pub fn place_bid_for_artifact(
@@ -180,10 +179,10 @@ pub mod forum {
         amount: u64,
     ) -> ProgramResult {
         artifact::auction::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
-        // verify::clock::to_place_bid(
-        //     &ctx.accounts.clock,
-        //     ctx.accounts.artifact_auction.end_timestamp,
-        // )?;
+        verify::clock::to_place_bid(
+            &ctx.accounts.clock,
+            ctx.accounts.artifact_auction.end_timestamp,
+        )?;
         anchor_transfer::transfer_from_signer(
             ctx.accounts.into_receive_artifact_bid_context(),
             amount,
@@ -196,20 +195,19 @@ pub mod forum {
         )?;
         ctx.accounts.artifact_auction.leading_bid.bidder = ctx.accounts.bidder.key();
         ctx.accounts.artifact_auction.leading_bid.lamports = amount;
-        //artifact::auction::adjust_end_timestamp(ctx)?;
+        artifact::auction::adjust_end_timestamp(ctx)?;
         Ok(())
     }
 
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
-        // verify::clock::to_edit_leaderboard(
-        //     &ctx.accounts.clock,
-        //     ctx.accounts.artifact_auction.end_timestamp,
-        // )?;
-        //verify::account::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
+        verify::clock::to_edit_leaderboard(
+            &ctx.accounts.clock,
+            ctx.accounts.artifact_auction.end_timestamp,
+        )?;
+        verify::address::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_session = ctx.accounts.forum.session;
-        if true {
-            //post.session < current_session {
+        if post.session < current_session {
             post.body = string_helper::new_body(body);
             post.link = string_helper::new_link(link);
             post.session_score = 0;
@@ -221,18 +219,18 @@ pub mod forum {
         }
     }
     pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
-        // verify::clock::to_edit_leaderboard(
-        //     &ctx.accounts.clock,
-        //     ctx.accounts.artifact_auction.end_timestamp,
-        // )?;
-        //verify::account::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
+        //i actually could move this to the param declaration
+        verify::clock::to_edit_leaderboard(
+            &ctx.accounts.clock,
+            ctx.accounts.artifact_auction.end_timestamp,
+        )?;
+        verify::address::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
         verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
 
         let current_session = ctx.accounts.forum.session;
         let voter = &mut ctx.accounts.vote;
-        if true {
-            //voter.session < current_session {
+        if voter.session < current_session {
             let mut voted_post = ctx.accounts.post.load_mut()?;
             voted_post.session_score += amount;
             voted_post.all_time_score += amount;

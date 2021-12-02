@@ -3,13 +3,13 @@ import * as web3 from "@solana/web3.js";
 import BN from "bn.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
-  "8TfXSaFPXA8hUgzk45w4gJfsyJ6RGjEFcbCesnk8WKsD"
+  "7LBXh2RuSNFrLrmX9iq3ZGunuqL94s5ZsXE8Ku3HgKAx"
 );
 export const FORUM_ENDPOINT =
   "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
 //"http://127.0.0.1:8899"
 //clusterApiUrl('devnet');
-export const SESSION_LENGTH = 1500; //518400
+export const SESSION_LENGTH = 250; //518400
 export const toDisplayString = (
   publicKey: PublicKey,
   sliceLength: number = 4
@@ -95,6 +95,10 @@ export function roundToTwo(num: number) {
 export const establishedTextFor = (date: Date) => {
   let month = abbreviatedMonthFor(date.getMonth());
   return "est. " + month + " " + date.getDate() + ", " + date.getFullYear();
+};
+export const endedTextFor = (date: Date) => {
+  let month = abbreviatedMonthFor(date.getMonth());
+  return "ended " + month + " " + date.getDate() + ", " + date.getFullYear();
 };
 const abbreviatedMonthFor = (number: number) => {
   if (number === 0) {

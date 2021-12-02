@@ -14,6 +14,7 @@ import Countdown from "./Countdown";
 import { useHistory } from "react-router";
 import { Row, Col, Container } from "react-bootstrap";
 import { useEasybase } from 'easybase-react';
+import toast from "react-hot-toast";
 
 
 interface Props {
@@ -81,7 +82,6 @@ function ActiveArtifactAuction(props: Props) {
                 if (sig.length > 1) {
                     console.log("tx sig: ", sig)
                     if (props.forumInfo && auction) {
-                        console.log('inserting')
                         db("FORUMSESSIONS").insert({
                             session: props.forumInfo.session,
                             winningLamports: auction.bidLamports,
@@ -94,7 +94,10 @@ function ActiveArtifactAuction(props: Props) {
                     console.log("an error occured with the artifact build");
                 }
             });
-
+        } else if (!wallet.connected) {
+            toast('wallet not connected', {
+                icon: '🪙',
+            });
         }
     }
     const executeWrapSession = async (payer: PublicKey, forum: PublicKey, artifactAuction:
@@ -197,10 +200,21 @@ function ActiveArtifactAuction(props: Props) {
                 amount
             ).then((sig) => {
                 console.log(sig);
+                console.log('inserting')
+                if (wallet.publicKey && props.forumInfo) {
+                    db("BIDHISTORY").insert({
+                        session: props.forumInfo.session,
+                        lamports: amount * web3.LAMPORTS_PER_SOL,
+                        bidder: wallet.publicKey?.toBase58(),
+                    }).one();
+                }
                 props.refreshArtifactAuction();
-                //add bid to history
                 setPlaceBidInput("");
             })
+        } else if (!wallet.connected) {
+            toast('wallet not connected', {
+                icon: '🪙',
+            });
         }
     }
 
@@ -237,7 +251,9 @@ function ActiveArtifactAuction(props: Props) {
     };
     const onPlaceBidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const amount = e.target.value;
-        if (!amount || amount.match(/^\d{1,}(\.\d{0,5})?$/)) {
+        if (amount === ".") {
+            setPlaceBidInput("0.")
+        } else if (!amount || amount.match(/^\d{1,}(\.\d{0,5})?$/)) {
             setPlaceBidInput(amount);
         }
     };
@@ -252,13 +268,6 @@ function ActiveArtifactAuction(props: Props) {
         console.log("u can't click right")
     }
 
-    const testDb = () => {
-        db("FORUMSESSIONS").insert({
-            session: 999999999,
-            winningLamports: 101010101010,
-            wrapTxSignature: "injection",
-        }).one();
-    }
 
     let headerElement;
     let bidElement;
@@ -271,7 +280,6 @@ function ActiveArtifactAuction(props: Props) {
                     Session #{auction.session}
                     <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button onClick={clickedRight} className="session-nav-button right">→</button>
                 </div>
-                <button onClick={testDb}>dbtest</button>
             </div>
         );
         if (props.auctionPhase === AUCTION_PHASE.needsSettled) {

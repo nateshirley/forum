@@ -1,7 +1,13 @@
 import * as anchor from "@project-serum/anchor";
 import { BN, Program } from "@project-serum/anchor";
 import * as web3 from "@solana/web3.js";
-import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import {
+  PublicKey,
+  Keypair,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import { Forum } from "../target/types/forum";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import * as assert from "assert";
@@ -64,6 +70,23 @@ describe("forum", () => {
     artifactAuctionBump = _abump;
     console.log(program.account.post.size);
   });
+
+  it("transfer to auction house", async () => {
+    let [auctionHouse, auctionHouseBump] =
+      await getArtifactAuctionHouseAddress();
+
+    const airdropSignature = await provider.connection.requestAirdrop(
+      auctionHouse,
+      5 * web3.LAMPORTS_PER_SOL
+    );
+    // let payer: any = provider.wallet.payer;
+    // await sendAndConfirmTransaction(
+    //   provider.connection,
+    //   transferTransaction,
+    //   []
+    // );
+  });
+
   /*
   //can put init and leaderboard into one later on
   it("initialize forum", async () => {
@@ -100,6 +123,7 @@ describe("forum", () => {
     //console.log(lb);
   });
 
+  
   it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 

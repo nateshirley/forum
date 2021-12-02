@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { PublicKey, Keypair, SystemProgram, SYSVAR_CLOCK_PUBKEY } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
-import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getForumAuthority, getLeaderboard } from "../../api/addresses";
+import { PublicKey, Keypair, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID, Token, } from "@solana/spl-token";
+import { getArtifactAddress, } from "../../api/addresses";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { getForumProgram } from "../../api/config";
 import { useHistory, useLocation } from "react-router";
 import { Artifact as ArtifactInterface, ArtifactAuction, Pda, ArtifactPost } from "../../interfaces";
 import qs from "qs";
-import { numberArrayToString, posterLink, toDisplayString } from "../../utils";
+import { numberArrayToString, posterLink, toDisplayString, endedTextFor } from "../../utils";
 import likeIcon from "../../assets/likeIcon.svg"
 import { useEasybase } from 'easybase-react';
+import { Row, Col, Container } from "react-bootstrap";
 
 interface Props {
     artifactAuction: ArtifactAuction | undefined,
@@ -32,6 +33,7 @@ function Artifact(props: Props) {
     const program = getForumProgram(wallet);
     const { db } = useEasybase();
     const connection = program.provider.connection;
+    const [endedText, setEndedText] = useState<undefined | string>(undefined);
     //other thing i need from here is the current owner
 
     useEffect(() => {
@@ -44,7 +46,7 @@ function Artifact(props: Props) {
     }, [location])
 
     useEffect(() => {
-        console.log(sessionRecord);
+        console.log("record: ", sessionRecord);
     }, [sessionRecord])
 
     useEffect(() => {
@@ -77,15 +79,21 @@ function Artifact(props: Props) {
     }
 
     const fetchSessionRecord = () => {
-        console.log("trying for record", session)
         db("FORUMSESSIONS").return().where({ session: session }).one().then((record: any) => {
             //db("FORUMSESSIONS").return().all().then((record: any) => {
-            console.log("record fetched", record)
             setSessionRecord({
                 session: record.session,
                 winningLamports: record.winninglamports,
                 wrapTxSignature: record.wraptxsignature
             })
+            if (record.wraptxsignature) {
+                connection.getTransaction(record.wraptxsignature, { commitment: "confirmed" }).then((response) => {
+                    if (response?.blockTime) {
+                        let endTime = new Date(response.blockTime * 1000);
+                        setEndedText(endedTextFor(endTime))
+                    }
+                })
+            }
         }).catch((e) => {
             console.log(e);
         });
@@ -150,7 +158,7 @@ function Artifact(props: Props) {
     if (artifactObject && auction) {
         headerElement = (
             <div>
-                <div className="accent-text session-date">{auction.session - artifactObject.session} weeks ago</div>
+                <div className="accent-text session-date">{endedText}</div>
                 <div className="session-header">
                     Session #{artifactObject.session}
                     <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button onClick={clickedRight} className="session-nav-button right">→</button>
@@ -178,7 +186,7 @@ function Artifact(props: Props) {
                         {post.body}
                     </div>
                     <div>
-                        <a href={post.link}>{post.link}</a>
+                        <a href={"http://" + post.link}>{post.link}</a>
                     </div>
                     <div >
                         <button className="like-button" ><img src={likeIcon} className="like-icon" alt="like" /> {post.score}</button>
@@ -188,9 +196,51 @@ function Artifact(props: Props) {
         })
     }
 
+
+    const styles = {
+        grid: {
+            paddingLeft: 0,
+            paddingRight: 0
+        },
+        row: {
+            marginLeft: 0,
+            marginRight: 0
+        },
+        col: {
+            paddingLeft: 0,
+            paddingRight: 0
+        }
+    };
+    let artifactOwnerElement;
+    if (artifactOwner) {
+        let winningBid = 1 * LAMPORTS_PER_SOL;
+        if (sessionRecord) {
+            winningBid = sessionRecord.winningLamports;
+        }
+        artifactOwnerElement = (
+            <div>
+                <div className="bid-content">
+                    <Row className="m-1" >
+                        <Col xl={3} style={styles.col}>
+                            <div className="accent-text">winning bid</div>
+                            <div className="auction-number">{winningBid / LAMPORTS_PER_SOL}<span className="auction-secondary-element"> sol</span></div>
+                        </Col>
+                        <Col style={styles.col}>
+                            <div className="time-remaining">
+                                <div className="accent-text">holder</div>
+                                <div className="auction-number">{toDisplayString(artifactOwner)}</div>
+                            </div>
+                        </Col>
+                    </Row>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="component-parent">
             {headerElement}
+            {artifactOwnerElement}
             {postCards}
         </div>
 
