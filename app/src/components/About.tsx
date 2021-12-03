@@ -11,10 +11,10 @@ function About() {
             wallets that hold a membership can post once per session and like once per session.
             <br />
             <br />
-            during an active session, the protocol accepts bids to purchase the session.
+            every session goes up for auction
             <br />
             <br />
-            when a session expires, it's wrapped into an asset and transferred it to the highest bidder
+            when a session expires, it's wrapped into an asset and transferred to the highest bidder
             <br />
             <br />
             <br />
