@@ -4,7 +4,7 @@ import {
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
 } from "@solana/web3.js";
-import { Provider, Program, utils } from "@project-serum/anchor";
+import { Provider, Program, utils, web3 } from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
 import { createAssociatedTokenAccountInstruction } from "./tokenHelpers";
 import {
@@ -13,6 +13,8 @@ import {
   getForumAuthority,
   getMemberAddress,
   getMemberAttributionAddress,
+  TOKEN_METADATA_PROGRAM_ID,
+  getMetadataAddress,
 } from "./addresses";
 import idl from "../idl.json";
 import { Forum } from "./ForumType";
@@ -64,6 +66,7 @@ export const fetchMembershipCardMintForWallet = async (
 export interface MintConfig {
   authority: PublicKey;
   cardMint: Keypair;
+  cardMetadata: PublicKey;
   cardTokenAccount: PublicKey;
   member: PublicKey;
   memberBump: number;
@@ -95,9 +98,12 @@ export const mintMembership = async (
         post: mintConfig.post,
         vote: mintConfig.vote,
         cardMint: mintConfig.cardMint.publicKey,
+        cardMetadata: mintConfig.cardMetadata,
         cardTokenAccount: mintConfig.cardTokenAccount,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
+        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+        rent: web3.SYSVAR_RENT_PUBKEY,
         clock: SYSVAR_CLOCK_PUBKEY,
       },
       instructions: [
@@ -158,9 +164,15 @@ export const mintMembership = async (
     "minted membership for wallet address: ",
     mintConfig.authority.toBase58()
   );
+  return tx;
 };
-export const getMintConfig = async (authority: PublicKey) => {
+export const getMintConfig = async (
+  authority: PublicKey
+): Promise<MintConfig> => {
   let cardMint = Keypair.generate();
+  let [cardMetadata, cardMetadataBump] = await getMetadataAddress(
+    cardMint.publicKey
+  );
   let cardTokenAccount = await getCardTokenAccount(
     authority,
     cardMint.publicKey
@@ -182,6 +194,7 @@ export const getMintConfig = async (authority: PublicKey) => {
       return {
         authority: authority,
         cardMint: cardMint,
+        cardMetadata: cardMetadata,
         cardTokenAccount: cardTokenAccount,
         member: values[0][0],
         memberBump: values[0][1],

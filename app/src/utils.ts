@@ -3,7 +3,7 @@ import * as web3 from "@solana/web3.js";
 import BN from "bn.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
-  "7LBXh2RuSNFrLrmX9iq3ZGunuqL94s5ZsXE8Ku3HgKAx"
+  "AZwXW1WTq6DjJ5cC3pLriSSgxgGTshZp2BcA7ppoAhgS"
 );
 export const FORUM_ENDPOINT =
   "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";

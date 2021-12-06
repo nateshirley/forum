@@ -5,7 +5,7 @@ import BN from 'bn.js';
 import * as web3 from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import "../../Global.css";
-import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority } from "../../api/addresses";
+import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority, getMetadataAddress, TOKEN_METADATA_PROGRAM_ID } from "../../api/addresses";
 import { establishedTextFor, getNow, minBid, numberArrayToString, toDisplayString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
 import { Artifact, ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Pda, Post } from "../../interfaces";
@@ -102,9 +102,9 @@ function ActiveArtifactAuction(props: Props) {
     }
     const executeWrapSession = async (payer: PublicKey, forum: PublicKey, artifactAuction:
         PublicKey, artifactAuctionHouse: Pda, winner: PublicKey, leaderboard: PublicKey, session: number): Promise<string> => {
-        let artifactCardMint = Keypair.generate();
+        let artifactMint = Keypair.generate();
         //let [artifactAttribution, artifactAttributionBump]
-        const attr = getArtifactAttributionAddress(artifactCardMint.publicKey);
+        const attr = getArtifactAttributionAddress(artifactMint.publicKey);
         //let [_forumAuthority, _forumAuthorityBump]
         const auth = getForumAuthority();
         const mintRent = program.provider.connection.getMinimumBalanceForRentExemption(
@@ -112,10 +112,11 @@ function ActiveArtifactAuction(props: Props) {
         );
         const winnerTokenAccount = getAssociatedTokenAccountAddress(
             winner,
-            artifactCardMint.publicKey
+            artifactMint.publicKey
         )
         const fetchArtifact = getArtifactAddress(session);
-        let response = await Promise.all([attr, auth, mintRent, winnerTokenAccount, fetchArtifact]).then(async (values) => {
+        const metadata = getMetadataAddress(artifactMint.publicKey);
+        let response = await Promise.all([attr, auth, mintRent, winnerTokenAccount, fetchArtifact, metadata]).then(async (values) => {
             let artifactAttribution = values[0][0];
             let artifactAttributionBump = values[0][1];
             let forumAuthority = values[1][0]
@@ -125,6 +126,7 @@ function ActiveArtifactAuction(props: Props) {
                 address: values[4][0],
                 bump: values[4][1]
             }
+            let artifactMetadata = values[5][0]
             return await program.rpc.assertArtifactDiscriminator({
                 accounts: {
                     artifact: artifact.address,
@@ -133,7 +135,7 @@ function ActiveArtifactAuction(props: Props) {
                     //create artifact mint
                     SystemProgram.createAccount({
                         fromPubkey: payer,
-                        newAccountPubkey: artifactCardMint.publicKey,
+                        newAccountPubkey: artifactMint.publicKey,
                         space: MintLayout.span,
                         lamports: mintRent,
                         programId: TOKEN_PROGRAM_ID,
@@ -141,14 +143,14 @@ function ActiveArtifactAuction(props: Props) {
                     //init the mint
                     Token.createInitMintInstruction(
                         TOKEN_PROGRAM_ID,
-                        artifactCardMint.publicKey,
+                        artifactMint.publicKey,
                         0,
                         forumAuthority,
                         forumAuthority
                     ),
                     //create token account for winner
                     createAssociatedTokenAccountInstruction(
-                        artifactCardMint.publicKey,
+                        artifactMint.publicKey,
                         winnerTokenAccount,
                         winner,
                         payer
@@ -161,7 +163,8 @@ function ActiveArtifactAuction(props: Props) {
                             accounts: {
                                 initializer: payer,
                                 artifact: artifact.address,
-                                artifactCardMint: artifactCardMint.publicKey,
+                                artifactMint: artifactMint.publicKey,
+                                artifactMetadata: artifactMetadata,
                                 artifactTokenAccount: winnerTokenAccount,
                                 winner: winner,
                                 artifactAuction: artifactAuction,
@@ -170,14 +173,16 @@ function ActiveArtifactAuction(props: Props) {
                                 forum: forum,
                                 forumAuthority: forumAuthority,
                                 leaderboard: leaderboard,
+                                rent: web3.SYSVAR_RENT_PUBKEY,
                                 clock: web3.SYSVAR_CLOCK_PUBKEY,
                                 tokenProgram: TOKEN_PROGRAM_ID,
+                                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
                                 systemProgram: SystemProgram.programId,
                             },
                         }
                     ),
                 ],
-                signers: [artifactCardMint],
+                signers: [artifactMint],
             });
         }).catch((e) => {
             console.log(e);

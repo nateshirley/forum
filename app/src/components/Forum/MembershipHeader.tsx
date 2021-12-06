@@ -69,7 +69,8 @@ function MembershipHeader(props: Props) {
     const didPressMintMembership = () => {
         if (wallet.publicKey) {
             getMintConfig(wallet.publicKey).then((mintConfig) => {
-                mintMembership(mintConfig, getProvider(wallet)).then(() => {
+                mintMembership(mintConfig, getProvider(wallet)).then((sig) => {
+                    console.log("minted tx", sig);
                     fetchMembershipCardMintForWallet(program, wallet.publicKey).then((cardMint) => {
                         props.setMemberCardMint(cardMint);
                         console.log("(use effect) setting isMember to ", cardMint?.toBase58())
