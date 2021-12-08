@@ -58,7 +58,7 @@ pub struct CreateMetadata<'info> {
     pub metadata: AccountInfo<'info>, //Metadata key (pda of ['metadata', program id, mint id])
     pub mint: AccountInfo<'info>,     //mint of the token we are creating metadata for
     pub mint_authority: AccountInfo<'info>,
-    pub payer: Signer<'info>,
+    pub payer: AccountInfo<'info>,
     pub update_authority: AccountInfo<'info>, //this is the account that will have future ability to update the newly created metadata
     #[account(address = spl_token_metadata::id())]
     pub token_metadata_program: AccountInfo<'info>,

@@ -86,10 +86,8 @@ describe("forum", () => {
     //   []
     // );
   });
-
   /*
-
-    //can put init and leaderboard into one later on
+  //can put init and leaderboard into one later on
   it("initialize forum", async () => {
     const tx = await program.rpc.initializeForum(
       forumBump,
@@ -123,6 +121,7 @@ describe("forum", () => {
     let lb = await provider.connection.getAccountInfo(leaderboard);
     //console.log(lb);
   });
+
     it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 

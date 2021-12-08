@@ -25,9 +25,10 @@ pub fn create_card_token_metadata(
         verified: true,
         share: 100,
     }];
-    let name: String = String::from("yelllow feed");
-    let symbol: String = String::from("YF");
-    let uri: String = String::from("https://nateshirley.github.io/feed/membership/default.json"); //make it look like a card eventually
+    let name: String = String::from("PRH Membership");
+    let symbol: String = String::from("PRHM");
+    let uri: String =
+        String::from("https://nateshirley.github.io/y/parisradiohour/membership/card.json"); //make it look like a card eventually
     anchor_token_metadata::create_metadata(
         ctx.accounts
             .into_create_membership_card_metadata_context()
@@ -51,7 +52,7 @@ impl<'info> MintMembership<'info> {
             metadata: self.card_metadata.to_account_info(),
             mint: self.card_mint.to_account_info(),
             mint_authority: self.forum_authority.to_account_info(),
-            payer: self.authority.clone(),
+            payer: self.authority.to_account_info(),
             update_authority: self.forum_authority.to_account_info(),
             token_metadata_program: self.token_metadata_program.to_account_info(),
             system_program: self.system_program.clone(),

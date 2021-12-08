@@ -14,6 +14,7 @@ interface Props {
     canLike: boolean,
     refresh: number,
     submitLike: (post: PublicKey) => Promise<string | undefined>,
+    sort: string,
 }
 
 
@@ -35,6 +36,24 @@ function ActivePosts(props: Props) {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.refresh]);
+
+    useEffect(() => {
+        console.log("sorting")
+        if (props.sort === "top") {
+            if (activePosts) {
+                setActivePosts(activePosts.sort((a, b) => {
+                    return b.sessionScore - a.sessionScore;
+                }));
+            }
+        } else {
+            //sort recent
+            if (activePosts) {
+                setActivePosts(activePosts.sort((a, b) => {
+                    return b.timestamp - a.timestamp;
+                }));
+            }
+        }
+    }, [props.sort, activePosts])
 
     const performRefresh = () => {
         if (props.forumInfo) {
@@ -68,45 +87,44 @@ function ActivePosts(props: Props) {
         }
 
     }
-
-
-
-    let postCards;
-    if (activePosts) {
-        postCards = activePosts.map((post, index) => {
-            return (
-                <div key={index} className="post-outer">
-                    <div >
-                        <a
-                            href={posterLink(post.cardMint)}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className="poster-card"
-                        >
-                            {toDisplayString(post.cardMint, 3)}
-                        </a>
-                        <span className="dot-time"> · {timeSince(post.timestamp)}</span>
-                    </div>
-                    <div className="post-body">
-                        {post.body}
-                    </div>
-                    <div>
-                        <a href={"http://" + post.link} target="_blank"
-                            rel="noreferrer noopener">{post.link}</a>
-                    </div>
-                    <div >
+    let postCards = () => {
+        if (activePosts && activePosts.length > 0) {
+            return activePosts.map((post, index) => {
+                return (
+                    <div key={index} className="post-outer">
+                        <div >
+                            <a
+                                href={posterLink(post.cardMint)}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="poster-card"
+                            >
+                                {toDisplayString(post.cardMint, 3)}
+                            </a>
+                            <span className="dot-time"> · {timeSince(post.timestamp)}</span>
+                        </div>
+                        <div className="post-body">
+                            {post.body}
+                        </div>
+                        <div className="post-link">
+                            <a href={"http://" + post.link} target="_blank"
+                                rel="noreferrer noopener">{post.link}</a>
+                        </div>
                         <button className="like-button" onClick={() => didPressLike(post.publicKey, index)}><img src={likeIcon} className="like-icon" alt="like" /> {post.sessionScore}</button>
                     </div>
-                </div>
-            )
-        })
+                )
+            })
+        } else {
+            return (<div style={{ color: "rgb(0,0,0,0.4" }}>make the first post</div>)
+        }
     }
+
 
 
     return (
         <div >
             <div><Toaster /></div>
-            {postCards}
+            {postCards()}
         </div>
     );
 }

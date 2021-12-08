@@ -6,6 +6,27 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #ffd2c8 !important;
+}
+
+.modal-wrapper {
+  background: radial-gradient(
+      51% 84% at 64% 64%,
+      #bde9ff 0%,
+      #cceacc 40%,
+      transparent 80%
+    ),
+    radial-gradient(
+      circle at top left,
+      #ffd2c8 0%,
+      #ffe4bd 50%,
+      transparent 80%
+    );
+  height: 100%;
+  width: 100%;
+  min-height: 100vh;
+  background-attachment: fixed;
+  z-index: -1;
 }
 
 code {

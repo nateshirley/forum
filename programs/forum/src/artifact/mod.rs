@@ -139,7 +139,11 @@ pub fn build_new(
     artifact.bump = artifact_bump;
     Ok(())
 }
-pub fn create_artifact_metadata(ctx: &Context<WrapSession>, seeds: &[&[u8]; 2]) -> ProgramResult {
+pub fn create_artifact_metadata(
+    ctx: &Context<WrapSession>,
+    auth_seeds: &[&[u8]; 2],
+    auction_house_bump: u8,
+) -> ProgramResult {
     //possibly change creator to treasury account to get some royalties
     //probably should add master edition too
     let creators = vec![spl_token_metadata::state::Creator {
@@ -147,13 +151,16 @@ pub fn create_artifact_metadata(ctx: &Context<WrapSession>, seeds: &[&[u8]; 2]) 
         verified: true,
         share: 100,
     }];
-    let name: String = String::from("session artifact");
+    let name: String = String::from("PRH ART");
     let symbol: String = String::from("ART");
-    let uri: String = String::from("https://nateshirley.github.io/feed/session/artifact.json"); //make it look like a card eventually
+    let uri: String =
+        String::from("https://nateshirley.github.io/y/parisradiohour/session/artifact.json");
+    let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];
+
     anchor_token_metadata::create_metadata(
         ctx.accounts
             .into_create_artifact_metadata_context()
-            .with_signer(&[&seeds[..]]),
+            .with_signer(&[auth_seeds, house_seeds]),
         name,
         symbol,
         uri,
@@ -173,7 +180,7 @@ impl<'info> WrapSession<'info> {
             metadata: self.artifact_metadata.to_account_info(),
             mint: self.artifact_mint.to_account_info(),
             mint_authority: self.forum_authority.to_account_info(),
-            payer: self.initializer.clone(),
+            payer: self.artifact_auction_house.to_account_info(),
             update_authority: self.forum_authority.to_account_info(),
             token_metadata_program: self.token_metadata_program.to_account_info(),
             system_program: self.system_program.clone(),

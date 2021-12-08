@@ -19,6 +19,7 @@ interface Props {
     canLike: boolean,
     activeUserPost: Post | undefined,
     activeUserLike: Like | undefined,
+    didSubmitNewPost: () => void,
     refreshArtifactAuction: () => void,
     setMemberCardMint: (mint: PublicKey | undefined) => void,
     setCanPost: (value: boolean) => void,
@@ -60,7 +61,7 @@ function Home(props: Props) {
             <div>
                 <Forum forumInfo={props.forumInfo} memberCardMint={props.memberCardMint} membership={props.membership} leaderboard={props.leaderboard}
                     cardTokenAccount={props.cardTokenAccount} canPost={props.canPost} canLike={props.canLike} activeUserPost={props.activeUserPost} activeUserLike={props.activeUserLike} setMemberCardMint={props.setMemberCardMint}
-                    setCanPost={props.setCanPost} submitLike={props.submitLike} artifactAuction={props.artifactAuction} />
+                    setCanPost={props.setCanPost} submitLike={props.submitLike} artifactAuction={props.artifactAuction} auctionPhase={props.auctionPhase} didSubmitNewPost={props.didSubmitNewPost} />
             </div>
 
         </div>
