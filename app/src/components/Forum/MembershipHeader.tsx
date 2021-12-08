@@ -7,7 +7,7 @@ import { fetchMembershipCardMintForWallet, getMintConfig } from "../../api/membe
 import { getForumProgram, getProvider } from '../../api/config'
 import { mintMembership } from "../../api/membership";
 import { toDisplayString } from "../../utils"
-import { ArtifactAuction, AUCTION_PHASE, ForumInfo, Like, Membership, Post } from "../../interfaces";
+import { ArtifactAuction, ForumInfo, Like, Membership, Post } from "../../interfaces";
 import { useHistory } from "react-router";
 
 /*
@@ -25,7 +25,6 @@ if member {
 interface Props {
     forumInfo: ForumInfo | undefined,
     artifactAuction: ArtifactAuction | undefined,
-    auctionPhase: string | undefined,
     memberCardMint: PublicKey | undefined,
     setMemberCardMint: (cardMint: PublicKey | undefined) => void,
     canPost: boolean,
@@ -70,8 +69,7 @@ function MembershipHeader(props: Props) {
     const didPressMintMembership = () => {
         if (wallet.publicKey) {
             getMintConfig(wallet.publicKey).then((mintConfig) => {
-                mintMembership(mintConfig, getProvider(wallet)).then((sig) => {
-                    console.log("minted tx", sig);
+                mintMembership(mintConfig, getProvider(wallet)).then(() => {
                     fetchMembershipCardMintForWallet(program, wallet.publicKey).then((cardMint) => {
                         props.setMemberCardMint(cardMint);
                         console.log("(use effect) setting isMember to ", cardMint?.toBase58())
@@ -112,81 +110,66 @@ function MembershipHeader(props: Props) {
 
     //need to trigger post reload when i post, not working rn
     if (props.memberCardMint) {
-        let postElement = () => {
-            if (props.canPost) {
-                return (
+        let postElement;
+        if (props.canPost) {
+            postElement = (
+                <div>
                     <div>
-                        <div>
-                            <textarea
-                                placeholder="what's up..."
-                                onChange={e => setPostBody(e.target.value)}
-                                value={postBody}
-                                className="post-input body"
-                            />
-                        </div>
-                        <div>
-                            <input
-                                placeholder="add link"
-                                onChange={e => setPostLink(e.target.value)}
-                                value={postLink}
-                                onKeyPress={onLinkKeyPress}
-                                className="post-input link"
-                            />
-                        </div>
-                        {
-                            postBody.length > 0
-                                ? <button onClick={didPressNewPost} className="forum-button post active">post</button>
-                                : <button onClick={didPressNewPost} className="forum-button post dead">post</button>
-                        }
+                        <textarea
+                            placeholder="what's up..."
+                            onChange={e => setPostBody(e.target.value)}
+                            value={postBody}
+                            className="post-input body"
+                        />
                     </div>
-                );
-            } else if (props.auctionPhase === AUCTION_PHASE.needsSettled) {
-                return (
                     <div>
-                        finalize auction to continue
+                        <input
+                            placeholder="add link"
+                            onChange={e => setPostLink(e.target.value)}
+                            value={postLink}
+                            onKeyPress={onLinkKeyPress}
+                            className="post-input link"
+                        />
                     </div>
-                )
-            } else {
-                return (
                     <div>
-                        <button onClick={didPressYourPost} className="your-activity">your post →</button>
+                        <button onClick={didPressNewPost} className="forum-button post">post</button>
                     </div>
-                )
-            }
-        };
-        let likeElement = () => {
-            if (props.canLike) {
-                return (
-                    <div className="likes-remaining">YOUR LIKE: tbd</div>
-                )
-            } else if (props.auctionPhase === AUCTION_PHASE.needsSettled) {
-                return <div />
-            } else {
-                return (
-                    <div>
-                        <button onClick={didPressYourLike} className="your-activity">your like →</button>
-                    </div>
-                )
-            }
+                </div>
+            );
+        } else {
+            postElement = (
+                <div>
+                    <button onClick={didPressYourPost} className="your-activity">your post →</button>
+                </div>
+            )
+        }
+        let likeElement;
+        if (props.canLike) {
+            likeElement = (
+                <div className="likes-remaining">(1 like remaining)</div>
+            )
+
+        } else {
+            likeElement = (
+                <div>
+                    <button onClick={didPressYourLike} className="your-activity">your like →</button>
+
+                </div>
+            )
         }
         return (
             <div>
                 <div className="member-greeting">
                     Hello, friend {membershipExplorerLink(props.memberCardMint, "friend-card-mint")}
                 </div>
-                {postElement()}
-                {likeElement()}
+                {postElement}
+                {likeElement}
             </div>
         )
     } else {
         return (
-            <div >
-                <div className="connect-alert">
-                    not a member?
-                </div>
-                <button className="mint-membership-button" onClick={didPressMintMembership}>
-                    mint membership
-                </button>
+            <div>
+                <button onClick={didPressMintMembership}>mint membership</button>
             </div>
         )
     }

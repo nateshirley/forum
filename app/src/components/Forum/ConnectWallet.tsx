@@ -4,26 +4,23 @@ import "../../Global.css"
 
 function ConnectWallet() {
     let connectStyle = {
+        borderRadius: '0px',
         color: "white",
-        backgroundColor: "black",
+        backgroundColor: "#000069",
         border: '0px solid #00288F',
-        borderRadius: "5px",
-        fontFamily: "Ubuntu Mono",
-        fontWeight: 800,
+        fontFamily: "Inconsolata",
+        fontWeight: 900,
         width: '100%',
         height: '100%',
-        fontSize: '16px'
+        fontSize: '21px'
     }
 
     let wallet = useWallet();
     if (!wallet.connected) {
         return (
             <div className="push-greeting">
-                <div className="connect-alert">
-                    wallet not connected
-                </div>
                 <div className="connect-button-parent">
-                    <WalletMultiButton style={connectStyle}>connect wallet</WalletMultiButton>
+                    <WalletMultiButton style={connectStyle}>CONNECT WALLET</WalletMultiButton>
                 </div>
             </div>
         )

@@ -44,7 +44,6 @@ const provider = anchor.Provider.env();
 interface MintConfig {
   authority: PublicKey;
   cardMint: Keypair;
-  cardMetadata: PublicKey;
   cardTokenAccount: PublicKey;
   member: PublicKey;
   memberBump: number;
@@ -79,9 +78,6 @@ export const getMintConfig = async (authority: PublicKey) => {
   let [member, memberBump] = await getMemberAddress(cardMint.publicKey);
   let [memberAttribution, memberAttributionBump] =
     await getMemberAttributionAddress(authority);
-  let [cardMetadata, cardMetadataBump] = await getMetadataAddress(
-    cardMint.publicKey
-  );
   let post = await PublicKey.createWithSeed(
     cardMint.publicKey,
     "post",
@@ -95,7 +91,6 @@ export const getMintConfig = async (authority: PublicKey) => {
   return {
     authority: authority,
     cardMint: cardMint,
-    cardMetadata: cardMetadata,
     cardTokenAccount: cardTokenAccount,
     member: member,
     memberBump: memberBump,
@@ -127,12 +122,9 @@ export const mintMembership = async (
         post: mintConfig.post,
         vote: mintConfig.vote,
         cardMint: mintConfig.cardMint.publicKey,
-        cardMetadata: mintConfig.cardMetadata,
         cardTokenAccount: mintConfig.cardTokenAccount,
         systemProgram: SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-        rent: web3.SYSVAR_RENT_PUBKEY,
         clock: web3.SYSVAR_CLOCK_PUBKEY,
       },
       instructions: [
@@ -319,20 +311,5 @@ export const getForumAuthority = () => {
   return PublicKey.findProgramAddress(
     [anchor.utils.bytes.utf8.encode("authority")],
     program.programId
-  );
-};
-
-export const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
-  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-);
-
-export const getMetadataAddress = async (mintPubkey: PublicKey) => {
-  return await PublicKey.findProgramAddress(
-    [
-      Buffer.from("metadata"),
-      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-      mintPubkey.toBuffer(),
-    ],
-    TOKEN_METADATA_PROGRAM_ID
   );
 };

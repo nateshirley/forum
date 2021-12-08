@@ -126,11 +126,6 @@ export type Forum = {
           "isSigner": false
         },
         {
-          "name": "cardMetadata",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "cardTokenAccount",
           "isMut": true,
           "isSigner": false
@@ -142,16 +137,6 @@ export type Forum = {
         },
         {
           "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMetadataProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -232,12 +217,7 @@ export type Forum = {
           "isSigner": false
         },
         {
-          "name": "artifactMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactMetadata",
+          "name": "artifactCardMint",
           "isMut": true,
           "isSigner": false
         },
@@ -282,22 +262,12 @@ export type Forum = {
           "isSigner": false
         },
         {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "clock",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -532,7 +502,7 @@ export type Forum = {
             "type": "u32"
           },
           {
-            "name": "tokenMint",
+            "name": "cardMint",
             "type": "publicKey"
           },
           {
@@ -981,11 +951,6 @@ export const IDL: Forum = {
           "isSigner": false
         },
         {
-          "name": "cardMetadata",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "cardTokenAccount",
           "isMut": true,
           "isSigner": false
@@ -997,16 +962,6 @@ export const IDL: Forum = {
         },
         {
           "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMetadataProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
           "isMut": false,
           "isSigner": false
         },
@@ -1087,12 +1042,7 @@ export const IDL: Forum = {
           "isSigner": false
         },
         {
-          "name": "artifactMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactMetadata",
+          "name": "artifactCardMint",
           "isMut": true,
           "isSigner": false
         },
@@ -1137,22 +1087,12 @@ export const IDL: Forum = {
           "isSigner": false
         },
         {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "clock",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -1387,7 +1327,7 @@ export const IDL: Forum = {
             "type": "u32"
           },
           {
-            "name": "tokenMint",
+            "name": "cardMint",
             "type": "publicKey"
           },
           {

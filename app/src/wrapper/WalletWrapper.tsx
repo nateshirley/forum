@@ -12,7 +12,6 @@ import Notification from './Notification';
 import ComponentSwitch from './ComponentSwitch';
 import "../index.css";
 import { FORUM_ENDPOINT } from '../utils';
-import Footer from './Footer';
 
 const WalletWrapper: FC = () => {
     const network = WalletAdapterNetwork.Devnet;
@@ -39,10 +38,9 @@ const WalletWrapper: FC = () => {
         <ConnectionProvider endpoint={FORUM_ENDPOINT}>
             <WalletProvider wallets={wallets} onError={onError} autoConnect>
                 <WalletModalProvider>
-                    <div className="modal-wrapper">
+                    <div className="wrapper-parent">
                         <NavigationBar />
                         <ComponentSwitch />
-                        <Footer />
                     </div>
                 </WalletModalProvider>
                 {/* <Toaster position="bottom-left" reverseOrder={false} /> */}

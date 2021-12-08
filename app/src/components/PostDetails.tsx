@@ -4,13 +4,11 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useHistory } from "react-router";
 import qs from "qs";
 import { getForumProgram } from "../api/config";
-import { numberArrayToString, posterLink, timeSince, toDisplayString } from "../utils";
+import { numberArrayToString } from "../utils";
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from "../api/membership";
 import { fetchedPostAccountToPostObject } from "../api/posts";
 import { Post } from "../interfaces";
 import { useLocation } from "react-router-dom";
-import likeIcon from "../assets/likeIcon.svg"
-import likeIconFill from "../assets/likeIconFill.svg"
 
 interface Props {
     canLike: boolean,
@@ -21,7 +19,7 @@ function PostDetails(props: Props) {
     const wallet = useWallet()
     const program = getForumProgram(wallet)
     const history = useHistory();
-    const [post, setPost] = useState<Post | undefined>(undefined);
+    const [postInfo, setPostInfo] = useState<Post | undefined>(undefined);
     const location = useLocation();
 
     //look up any post account 
@@ -56,7 +54,7 @@ function PostDetails(props: Props) {
     const queryForPostAtAddress = async (postAddress: PublicKey) => {
         try {
             let postAccount = await program.account.post.fetch(postAddress);
-            setPost(fetchedPostAccountToPostObject(postAccount, postAddress));
+            setPostInfo(fetchedPostAccountToPostObject(postAccount, postAddress));
             return true;
         } catch (e) {
             return false;
@@ -94,50 +92,31 @@ function PostDetails(props: Props) {
     }
 
     let postCard;
-    if (post) {
+    if (postInfo) {
         postCard = (
             <div className="post-outer">
-                <div >
-                    <a
-                        href={posterLink(post.cardMint)}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="poster-card"
-                    >
-                        {toDisplayString(post.cardMint, 3)}
-                    </a>
-                    <span className="dot-time"> · {timeSince(post.timestamp)}</span>
+                <div>
+                    {postInfo.body}
                 </div>
-                <div className="post-body">
-                    {post.body}
+                <div>
+                    {postInfo.sessionScore}
                 </div>
-                <div className="post-link">
-                    <a href={"http://" + post.link} target="_blank"
-                        rel="noreferrer noopener">{post.link}</a>
+                <div>
+                    <a href={postInfo.link}>{postInfo.link}</a>
                 </div>
-                {props.canLike
-                    ? (
-                        <button className="like-button" onClick={() => didPressLike(post.publicKey)}>
-                            <img src={likeIcon} className="like-icon-active" alt="like" />
-                            {post.sessionScore}
-                        </button>
-                    )
-                    : (
-                        <div className="like-button-cant">
-                            <img src={likeIconFill} className="like-icon-active" alt="like" />
-                            {post.sessionScore}
-                        </div>
-                    )
-                }
+                <div>
+                    {props.canLike
+                        ? <button onClick={() => didPressLike(postInfo.publicKey)}>like</button>
+                        : <div>not able</div>
+                    }
+                </div>
             </div>
         )
     }
 
     return (
         <div className="component-parent">
-            <div className="posts-details-header">
-                <div className="posts-header-title">POST</div>
-            </div>
+            post details
             {postCard}
         </div>
     );
