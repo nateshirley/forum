@@ -33,3 +33,17 @@ text {
 .prh-link:visited {
   color: #0400ff;
 }
+.navbar {
+  height: 200px;
+  margin-left: 10px;
+  padding-top: 20px;
+  margin-right: 40px;
+}
+
+@media only screen and (min-width: 641px) {
+  .navbar {
+    height: 100px;
+    margin-left: 40px;
+    margin-right: 40px;
+  }
+}
