@@ -24,7 +24,7 @@ function Footer() {
     }
     return (
         <div style={{ textAlign: "center", paddingBottom: "20px" }}>
-            <button onClick={airdrop}>airdrop</button>
+            <button onClick={airdrop} className="airdrop">airdrop</button>
             <button onClick={about} className="about">about</button>
         </div>
     )
