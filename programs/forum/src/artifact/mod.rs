@@ -1,3 +1,4 @@
+use crate::anchor_token_metadata;
 use crate::create_ix;
 use crate::{
     anchor_transfer, bid::Bid, ErrorCode, LeaderboardPost, PlaceBidForArtifact, WrapSession,
@@ -29,7 +30,7 @@ pub struct ArtifactAuction {
 #[derive(Default)]
 pub struct Artifact {
     pub session: u32,
-    pub card_mint: Pubkey,
+    pub token_mint: Pubkey,
     pub posts: [LeaderboardPost; 10],
     pub bump: u8,
 }
@@ -133,10 +134,60 @@ pub fn build_new(
     let mut artifact = artifact_loader.load_init()?;
     let leaderboard = ctx.accounts.leaderboard.load().unwrap();
     artifact.session = ctx.accounts.forum.session;
-    artifact.card_mint = ctx.accounts.artifact_card_mint.key();
+    artifact.token_mint = ctx.accounts.artifact_mint.key();
     artifact.posts = leaderboard.posts;
     artifact.bump = artifact_bump;
     Ok(())
+}
+pub fn create_artifact_metadata(
+    ctx: &Context<WrapSession>,
+    auth_seeds: &[&[u8]; 2],
+    auction_house_bump: u8,
+) -> ProgramResult {
+    //possibly change creator to treasury account to get some royalties
+    //probably should add master edition too
+    let creators = vec![spl_token_metadata::state::Creator {
+        address: ctx.accounts.forum_authority.key(),
+        verified: true,
+        share: 100,
+    }];
+    let name: String = String::from("PRH artifact");
+    let symbol: String = String::from("PRH");
+    let uri: String =
+        String::from("https://nateshirley.github.io/y/parisradiohour/session/artifact.json");
+    let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];
+
+    anchor_token_metadata::create_metadata(
+        ctx.accounts
+            .into_create_artifact_metadata_context()
+            .with_signer(&[auth_seeds, house_seeds]),
+        name,
+        symbol,
+        uri,
+        Some(creators),
+        0,
+        true,
+        true,
+    )
+}
+
+impl<'info> WrapSession<'info> {
+    pub fn into_create_artifact_metadata_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, anchor_token_metadata::CreateMetadata<'info>> {
+        let cpi_program = self.token_metadata_program.to_account_info();
+        let cpi_accounts = anchor_token_metadata::CreateMetadata {
+            metadata: self.artifact_metadata.to_account_info(),
+            mint: self.artifact_mint.to_account_info(),
+            mint_authority: self.forum_authority.to_account_info(),
+            payer: self.artifact_auction_house.to_account_info(),
+            update_authority: self.forum_authority.to_account_info(),
+            token_metadata_program: self.token_metadata_program.to_account_info(),
+            system_program: self.system_program.clone(),
+            rent: self.rent.clone(),
+        };
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
 }
 
 impl<'info> WrapSession<'info> {
@@ -145,7 +196,7 @@ impl<'info> WrapSession<'info> {
     ) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
         let cpi_program = self.token_program.to_account_info();
         let cpi_accounts = token::MintTo {
-            mint: self.artifact_card_mint.to_account_info(),
+            mint: self.artifact_mint.to_account_info(),
             to: self.artifact_token_account.to_account_info(),
             authority: self.forum_authority.to_account_info(),
         };

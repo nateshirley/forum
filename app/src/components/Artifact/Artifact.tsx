@@ -8,7 +8,7 @@ import { useHistory, useLocation } from "react-router";
 import { Artifact as ArtifactInterface, ArtifactAuction, Pda, ArtifactPost } from "../../interfaces";
 import qs from "qs";
 import { numberArrayToString, posterLink, toDisplayString, endedTextFor } from "../../utils";
-import likeIcon from "../../assets/likeIcon.svg"
+import likeIconFill from "../../assets/likeIconFill.svg"
 import { useEasybase } from 'easybase-react';
 import { Row, Col, Container } from "react-bootstrap";
 
@@ -33,7 +33,7 @@ function Artifact(props: Props) {
     const program = getForumProgram(wallet);
     const { db } = useEasybase();
     const connection = program.provider.connection;
-    const [endedText, setEndedText] = useState<undefined | string>(undefined);
+    const [endedText, setEndedText] = useState<undefined | string>("ended ...");
     //other thing i need from here is the current owner
 
     useEffect(() => {
@@ -62,11 +62,11 @@ function Artifact(props: Props) {
 
     const fetchArtifactOwner = () => {
         if (artifactObject) {
-            connection.getTokenLargestAccounts(artifactObject.cardMint).then((response) => {
+            connection.getTokenLargestAccounts(artifactObject.tokenMint).then((response) => {
                 if (response.value.length > 0) {
                     let artifactToken = new Token(
                         connection,
-                        artifactObject.cardMint,
+                        artifactObject.tokenMint,
                         TOKEN_PROGRAM_ID,
                         Keypair.generate()
                     )
@@ -79,7 +79,7 @@ function Artifact(props: Props) {
     }
 
     const fetchSessionRecord = () => {
-        db("FORUMSESSIONS").return().where({ session: session }).one().then((record: any) => {
+        db("DFORUMSESSIONS").return().where({ session: session }).one().then((record: any) => {
             //db("FORUMSESSIONS").return().all().then((record: any) => {
             setSessionRecord({
                 session: record.session,
@@ -123,10 +123,12 @@ function Artifact(props: Props) {
                     setArtifactObject({
                         address: artifactAddress,
                         session: fetchedArtifact.session,
-                        cardMint: fetchedArtifact.cardMint,
+                        tokenMint: fetchedArtifact.tokenMint,
                         posts: artifactPosts,
                         bump: fetchedArtifact.bump
                     })
+                    console.log(fetchedArtifact.tokenMint.toBase58());
+
                 }).catch((e) => {
                     console.log("failed to get the artifact object")
                 })
@@ -160,7 +162,7 @@ function Artifact(props: Props) {
             <div>
                 <div className="accent-text session-date">{endedText}</div>
                 <div className="session-header">
-                    Session #{artifactObject.session}
+                    PRH {artifactObject.session}
                     <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button onClick={clickedRight} className="session-nav-button right">→</button>
                 </div>
             </div>
@@ -189,7 +191,7 @@ function Artifact(props: Props) {
                         <a href={"http://" + post.link}>{post.link}</a>
                     </div>
                     <div >
-                        <button className="like-button" ><img src={likeIcon} className="like-icon" alt="like" /> {post.score}</button>
+                        <div className="like-button-cant" ><img src={likeIconFill} className="like-icon-artifact" alt="like" /> {post.score}</div>
                     </div>
                 </div>
             )
@@ -237,10 +239,15 @@ function Artifact(props: Props) {
         )
     }
 
+
+
     return (
         <div className="component-parent">
             {headerElement}
             {artifactOwnerElement}
+            <div className="posts-header">
+                <div className="posts-header-title">TOP POSTS</div>
+            </div>
             {postCards}
         </div>
 

@@ -1,12 +1,14 @@
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
 use std::convert::TryFrom;
-declare_id!("7LBXh2RuSNFrLrmX9iq3ZGunuqL94s5ZsXE8Ku3HgKAx");
+declare_id!("BMqMvKtRPi5xRJNRN2aRXwFiT8dPEbQW1NC45bevzuWA");
+mod anchor_token_metadata;
 mod anchor_transfer;
 mod artifact;
 mod bid;
 mod create_ix;
 mod leaderboard;
+mod membership;
 mod string_helper;
 mod verify;
 use bid::Bid;
@@ -20,7 +22,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 86400;
+const SESSION_LENGTH: u64 = 300; //86400;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]
@@ -92,14 +94,11 @@ pub mod forum {
             &FORUM_AUTHORITY_SEED[..],
             &[ctx.accounts.forum_authority.bump],
         ];
+
         //mint one subscription token to the subscriber
-        token::mint_to(
-            ctx.accounts
-                .into_mint_membership_context()
-                .with_signer(&[seeds]),
-            1,
-        )?;
-        //add something that creates metadata for the membership card
+        membership::mint_card_token_to_new_member(&ctx, seeds)?;
+        //create metadata for membership card
+        membership::create_card_token_metadata(&ctx, seeds)?;
         Ok(())
     }
     //claim authority after a transfer
@@ -138,16 +137,17 @@ pub mod forum {
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
 
         //mint the artifact token to the winner of the auction
-        let seeds = &[
+        let auth_seeds = &[
             &FORUM_AUTHORITY_SEED[..],
             &[ctx.accounts.forum_authority.bump],
         ];
         token::mint_to(
             ctx.accounts
                 .into_mint_artifact_context()
-                .with_signer(&[seeds]),
+                .with_signer(&[auth_seeds]),
             1,
         )?;
+        artifact::create_artifact_metadata(&ctx, auth_seeds, _artifact_auction_house_bump)?;
         //todo: create some metadata
         //todo: send funds to multisig,
         //todo: treasury cut
@@ -299,19 +299,19 @@ pub struct MintMembership<'info> {
         bump = member_bump,
         payer = authority,
     )]
-    membership: Account<'info, Membership>,
+    membership: Box<Account<'info, Membership>>,
     #[account(
         init,
         seeds = [MEMBERSHIP_ATTRIBUTION_SEED, authority.key().as_ref()],
         bump = member_attribution_bump,
         payer = authority,
     )]
-    membership_attribution: Account<'info, MembershipAttribution>,
+    membership_attribution: Box<Account<'info, MembershipAttribution>>,
     #[account(
         seeds = [FORUM_SEED],
         bump = forum.bump
     )]
-    forum: Account<'info, Forum>,
+    forum: Box<Account<'info, Forum>>,
     #[account(
         seeds = [FORUM_AUTHORITY_SEED],
         bump = forum_authority.bump,
@@ -328,6 +328,8 @@ pub struct MintMembership<'info> {
         constraint = card_mint.mint_authority.unwrap() == forum_authority.key(),
     )]
     card_mint: Account<'info, token::Mint>,
+    #[account(mut)] //verified via cpi in the metadata program
+    card_metadata: AccountInfo<'info>,
     #[account(
         mut,
         constraint = card_token_account.amount == 0,
@@ -336,8 +338,12 @@ pub struct MintMembership<'info> {
     card_token_account: Account<'info, token::TokenAccount>,
     system_program: Program<'info, System>,
     token_program: Program<'info, token::Token>,
+    #[account(address = spl_token_metadata::id())]
+    token_metadata_program: AccountInfo<'info>,
+    rent: Sysvar<'info, Rent>,
     clock: Sysvar<'info, Clock>,
 }
+
 #[derive(Accounts)]
 #[instruction(member_attribution_bump: u8)]
 pub struct ClaimMembershipAuthority<'info> {
@@ -376,13 +382,16 @@ pub struct WrapSession<'info> {
     artifact: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = artifact_card_mint.supply == 0
+        constraint = artifact_mint.supply == 0
     )]
-    artifact_card_mint: Account<'info, token::Mint>,
+    artifact_mint: Account<'info, token::Mint>,
+    //todo: make sure this gets verified by metadata program
+    #[account(mut)]
+    artifact_metadata: AccountInfo<'info>,
     #[account(
         mut,
         constraint = artifact_token_account.owner == winner.key(),
-        constraint = artifact_token_account.mint == artifact_card_mint.key()
+        constraint = artifact_token_account.mint == artifact_mint.key()
     )]
     artifact_token_account: Account<'info, token::TokenAccount>,
     #[account(
@@ -398,7 +407,7 @@ pub struct WrapSession<'info> {
     artifact_auction: Account<'info, artifact::ArtifactAuction>,
     #[account(
         init,
-        seeds = [ARTIFACT_SEED, artifact_card_mint.key().as_ref()],
+        seeds = [ARTIFACT_SEED, artifact_mint.key().as_ref()],
         bump = artifact_attribution_bump,
         payer = initializer
     )]
@@ -422,8 +431,11 @@ pub struct WrapSession<'info> {
     forum_authority: Account<'info, ForumAuthority>,
     #[account(mut)]
     leaderboard: Loader<'info, Leaderboard>,
+    rent: Sysvar<'info, Rent>,
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,
+    #[account(address = spl_token_metadata::id())]
+    token_metadata_program: AccountInfo<'info>,
     system_program: Program<'info, System>,
 }
 #[derive(Accounts)]
@@ -584,18 +596,6 @@ pub struct Vote {
     authority_card_mint: Pubkey,
     voted_for_card_mint: Pubkey,
     session: u32,
-}
-
-impl<'info> MintMembership<'info> {
-    fn into_mint_membership_context(&self) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
-        let cpi_program = self.token_program.to_account_info();
-        let cpi_accounts = token::MintTo {
-            mint: self.card_mint.to_account_info(),
-            to: self.card_token_account.to_account_info(),
-            authority: self.forum_authority.to_account_info(),
-        };
-        CpiContext::new(cpi_program, cpi_accounts)
-    }
 }
 
 #[error]

@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react';
 import { getNow } from '../../utils';
 
 interface Props {
-    auctionEndTimestamp: number | undefined
+    auctionEndTimestamp: number | undefined,
+    countedToZero: () => void,
 }
 
-const displayCountdown = (seconds: number) => {
+
+export const displayCountdown = (seconds: number) => {
     seconds = Number(seconds);
     var d = Math.floor(seconds / (3600 * 24));
     var h = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -19,21 +21,23 @@ const displayCountdown = (seconds: number) => {
     var sEl = timeElement(s, "s");
     //return dDisplay + hDisplay + mDisplay + sDisplay;
     if (d > 0) {
-        return [dEl, hEl, mEl]
+        return [dEl, hEl, mEl];
     } else {
-        return [hEl, mEl, sEl]
+        return [hEl, mEl, sEl];
     }
 };
-
 const timeElement = (number: number, letter: string) => {
     return (
-        <span className="auction-number" key={letter}>{number}<span className="auction-secondary-element">{letter}&nbsp;&nbsp;</span></span>
-    )
-}
+        <span className="auction-number" key={letter}>
+            {number}
+            <span className="auction-secondary-element">{letter}&nbsp;&nbsp;</span>
+        </span>
+    );
+};
+
 
 function Countdown(props: Props) {
     const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
-
     useEffect(() => {
         if (props.auctionEndTimestamp) {
             const now = getNow();
@@ -50,6 +54,9 @@ function Countdown(props: Props) {
     const tick = () => {
         if (secondsRemaining && secondsRemaining > 0) {
             setSecondsRemaining(secondsRemaining - 1);
+        } else if (props.auctionEndTimestamp && props.auctionEndTimestamp - getNow() <= 0) {
+            console.log("throw it back")
+            props.countedToZero();
         }
     }
 
@@ -58,3 +65,4 @@ function Countdown(props: Props) {
     )
 }
 export default Countdown;
+

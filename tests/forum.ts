@@ -86,7 +86,6 @@ describe("forum", () => {
     //   []
     // );
   });
-
   /*
   //can put init and leaderboard into one later on
   it("initialize forum", async () => {
@@ -123,8 +122,7 @@ describe("forum", () => {
     //console.log(lb);
   });
 
-  
-  it("mint membership", async () => {
+    it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 
     let newMember = await program.account.membership.fetch(
@@ -137,7 +135,6 @@ describe("forum", () => {
       );
     assert.ok(cardTokenAccountBalance.value.uiAmount === 1);
   });
-
   it("new post", async () => {
     const newBody = "fuuuuuuuuck yeah";
     const newLink = "https://yelllow.xyz/";

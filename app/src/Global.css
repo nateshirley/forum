@@ -4,17 +4,17 @@
   margin-right: auto;
   width: 90%;
   max-width: 540px;
-  margin-bottom: 150px;
   color: black;
+  padding-bottom: 20px;
+  min-height: 80vh;
   font-family: "IBM Plex Sans";
 }
 :root {
   --gray-text: #b3b3b3;
 }
+
 .session-date {
   margin-top: 10px;
-  color: var(--gray-text);
-  font-size: 13px;
 }
 .session-header {
   font-size: 52px;
@@ -23,7 +23,8 @@
 }
 .accent-text {
   font-size: 13px;
-  color: var(--gray-text);
+  color: black;
+  opacity: 0.5;
 }
 .auction-number {
   font-size: 26px;
@@ -40,21 +41,23 @@
 .auction-info-row {
   margin-top: 20px;
 }
+
 .bid-element {
   border: 1px solid black;
   border-radius: 8px;
   margin-top: 30px;
   max-width: 380px;
+  background: rgb(255, 255, 255, 0.75);
 }
+
 .bid-content {
   padding-top: 15px;
   padding-left: 20px;
   padding-bottom: 18px;
   padding-right: 20px;
+  position: relative;
 }
 .minimum-bid {
-  color: var(--gray-text);
-  font-size: 13px;
   margin-top: 24px;
   margin-bottom: 2px;
 }
@@ -66,26 +69,54 @@
   height: 32px;
   margin-bottom: 40px;
 }
+.bid-input-parent {
+  position: relative;
+}
 .bid-input {
   width: 75%;
-  border: 1px solid black;
+  background: white;
+  border: none;
+  box-shadow: 0px 3px 9px rgb(0, 0, 0, 0.07);
+}
+.bid-input:focus {
+  outline: 1.5px solid black;
+}
+.sol-bid-label {
+  position: absolute;
+  right: 27%;
+  top: 5px;
+  z-index: 100;
+  font-size: 11px;
+  font-weight: 600;
 }
 .bid-button {
   margin-left: 8px;
   width: 20%;
   background-color: #293eff;
+  box-shadow: 0px 3px 9px rgb(0, 0, 0, 0.1);
   border: none;
   color: white;
   font-weight: 800;
 }
 .bid-leader {
-  background-color: #ededed;
+  background-color: rgb(0, 0, 0, 0.07);
   height: 30px;
   width: 97%;
   margin-top: 9px;
   padding-left: 8px;
   padding-right: -8px;
   line-height: 30px;
+}
+.expandable-bid {
+  position: absolute;
+  top: 7px;
+  right: 11px;
+}
+.chev-up {
+  transform: rotate(180deg);
+}
+.collapsed-auction:hover {
+  cursor: pointer;
 }
 .session-nav-button {
   font-size: 34px;
@@ -101,28 +132,39 @@
 .session-nav-button.right {
   padding: 0px;
 }
+.dead-button {
+  opacity: 0.4;
+}
 .wrap-session {
   width: 99%;
   height: 32px;
-  background-color: #3106f1;
+  background-color: #1000ea;
   border: none;
   color: white;
   font-weight: 800;
+  font-family: "Ubuntu Mono";
 }
 .friend-card-mint {
-  color: var(--gray-text);
+  color: rgb(0, 0, 0, 0.4);
+}
+.friend-card-mint:hover {
+  color: #1000ea;
 }
 .member-greeting {
   font-weight: 500;
 }
 .post-input {
-  border: 1px solid #f0f0f0;
+  background-color: rgb(0, 0, 0, 0);
+  border: 2px solid #ffffff;
   margin-top: 7px;
   padding: 7px;
 }
+.post-input::placeholder {
+  color: rgb(0, 0, 0, 0.4);
+}
 .post-input:focus {
   outline: none !important;
-  border-color: #66edff;
+  border-color: black;
 }
 .post-input.body {
   height: 70px;
@@ -130,7 +172,7 @@
 }
 .post-input.link {
   margin-top: 2px;
-  height: 32px;
+  height: 34px;
   width: 100%;
 }
 .forum-button {
@@ -141,33 +183,105 @@
   margin-right: 2px;
   margin-left: auto;
   display: block;
-  width: 70px;
+  width: 66px;
   height: 30px;
-  background-color: #0bbaff;
   color: white;
   font-weight: 700;
   border: none;
   font-size: 16px;
 }
+.forum-button.post.active {
+  background-color: black;
+  box-shadow: 0px 2px 9px rgb(0, 0, 0, 0.22);
+}
+.forum-button.post.dead {
+  background-color: rgb(0, 0, 0, 0.4);
+  box-shadow: 0px 2px 7px rgb(0, 0, 0, 0.11);
+}
 .your-activity {
-  background-color: white;
+  background-color: rgb(0, 0, 0, 0);
   text-decoration: underline;
-  color: blue;
+  color: black;
   border: none;
 }
 .posts-header {
   margin-top: 80px;
+  padding-bottom: 26px;
+}
+.posts-details-header {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 26px;
+}
+.posts-header-title {
   font-size: 16px;
   font-weight: 700;
-  color: rgb(206, 206, 206);
+  color: black;
+  float: left;
 }
-
+.sort-button {
+  float: right;
+  background-color: rgb(0, 0, 0, 0);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding-top: 2px;
+}
+.sort-button:hover {
+  background-color: rgb(255, 255, 255, 0.55);
+}
+.sort-button.top {
+  float: right;
+}
+.sort-button.recent {
+  float: right;
+}
+.sort-button.active {
+  color: rgb(0, 0, 0);
+}
+.sort-button.inactive {
+  color: rgb(0, 0, 0, 0.4);
+}
+.push-greeting {
+  color: rgb(0, 0, 0, 0.4);
+  font-size: 13px;
+}
+.connect-alert {
+  color: rgb(0, 0, 0, 0.4);
+  font-size: 13px;
+  padding-bottom: 4px;
+  margin-left: 6px;
+}
+.connect-button-parent {
+  height: 35px;
+  width: 100%;
+  font-weight: 800;
+  border-radius: 5px;
+  box-shadow: 0px 3px 9px rgb(0, 0, 0, 0.15);
+}
+.mint-membership-button {
+  background-color: #1000ea;
+  font-family: "Ubuntu Mono";
+  color: white;
+  border: none;
+  height: 35px;
+  width: 100%;
+  font-weight: 800;
+  border-radius: 5px;
+  box-shadow: 0px 3px 9px rgba(12, 7, 255, 0.12);
+}
 .post-outer {
   margin-top: 15px;
-  margin-bottom: 50px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background-color: rgb(255, 255, 255, 0.75);
+  position: relative;
+}
+.forum-outer {
+  margin-bottom: 100px;
 }
 .dot-time {
-  color: var(--gray-text);
+  color: rgb(0, 0, 0, 0.4);
 }
 .poster-card {
   color: black;
@@ -175,26 +289,60 @@
   text-decoration: none;
 }
 .post-body {
-  margin-top: 0px;
+  margin-top: 7px;
 }
-.like-icon {
-  width: 14px;
+.post-link {
+  margin-top: 0px;
+  max-width: 85%;
+  overflow: hidden;
+}
+.like-icon-active {
+  width: 17px;
+  vertical-align: top;
+  margin-top: 7px;
+  margin-right: 2px;
+}
+.like-icon-artifact {
+  width: 17px;
+  vertical-align: top;
+  margin-top: 6px;
 }
 .like-button {
-  background-color: #f5f5f5;
+  background-color: rgb(0, 0, 0, 0);
   border: none;
-  border-radius: 13px;
-  height: 26px;
+  height: 30px;
   font-weight: 500;
   line-height: 26px;
-  font-size: 13px;
-  color: #707070;
-  width: 60px;
-  margin-top: 9px;
+  font-size: 16px;
+  color: #000000;
+  width: 56px;
+  position: absolute;
+  right: 5px;
+  bottom: 8px;
+}
+.like-button:hover {
+  background-color: rgb(0, 0, 0, 0.12);
 }
 .likes-remaining {
-  color: var(--gray-text);
+  color: rgb(0, 0, 0, 0.4);
+  font-weight: 500;
+  font-size: 13px;
 }
+.like-button-cant {
+  background-color: rgb(0, 0, 0, 0);
+  border: none;
+  height: 30px;
+  font-weight: 500;
+  line-height: 26px;
+  font-size: 16px;
+  color: #000000;
+  width: 56px;
+  position: absolute;
+  right: 15px;
+  bottom: 8px;
+  text-align: right;
+}
+
 .about {
   background-color: white;
   border: none;

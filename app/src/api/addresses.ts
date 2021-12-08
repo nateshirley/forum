@@ -76,3 +76,18 @@ export const getArtifactAttributionAddress = async (cardMint: PublicKey) => {
     FORUM_PROGRAM_ID
   );
 };
+
+export const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+);
+
+export const getMetadataAddress = async (mintPubkey: PublicKey) => {
+  return await PublicKey.findProgramAddress(
+    [
+      Buffer.from("metadata"),
+      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      mintPubkey.toBuffer(),
+    ],
+    TOKEN_METADATA_PROGRAM_ID
+  );
+};
