@@ -6,8 +6,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffafbe !important;
-  background: linear-gradient(#ffafbe, #ffde85);
+  background-color: #ff8ba0 !important;
+  background: linear-gradient(#ff8ba0, #ffde85);
 }
 
 .modal-wrapper {
@@ -25,7 +25,7 @@ body {
       #7adeff 0%,
       #b6f4b6 45%,
       #ffde85 80%,
-      rgb(255, 222, 133, 0) 100%
+      rgb(255, 222, 133, 0) 150%
     );
   }
 }
@@ -36,7 +36,7 @@ body {
       #7adeff 0%,
       #b6f4b6 45%,
       #ffde85 80%,
-      rgb(255, 222, 133, 0) 100%
+      rgb(255, 222, 133, 0) 130%
     );
   }
 }
