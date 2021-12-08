@@ -26,7 +26,7 @@ pub fn create_card_token_metadata(
         share: 100,
     }];
     let name: String = String::from("PRH Membership");
-    let symbol: String = String::from("PRHM");
+    let symbol: String = String::from("MEM");
     let uri: String =
         String::from("https://nateshirley.github.io/y/parisradiohour/membership/card.json"); //make it look like a card eventually
     anchor_token_metadata::create_metadata(

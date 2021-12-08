@@ -10,7 +10,6 @@ import { getArtifactAddress, getArtifactAuctionAddress, getCardTokenAccount, get
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../api/membership';
 import { fetchedPostAccountToPostObject } from '../api/posts';
 import ActiveArtifactAuction from '../components/ActiveArtifactAuction/ActiveArtifactAuction';
-import WrapSession from '../components/WrapSession';
 import Home from "../components/Home";
 import Forum from "../components/Forum/Forum"
 import { ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Post, Like } from '../interfaces';
@@ -173,7 +172,7 @@ const ComponentSwitch: FC = () => {
 
     const submitLike = async (post: PublicKey) => {
         if (wallet.publicKey && forumInfo && artifactAuction && membership && cardTokenAccount && leaderboard) {
-            let tx = await program.rpc.submitVote(1, {
+            return program.rpc.submitVote(1, {
                 accounts: {
                     authority: wallet.publicKey,
                     membership: membership.publicKey,
@@ -186,10 +185,10 @@ const ComponentSwitch: FC = () => {
                     cardTokenAccount: cardTokenAccount,
                     clock: web3.SYSVAR_CLOCK_PUBKEY
                 },
+            }).then((sig) => {
+                refreshActiveUserLike();
+                return sig;
             });
-            setCanLike(false);
-            refreshActiveUserLike();
-            return tx;
         }
     }
 

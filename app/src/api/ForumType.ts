@@ -532,7 +532,7 @@ export type Forum = {
             "type": "u32"
           },
           {
-            "name": "cardMint",
+            "name": "tokenMint",
             "type": "publicKey"
           },
           {
@@ -1387,7 +1387,7 @@ export const IDL: Forum = {
             "type": "u32"
           },
           {
-            "name": "cardMint",
+            "name": "tokenMint",
             "type": "publicKey"
           },
           {
