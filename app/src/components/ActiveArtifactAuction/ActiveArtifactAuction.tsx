@@ -85,7 +85,7 @@ function ActiveArtifactAuction(props: Props) {
                 if (sig.length > 1) {
                     console.log("tx sig: ", sig)
                     if (props.forumInfo && auction) {
-                        db("DFORUMSESSIONS").insert({
+                        db("FORUMSESSIONS").insert({
                             session: props.forumInfo.session,
                             winningLamports: auction.bidLamports,
                             wrapTxSignature: sig,
@@ -214,6 +214,7 @@ function ActiveArtifactAuction(props: Props) {
                         session: props.forumInfo.session,
                         lamports: amount * web3.LAMPORTS_PER_SOL,
                         bidder: wallet.publicKey?.toBase58(),
+                        txSignature: sig,
                     }).one();
                 }
                 props.refreshArtifactAuction();

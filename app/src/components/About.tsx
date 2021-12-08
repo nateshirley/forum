@@ -1,24 +1,30 @@
+import { Link } from "react-router-dom";
+
 function About() {
 
 
     return (
         <div className="component-parent">
-            yelllow forum
+            prh
             <br />
             <br />
             <br />
             <br />
-            wallets that hold a membership can post once per session and like once per session.
+            a ParisRadioHour is a set of ideas about music/crypto.
             <br />
             <br />
-            every session goes up for auction
+            each week, a new PRH is written on chain—by the community—and then auctioned off by the protocol
             <br />
             <br />
-            when a session expires, it's wrapped into an asset and transferred to the highest bidder
+            auction proceeds enter the community's treasury, where they are used to further the PRH
             <br />
             <br />
+            every PRH is created, issued, and auctioned permissionlessly. all data comes and goes directly from the solana blockchain
             <br />
-            everything is on-chain. this process runs and restarts permissionlessly
+            <br />
+            ---
+            <br />
+            p.s. community members can submit one post and one like per week. PRH is currently in beta on the solana devnet. try it <Link to="/">here</Link>
         </div>
     );
 }

@@ -3,13 +3,13 @@ import * as web3 from "@solana/web3.js";
 import BN from "bn.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
-  "BMqMvKtRPi5xRJNRN2aRXwFiT8dPEbQW1NC45bevzuWA"
+  "CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH"
 );
 export const FORUM_ENDPOINT =
   "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
 //"http://127.0.0.1:8899"
 //clusterApiUrl('devnet');
-export const SESSION_LENGTH = 300; //518400
+export const SESSION_LENGTH = 604800; //518400
 export const toDisplayString = (
   publicKey: PublicKey,
   sliceLength: number = 4
@@ -74,9 +74,9 @@ export const artifactAuctionTime = (lastDawn: BN | undefined) => {
   }
   return "";
 };
-export const posterLink = (toPubkey: PublicKey) => {
+export const tokenLink = (toPubkey: PublicKey) => {
   //https://explorer.solana.com/address/Fs95oxtjcUdVqo6Zg1JJZ8orq3eGF8qF8cxdKeunD7U1?cluster=devnet
-  return `https://solscan.io/token/${toPubkey.toBase58()}`;
+  return `https://solscan.io/token/${toPubkey.toBase58()}?cluster=devnet`;
 };
 export const minBid = (currentBid: number) => {
   const increment_percentage = 2;
@@ -127,4 +127,11 @@ const abbreviatedMonthFor = (number: number) => {
     return "Dec";
   }
   return "";
+};
+export const toPostHref = (postLink: string) => {
+  if (postLink.startsWith("http")) {
+    return postLink;
+  } else {
+    return "http://" + postLink;
+  }
 };

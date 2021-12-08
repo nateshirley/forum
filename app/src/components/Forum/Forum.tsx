@@ -46,7 +46,7 @@ function Forum(props: Props) {
     const wallet = useWallet();
     const [postRefresh, doPostRefresh] = useState(0);
     const program = getForumProgram(wallet);
-    const [sort, setSort] = useState("top");
+    const [sort, setSort] = useState("");
 
     const didSubmitNewPost = () => {
         props.setCanPost(false);
@@ -73,7 +73,7 @@ function Forum(props: Props) {
 
 
     const sortButtons = () => {
-        if (sort === "top") {
+        if (sort === "top" || sort === "") {
             return (
                 <>
                     <button onClick={didPressRecent} className="sort-button recent inactive">recent</button>

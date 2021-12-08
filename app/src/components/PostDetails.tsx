@@ -4,7 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useHistory } from "react-router";
 import qs from "qs";
 import { getForumProgram } from "../api/config";
-import { numberArrayToString, posterLink, timeSince, toDisplayString } from "../utils";
+import { numberArrayToString, tokenLink, timeSince, toDisplayString, toPostHref } from "../utils";
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from "../api/membership";
 import { fetchedPostAccountToPostObject } from "../api/posts";
 import { Post } from "../interfaces";
@@ -99,7 +99,7 @@ function PostDetails(props: Props) {
             <div className="post-outer">
                 <div >
                     <a
-                        href={posterLink(post.cardMint)}
+                        href={tokenLink(post.cardMint)}
                         target="_blank"
                         rel="noreferrer noopener"
                         className="poster-card"
@@ -112,7 +112,7 @@ function PostDetails(props: Props) {
                     {post.body}
                 </div>
                 <div className="post-link">
-                    <a href={"http://" + post.link} target="_blank"
+                    <a href={toPostHref(post.link)} target="_blank"
                         rel="noreferrer noopener">{post.link}</a>
                 </div>
                 {props.canLike

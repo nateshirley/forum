@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { getForumProgram, getProvider } from "../../api/config";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { posterLink, timeSince, toDisplayString } from "../../utils";
+import { tokenLink, timeSince, toDisplayString, toPostHref } from "../../utils";
 import { ForumInfo, Post } from "../../interfaces";
 import likeIcon from "../../assets/likeIcon.svg"
 import likeIconFill from "../../assets/likeIconFill.svg"
@@ -39,22 +39,21 @@ function ActivePosts(props: Props) {
     }, [props.refresh]);
 
     useEffect(() => {
-        console.log("sorting")
         if (props.sort === "top") {
             if (activePosts) {
-                setActivePosts(activePosts.sort((a, b) => {
+                setActivePosts([...activePosts].sort((a, b) => {
                     return b.sessionScore - a.sessionScore;
                 }));
             }
-        } else {
-            //sort recent
+        } else if (props.sort === "recent") {
             if (activePosts) {
-                setActivePosts(activePosts.sort((a, b) => {
+                setActivePosts([...activePosts].sort((a, b) => {
                     return b.timestamp - a.timestamp;
                 }));
             }
         }
-    }, [props.sort, activePosts])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.sort])
 
     const performRefresh = () => {
         if (props.forumInfo) {
@@ -86,8 +85,9 @@ function ActivePosts(props: Props) {
                 icon: '👀',
             });
         }
-
     }
+
+
     let postCards = () => {
         if (activePosts && activePosts.length > 0) {
             return activePosts.map((post, index) => {
@@ -95,7 +95,7 @@ function ActivePosts(props: Props) {
                     <div key={index} className="post-outer">
                         <div >
                             <a
-                                href={posterLink(post.cardMint)}
+                                href={tokenLink(post.cardMint)}
                                 target="_blank"
                                 rel="noreferrer noopener"
                                 className="poster-card"
@@ -108,7 +108,7 @@ function ActivePosts(props: Props) {
                             {post.body}
                         </div>
                         <div className="post-link">
-                            <a href={"http://" + post.link} target="_blank"
+                            <a href={toPostHref(post.link)} target="_blank"
                                 rel="noreferrer noopener">{post.link}</a>
                         </div>
                         {props.canLike
@@ -133,7 +133,6 @@ function ActivePosts(props: Props) {
             return (<div style={{ color: "rgb(0,0,0,0.4" }}>make the first post</div>)
         }
     }
-
 
 
     return (

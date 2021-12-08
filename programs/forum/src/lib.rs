@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
 use std::convert::TryFrom;
-declare_id!("BMqMvKtRPi5xRJNRN2aRXwFiT8dPEbQW1NC45bevzuWA");
+declare_id!("CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH");
 mod anchor_token_metadata;
 mod anchor_transfer;
 mod artifact;
@@ -22,7 +22,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 300; //86400;
+const SESSION_LENGTH: u64 = 604800; //86400;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]
@@ -69,26 +69,26 @@ pub mod forum {
         member_attribution_bump: u8,
     ) -> ProgramResult {
         verify::address::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
+        ctx.accounts.forum.membership = ctx.accounts.forum.membership.checked_add(1).unwrap();
+
         let mut post = ctx.accounts.post.load_init()?;
         post.card_mint = ctx.accounts.card_mint.key();
-        post.session = ctx.accounts.forum.session - 1;
+        post.session = ctx.accounts.forum.session.checked_sub(1).unwrap();
         post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
 
         ctx.accounts.vote.authority_card_mint = ctx.accounts.card_mint.key();
-        ctx.accounts.vote.session = ctx.accounts.forum.session - 1;
+        ctx.accounts.vote.session = ctx.accounts.forum.session.checked_sub(1).unwrap();
 
         ctx.accounts.membership.authority = ctx.accounts.authority.key();
         ctx.accounts.membership.card_mint = ctx.accounts.card_mint.key();
         ctx.accounts.membership.post = ctx.accounts.post.key();
         ctx.accounts.membership.vote = ctx.accounts.vote.key();
-        ctx.accounts.membership.id = ctx.accounts.forum.membership + 1;
+        ctx.accounts.membership.id = ctx.accounts.forum.membership;
         ctx.accounts.membership.bump = member_bump;
 
         ctx.accounts.membership_attribution.membership = ctx.accounts.membership.key();
         ctx.accounts.membership_attribution.card_mint = ctx.accounts.card_mint.key();
         ctx.accounts.membership_attribution.bump = member_attribution_bump;
-
-        ctx.accounts.forum.membership = ctx.accounts.forum.membership + 1;
 
         let seeds = &[
             &FORUM_AUTHORITY_SEED[..],
@@ -308,6 +308,7 @@ pub struct MintMembership<'info> {
     )]
     membership_attribution: Box<Account<'info, MembershipAttribution>>,
     #[account(
+        mut,
         seeds = [FORUM_SEED],
         bump = forum.bump
     )]
@@ -385,7 +386,6 @@ pub struct WrapSession<'info> {
         constraint = artifact_mint.supply == 0
     )]
     artifact_mint: Account<'info, token::Mint>,
-    //todo: make sure this gets verified by metadata program
     #[account(mut)]
     artifact_metadata: AccountInfo<'info>,
     #[account(

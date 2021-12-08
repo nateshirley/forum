@@ -151,8 +151,11 @@ pub fn create_artifact_metadata(
         verified: true,
         share: 100,
     }];
-    let name: String = String::from("PRH artifact");
-    let symbol: String = String::from("PRH");
+    let session_string = ctx.accounts.forum.session.to_string();
+    let mut name: String = String::from("PRH");
+    name.push_str(&session_string);
+    let mut symbol: String = String::from("PRH");
+    symbol.push_str(&session_string);
     let uri: String =
         String::from("https://nateshirley.github.io/y/parisradiohour/session/artifact.json");
     let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];

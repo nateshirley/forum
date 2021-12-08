@@ -25,8 +25,11 @@ pub fn create_card_token_metadata(
         verified: true,
         share: 100,
     }];
-    let name: String = String::from("PRH Membership");
-    let symbol: String = String::from("MEM");
+    let session = ctx.accounts.forum.membership.to_string();
+    let mut name: String = String::from("PRH Member ");
+    name.push_str(&session);
+    let mut symbol: String = String::from("MEM");
+    symbol.push_str(&session);
     let uri: String =
         String::from("https://nateshirley.github.io/y/parisradiohour/membership/card.json"); //make it look like a card eventually
     anchor_token_metadata::create_metadata(
