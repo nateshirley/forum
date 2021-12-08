@@ -6,12 +6,12 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffc7ca !important;
-  background: linear-gradient(#ffc7ca, #ffe1a8);
+  background-color: #ffafbe !important;
+  background: linear-gradient(#ffafbe, #ffde85);
 }
 
 .modal-wrapper {
-  background: #ffc7ca;
+  background: #ffafbe;
   height: 100%;
   width: 100%;
   min-height: 100vh;
@@ -22,10 +22,10 @@ body {
   .modal-wrapper {
     background: radial-gradient(
       110% 60% at 70% 90%,
-      #b1e5ff 0%,
-      #c6e9c6 45%,
-      #ffe1a8 80%,
-      rgb(255, 225, 168, 0) 100%
+      #7adeff 0%,
+      #b6f4b6 45%,
+      #ffde85 80%,
+      rgb(255, 222, 133, 0) 100%
     );
   }
 }
@@ -33,13 +33,22 @@ body {
   .modal-wrapper {
     background: radial-gradient(
       43% 94% at 50% 56%,
-      #b1e5ff 0%,
-      #c6e9c6 45%,
-      #ffe1a8 80%,
-      rgb(255, 225, 168, 0) 100%
+      #7adeff 0%,
+      #b6f4b6 45%,
+      #ffde85 80%,
+      rgb(255, 222, 133, 0) 100%
     );
   }
 }
+/* .modal-wrapper {
+  background: radial-gradient(
+    43% 94% at 50% 56%,
+    #7ae9ff 0%,
+    #b6f4b6 45%,
+    #ffe396 80%,
+    rgb(255, 225, 168, 0) 100%
+  );
+} */
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",

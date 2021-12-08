@@ -123,6 +123,7 @@
 .session-nav-button {
   font-size: 34px;
   line-height: 54px;
+  color: rgb(0, 0, 0);
   background-color: rgba(255, 255, 255, 0);
   border: none;
   width: 32px;
@@ -277,7 +278,7 @@
   margin-top: 15px;
   margin-bottom: 20px;
   padding: 14px 16px;
-  background-color: rgb(255, 255, 255, 0.45);
+  background-color: rgb(255, 255, 255, 1);
   position: relative;
 }
 .forum-outer {
