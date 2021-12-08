@@ -25,7 +25,7 @@ body {
       #b1e5ff 0%,
       #c6e9c6 45%,
       #ffe1a8 80%,
-      transparent 100%
+      rgb(255, 225, 168, 0) 100%
     );
   }
 }
@@ -36,7 +36,7 @@ body {
       #b1e5ff 0%,
       #c6e9c6 45%,
       #ffe1a8 80%,
-      transparent 100%
+      rgb(255, 225, 168, 0) 100%
     );
   }
 }
