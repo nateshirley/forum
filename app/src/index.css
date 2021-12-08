@@ -6,22 +6,24 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffd2c8 !important;
+  background-color: #ffc7ca !important;
+  background: linear-gradient(#ffc7ca, #ffe1a8);
 }
 
 .modal-wrapper {
   background: radial-gradient(
-      51% 84% at 64% 64%,
-      #bde9ff 0%,
-      #cceacc 40%,
-      transparent 80%
-    ),
-    radial-gradient(
+    43% 94% at 50% 56%,
+    #b1e5ff 0%,
+    #c6e9c6 45%,
+    #ffe1a8 80%,
+    transparent 100%
+  );
+  /* radial-gradient(
       circle at top left,
-      #ffd2c8 0%,
-      #ffe4bd 50%,
+      #fcc6b9 0%,
+      #ffddae 50%,
       transparent 80%
-    );
+    ); */
   height: 100%;
   width: 100%;
   min-height: 100vh;

@@ -6,6 +6,7 @@
   max-width: 540px;
   color: black;
   padding-bottom: 20px;
+  min-height: 80vh;
   font-family: "IBM Plex Sans";
 }
 :root {
@@ -207,6 +208,11 @@
   margin-top: 80px;
   padding-bottom: 26px;
 }
+.posts-details-header {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 26px;
+}
 .posts-header-title {
   font-size: 16px;
   font-weight: 700;
@@ -290,8 +296,16 @@
   max-width: 85%;
   overflow: hidden;
 }
-.like-icon {
+.like-icon-active {
   width: 17px;
+  vertical-align: top;
+  margin-top: 7px;
+  margin-right: 2px;
+}
+.like-icon-artifact {
+  width: 17px;
+  vertical-align: top;
+  margin-top: 6px;
 }
 .like-button {
   background-color: rgb(0, 0, 0, 0);
@@ -301,11 +315,10 @@
   line-height: 26px;
   font-size: 16px;
   color: #000000;
-  width: 60px;
-  margin-top: 9px;
+  width: 56px;
   position: absolute;
   right: 5px;
-  bottom: 5px;
+  bottom: 8px;
 }
 .like-button:hover {
   background-color: rgb(0, 0, 0, 0.12);
@@ -315,6 +328,21 @@
   font-weight: 500;
   font-size: 13px;
 }
+.like-button-cant {
+  background-color: rgb(0, 0, 0, 0);
+  border: none;
+  height: 30px;
+  font-weight: 500;
+  line-height: 26px;
+  font-size: 16px;
+  color: #000000;
+  width: 56px;
+  position: absolute;
+  right: 15px;
+  bottom: 8px;
+  text-align: right;
+}
+
 .about {
   background-color: white;
   border: none;

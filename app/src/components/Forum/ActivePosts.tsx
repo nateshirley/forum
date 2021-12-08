@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { getForumProgram, getProvider } from "../../api/config";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { getNow, posterLink, timeSince, toDisplayString } from "../../utils";
+import { posterLink, timeSince, toDisplayString } from "../../utils";
 import { ForumInfo, Post } from "../../interfaces";
 import likeIcon from "../../assets/likeIcon.svg"
+import likeIconFill from "../../assets/likeIconFill.svg"
 import toast, { Toaster } from "react-hot-toast";
 
 interface Props {
@@ -110,7 +111,21 @@ function ActivePosts(props: Props) {
                             <a href={"http://" + post.link} target="_blank"
                                 rel="noreferrer noopener">{post.link}</a>
                         </div>
-                        <button className="like-button" onClick={() => didPressLike(post.publicKey, index)}><img src={likeIcon} className="like-icon" alt="like" /> {post.sessionScore}</button>
+                        {props.canLike
+                            ? (
+                                <button className="like-button" onClick={() => didPressLike(post.publicKey, index)}>
+                                    <img src={likeIcon} className="like-icon-active" alt="like" />
+                                    {post.sessionScore}
+                                </button>
+                            )
+                            : (
+                                <div className="like-button-cant">
+                                    <img src={likeIconFill} className="like-icon-active" alt="like" />
+                                    {post.sessionScore}
+                                </div>
+                            )
+                        }
+
                     </div>
                 )
             })

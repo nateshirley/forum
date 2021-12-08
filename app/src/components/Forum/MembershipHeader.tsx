@@ -182,7 +182,7 @@ function MembershipHeader(props: Props) {
         return (
             <div >
                 <div className="connect-alert">
-                    wallet not connected
+                    not a member?
                 </div>
                 <button className="mint-membership-button" onClick={didPressMintMembership}>
                     mint membership

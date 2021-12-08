@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
 use std::convert::TryFrom;
-declare_id!("CRtDsXxv7zVoZijsL9kPHSFDbJnLSVXRWw4umezaSCo2");
+declare_id!("BMqMvKtRPi5xRJNRN2aRXwFiT8dPEbQW1NC45bevzuWA");
 mod anchor_token_metadata;
 mod anchor_transfer;
 mod artifact;

@@ -30,7 +30,7 @@ pub struct ArtifactAuction {
 #[derive(Default)]
 pub struct Artifact {
     pub session: u32,
-    pub card_mint: Pubkey,
+    pub token_mint: Pubkey,
     pub posts: [LeaderboardPost; 10],
     pub bump: u8,
 }
@@ -134,7 +134,7 @@ pub fn build_new(
     let mut artifact = artifact_loader.load_init()?;
     let leaderboard = ctx.accounts.leaderboard.load().unwrap();
     artifact.session = ctx.accounts.forum.session;
-    artifact.card_mint = ctx.accounts.artifact_mint.key();
+    artifact.token_mint = ctx.accounts.artifact_mint.key();
     artifact.posts = leaderboard.posts;
     artifact.bump = artifact_bump;
     Ok(())
@@ -151,8 +151,8 @@ pub fn create_artifact_metadata(
         verified: true,
         share: 100,
     }];
-    let name: String = String::from("PRH ART");
-    let symbol: String = String::from("ART");
+    let name: String = String::from("PRH artifact");
+    let symbol: String = String::from("PRH");
     let uri: String =
         String::from("https://nateshirley.github.io/y/parisradiohour/session/artifact.json");
     let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];
