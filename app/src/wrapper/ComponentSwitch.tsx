@@ -135,9 +135,19 @@ const ComponentSwitch: FC = () => {
     //TODO: make sure the like account is getting updated when a new like goes through
     useEffect(() => {
         if (forumInfo && membership && auctionPhase) {
-            let activeSession = forumInfo?.session ?? 0;
+            refreshActiveUserLike();
+            refreshActiveUserPost();
+        } else {
+            setCanLike(false);
+            setCanPost(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [membership, forumInfo, auctionPhase]);
+
+    const refreshActiveUserLike = () => {
+        if (forumInfo && membership && auctionPhase) {
             program.account.vote.fetch(membership.vote).then((likeAccount) => {
-                setCanLike(likeAccount.session < activeSession && auctionPhase === AUCTION_PHASE.isActive);
+                setCanLike(likeAccount.session < forumInfo.session && auctionPhase === AUCTION_PHASE.isActive);
                 console.log("found a like", likeAccount.votedForCardMint.toBase58())
                 setActiveUserLike({
                     publicKey: membership.vote,
@@ -146,6 +156,11 @@ const ComponentSwitch: FC = () => {
                     session: likeAccount.session,
                 })
             });
+        }
+    }
+    const refreshActiveUserPost = () => {
+        if (forumInfo && membership && auctionPhase) {
+            let activeSession = forumInfo.session;
             program.account.post.fetch(membership.post).then((postAccount) => {
                 let canPost = postAccount.session < activeSession && auctionPhase === AUCTION_PHASE.isActive;
                 setCanPost(canPost);
@@ -153,12 +168,8 @@ const ComponentSwitch: FC = () => {
                     setActiveUserPost(fetchedPostAccountToPostObject(postAccount, membership.post));
                 }
             })
-        } else {
-            setCanLike(false);
-            setCanPost(false);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [membership, forumInfo, auctionPhase]);
+    }
 
     const submitLike = async (post: PublicKey) => {
         if (wallet.publicKey && forumInfo && artifactAuction && membership && cardTokenAccount && leaderboard) {
@@ -177,10 +188,14 @@ const ComponentSwitch: FC = () => {
                 },
             });
             setCanLike(false);
+            refreshActiveUserLike();
             return tx;
         }
     }
 
+    const didSubmitNewPost = () => {
+        refreshActiveUserPost();
+    }
     const refreshArtifactAuction = () => {
         fetchAuction().then((artifactAuction) => {
             console.log("got the auction")
@@ -203,7 +218,7 @@ const ComponentSwitch: FC = () => {
                 <Home forumInfo={forumInfo} memberCardMint={memberCardMint} membership={membership} leaderboard={leaderboard}
                     artifactAuction={artifactAuction} cardTokenAccount={cardTokenAccount} canPost={canPost} canLike={canLike}
                     activeUserPost={activeUserPost} setMemberCardMint={setMemberCardMint} setCanPost={setCanPost} submitLike={submitLike}
-                    refreshArtifactAuction={refreshArtifactAuction} auctionPhase={auctionPhase} activeUserLike={activeUserLike}
+                    refreshArtifactAuction={refreshArtifactAuction} auctionPhase={auctionPhase} activeUserLike={activeUserLike} didSubmitNewPost={didSubmitNewPost}
                 />
             </Route>
 

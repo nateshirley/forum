@@ -5,6 +5,7 @@ import BN from 'bn.js';
 import * as web3 from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import "../../Global.css";
+import chevrondown from "../../assets/chevrondown.svg"
 import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority, getMetadataAddress, TOKEN_METADATA_PROGRAM_ID } from "../../api/addresses";
 import { establishedTextFor, getNow, minBid, numberArrayToString, toDisplayString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
@@ -15,6 +16,7 @@ import { useHistory } from "react-router";
 import { Row, Col, Container } from "react-bootstrap";
 import { useEasybase } from 'easybase-react';
 import toast from "react-hot-toast";
+import ZeroCountdown from "./ZeroCountdown";
 
 
 interface Props {
@@ -38,6 +40,7 @@ function ActiveArtifactAuction(props: Props) {
     const [auctionHouse, setAuctionHouse] = useState<Pda | undefined>(undefined);
     const [placeBidInput, setPlaceBidInput] = useState("");
     const [estText, setEstText] = useState("");
+    const [isExpanded, setIsExpanded] = useState(false);
     const history = useHistory();
     let auction = props.artifactAuction;
     const { db, useReturn } = useEasybase();
@@ -82,7 +85,7 @@ function ActiveArtifactAuction(props: Props) {
                 if (sig.length > 1) {
                     console.log("tx sig: ", sig)
                     if (props.forumInfo && auction) {
-                        db("FORUMSESSIONS").insert({
+                        db("DFORUMSESSIONS").insert({
                             session: props.forumInfo.session,
                             winningLamports: auction.bidLamports,
                             wrapTxSignature: sig,
@@ -240,6 +243,10 @@ function ActiveArtifactAuction(props: Props) {
         );
     }
 
+    const countedToZero = () => {
+        window.location.reload();
+    }
+
     const styles = {
         grid: {
             paddingLeft: 0,
@@ -269,10 +276,11 @@ function ActiveArtifactAuction(props: Props) {
             history.push("/session/" + nextArtifact);
         }
     }
-    const clickedRight = () => {
-        console.log("u can't click right")
-    }
 
+    const didClickExpandBidElement = () => {
+        console.log("should be expanding now")
+        setIsExpanded(!isExpanded)
+    }
 
     let headerElement;
     let bidElement;
@@ -282,28 +290,31 @@ function ActiveArtifactAuction(props: Props) {
             <div>
                 <div className="accent-text session-date">{estText}</div>
                 <div className="session-header">
-                    Session #{auction.session}
-                    <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button onClick={clickedRight} className="session-nav-button right">→</button>
+                    PRH {auction.session}
+                    <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button className="session-nav-button right active dead-button">→</button>
                 </div>
             </div>
         );
         if (props.auctionPhase === AUCTION_PHASE.needsSettled) {
             actionElement = (
                 <div>
-                    <button className="wrap-session" onClick={didPressWrapSession}>wrap session</button>
+                    <button className="wrap-session" onClick={didPressWrapSession}>finalize auction</button>
                     <div className="bid-leader">winner: {toDisplayString(auction.leadingBidder)}</div>
                 </div>
             );
         } else if (props.auctionPhase === AUCTION_PHASE.isActive) {
             actionElement = (
                 <div className="bid-action">
-                    <input
-                        placeholder=""
-                        onChange={e => onPlaceBidAmountChange(e)}
-                        value={placeBidInput}
-                        className="bid-input"
-                    />
-                    <button className="bid-button" onClick={didPressBid}>bid</button>
+                    <div className="bid-input-parent">
+                        <div className="sol-bid-label">SOL</div>
+                        <input
+                            placeholder=""
+                            onChange={e => onPlaceBidAmountChange(e)}
+                            value={placeBidInput}
+                            className="bid-input"
+                        />
+                        <button className="bid-button" onClick={didPressBid}>bid</button>
+                    </div>
                     <div className="bid-leader">leader: {auction.bidLamports > 0
                         ? toDisplayString(auction.leadingBidder)
                         : <span></span>
@@ -311,26 +322,56 @@ function ActiveArtifactAuction(props: Props) {
                 </div>
             );
         }
+        let bidContent;
+        let auctionStatus = (
+            <Row className="m-1" >
+                <Col xl={3} style={styles.col}>
+                    <div className="accent-text">current bid</div>
+                    <div className="auction-number">{auction.bidLamports / web3.LAMPORTS_PER_SOL}<span className="auction-secondary-element"> sol</span></div>
+                </Col>
+                <Col style={styles.col}>
+                    <div className="time-remaining">
+                        <div className="accent-text">ends in</div>
+                        {auction && auction.endTimestamp - getNow() > 0
+                            ? <Countdown auctionEndTimestamp={auction.endTimestamp} countedToZero={countedToZero} />
+                            : <ZeroCountdown />
+                        }
+                    </div>
+                </Col>
+            </Row>
+        );
+        if (isExpanded || props.auctionPhase === AUCTION_PHASE.needsSettled) {
+            bidContent = (
+                <div>
+                    <div className="expandable-bid">
+                        <img src={chevrondown} alt="down" className="chev-up" />
+                    </div>
+                    <div className="collapsed-auction" onClick={didClickExpandBidElement}>
+                        {auctionStatus}
+                    </div>
+                    <div className="action-element">
+                        <div className="minimum-bid accent-text">min bid: {minBid(auction.bidLamports)} SOL</div>
+                        {actionElement}
+                    </div>
+                </div>
+            );
+
+        } else {
+            bidContent = (
+                <div>
+                    <div className="expandable-bid">
+                        <img src={chevrondown} alt="down" />
+                    </div>
+                    <div className="collapsed-auction" onClick={didClickExpandBidElement}>
+                        {auctionStatus}
+                    </div>
+                </div>
+            );
+        }
         bidElement = (
             <div className="bid-element">
                 <div className="bid-content">
-                    <Row className="m-1" >
-                        <Col xl={3} style={styles.col}>
-                            <div className="accent-text">current bid</div>
-                            <div className="auction-number">{auction.bidLamports / web3.LAMPORTS_PER_SOL}<span className="auction-secondary-element"> sol</span></div>
-                        </Col>
-                        <Col style={styles.col}>
-                            <div className="time-remaining">
-                                <div className="accent-text">ends in</div>
-                                <Countdown auctionEndTimestamp={auction.endTimestamp} />
-                            </div>
-                        </Col>
-                    </Row>
-                    <div className="action-element">
-                        <div className="minimum-bid">min bid: {minBid(auction.bidLamports)} SOL</div>
-                        {actionElement}
-                    </div>
-
+                    {bidContent}
                 </div>
             </div>
         );

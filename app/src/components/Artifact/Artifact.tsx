@@ -79,7 +79,7 @@ function Artifact(props: Props) {
     }
 
     const fetchSessionRecord = () => {
-        db("FORUMSESSIONS").return().where({ session: session }).one().then((record: any) => {
+        db("DFORUMSESSIONS").return().where({ session: session }).one().then((record: any) => {
             //db("FORUMSESSIONS").return().all().then((record: any) => {
             setSessionRecord({
                 session: record.session,

@@ -238,7 +238,7 @@ export type Forum = {
         },
         {
           "name": "artifactMetadata",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1093,7 +1093,7 @@ export const IDL: Forum = {
         },
         {
           "name": "artifactMetadata",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {

@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
 use std::convert::TryFrom;
-declare_id!("AZwXW1WTq6DjJ5cC3pLriSSgxgGTshZp2BcA7ppoAhgS");
+declare_id!("CRtDsXxv7zVoZijsL9kPHSFDbJnLSVXRWw4umezaSCo2");
 mod anchor_token_metadata;
 mod anchor_transfer;
 mod artifact;
@@ -22,7 +22,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 86400;
+const SESSION_LENGTH: u64 = 300; //86400;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]
@@ -137,17 +137,17 @@ pub mod forum {
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
 
         //mint the artifact token to the winner of the auction
-        let seeds = &[
+        let auth_seeds = &[
             &FORUM_AUTHORITY_SEED[..],
             &[ctx.accounts.forum_authority.bump],
         ];
         token::mint_to(
             ctx.accounts
                 .into_mint_artifact_context()
-                .with_signer(&[seeds]),
+                .with_signer(&[auth_seeds]),
             1,
         )?;
-        artifact::create_artifact_metadata(&ctx, seeds)?;
+        artifact::create_artifact_metadata(&ctx, auth_seeds, _artifact_auction_house_bump)?;
         //todo: create some metadata
         //todo: send funds to multisig,
         //todo: treasury cut
@@ -328,7 +328,7 @@ pub struct MintMembership<'info> {
         constraint = card_mint.mint_authority.unwrap() == forum_authority.key(),
     )]
     card_mint: Account<'info, token::Mint>,
-    #[account(mut)]
+    #[account(mut)] //verified via cpi in the metadata program
     card_metadata: AccountInfo<'info>,
     #[account(
         mut,
@@ -385,6 +385,8 @@ pub struct WrapSession<'info> {
         constraint = artifact_mint.supply == 0
     )]
     artifact_mint: Account<'info, token::Mint>,
+    //todo: make sure this gets verified by metadata program
+    #[account(mut)]
     artifact_metadata: AccountInfo<'info>,
     #[account(
         mut,
