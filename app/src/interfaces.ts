@@ -20,7 +20,7 @@ export interface Like {
 export interface Artifact {
   address: PublicKey;
   session: number;
-  tokenMint: PublicKey;
+  cardMint: PublicKey;
   posts: ArtifactPost[];
   bump: number;
 }

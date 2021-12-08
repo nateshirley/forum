@@ -18,9 +18,7 @@ ReactDOM.render(
   <StrictMode>
     <BrowserRouter>
       <EasybaseProvider ebconfig={ebconfig}>
-        <div className="wrapper-parent">
-          <WalletWrapper />
-        </div>
+        <WalletWrapper />
       </EasybaseProvider>
     </BrowserRouter>
   </StrictMode>,

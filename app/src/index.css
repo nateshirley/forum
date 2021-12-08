@@ -6,29 +6,6 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffc7ca !important;
-  background: linear-gradient(#ffc7ca, #ffe1a8);
-}
-
-.modal-wrapper {
-  background: radial-gradient(
-    43% 94% at 50% 56%,
-    #b1e5ff 0%,
-    #c6e9c6 45%,
-    #ffe1a8 80%,
-    transparent 100%
-  );
-  /* radial-gradient(
-      circle at top left,
-      #fcc6b9 0%,
-      #ffddae 50%,
-      transparent 80%
-    ); */
-  height: 100%;
-  width: 100%;
-  min-height: 100vh;
-  background-attachment: fixed;
-  z-index: -1;
 }
 
 code {

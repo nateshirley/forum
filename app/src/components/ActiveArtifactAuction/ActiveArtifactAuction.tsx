@@ -5,8 +5,7 @@ import BN from 'bn.js';
 import * as web3 from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import "../../Global.css";
-import chevrondown from "../../assets/chevrondown.svg"
-import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority, getMetadataAddress, TOKEN_METADATA_PROGRAM_ID } from "../../api/addresses";
+import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority } from "../../api/addresses";
 import { establishedTextFor, getNow, minBid, numberArrayToString, toDisplayString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
 import { Artifact, ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Pda, Post } from "../../interfaces";
@@ -16,7 +15,6 @@ import { useHistory } from "react-router";
 import { Row, Col, Container } from "react-bootstrap";
 import { useEasybase } from 'easybase-react';
 import toast from "react-hot-toast";
-import ZeroCountdown from "./ZeroCountdown";
 
 
 interface Props {
@@ -40,7 +38,6 @@ function ActiveArtifactAuction(props: Props) {
     const [auctionHouse, setAuctionHouse] = useState<Pda | undefined>(undefined);
     const [placeBidInput, setPlaceBidInput] = useState("");
     const [estText, setEstText] = useState("");
-    const [isExpanded, setIsExpanded] = useState(false);
     const history = useHistory();
     let auction = props.artifactAuction;
     const { db, useReturn } = useEasybase();
@@ -85,7 +82,7 @@ function ActiveArtifactAuction(props: Props) {
                 if (sig.length > 1) {
                     console.log("tx sig: ", sig)
                     if (props.forumInfo && auction) {
-                        db("DFORUMSESSIONS").insert({
+                        db("FORUMSESSIONS").insert({
                             session: props.forumInfo.session,
                             winningLamports: auction.bidLamports,
                             wrapTxSignature: sig,
@@ -105,9 +102,9 @@ function ActiveArtifactAuction(props: Props) {
     }
     const executeWrapSession = async (payer: PublicKey, forum: PublicKey, artifactAuction:
         PublicKey, artifactAuctionHouse: Pda, winner: PublicKey, leaderboard: PublicKey, session: number): Promise<string> => {
-        let artifactMint = Keypair.generate();
+        let artifactCardMint = Keypair.generate();
         //let [artifactAttribution, artifactAttributionBump]
-        const attr = getArtifactAttributionAddress(artifactMint.publicKey);
+        const attr = getArtifactAttributionAddress(artifactCardMint.publicKey);
         //let [_forumAuthority, _forumAuthorityBump]
         const auth = getForumAuthority();
         const mintRent = program.provider.connection.getMinimumBalanceForRentExemption(
@@ -115,11 +112,10 @@ function ActiveArtifactAuction(props: Props) {
         );
         const winnerTokenAccount = getAssociatedTokenAccountAddress(
             winner,
-            artifactMint.publicKey
+            artifactCardMint.publicKey
         )
         const fetchArtifact = getArtifactAddress(session);
-        const metadata = getMetadataAddress(artifactMint.publicKey);
-        let response = await Promise.all([attr, auth, mintRent, winnerTokenAccount, fetchArtifact, metadata]).then(async (values) => {
+        let response = await Promise.all([attr, auth, mintRent, winnerTokenAccount, fetchArtifact]).then(async (values) => {
             let artifactAttribution = values[0][0];
             let artifactAttributionBump = values[0][1];
             let forumAuthority = values[1][0]
@@ -129,7 +125,6 @@ function ActiveArtifactAuction(props: Props) {
                 address: values[4][0],
                 bump: values[4][1]
             }
-            let artifactMetadata = values[5][0]
             return await program.rpc.assertArtifactDiscriminator({
                 accounts: {
                     artifact: artifact.address,
@@ -138,7 +133,7 @@ function ActiveArtifactAuction(props: Props) {
                     //create artifact mint
                     SystemProgram.createAccount({
                         fromPubkey: payer,
-                        newAccountPubkey: artifactMint.publicKey,
+                        newAccountPubkey: artifactCardMint.publicKey,
                         space: MintLayout.span,
                         lamports: mintRent,
                         programId: TOKEN_PROGRAM_ID,
@@ -146,14 +141,14 @@ function ActiveArtifactAuction(props: Props) {
                     //init the mint
                     Token.createInitMintInstruction(
                         TOKEN_PROGRAM_ID,
-                        artifactMint.publicKey,
+                        artifactCardMint.publicKey,
                         0,
                         forumAuthority,
                         forumAuthority
                     ),
                     //create token account for winner
                     createAssociatedTokenAccountInstruction(
-                        artifactMint.publicKey,
+                        artifactCardMint.publicKey,
                         winnerTokenAccount,
                         winner,
                         payer
@@ -166,8 +161,7 @@ function ActiveArtifactAuction(props: Props) {
                             accounts: {
                                 initializer: payer,
                                 artifact: artifact.address,
-                                artifactMint: artifactMint.publicKey,
-                                artifactMetadata: artifactMetadata,
+                                artifactCardMint: artifactCardMint.publicKey,
                                 artifactTokenAccount: winnerTokenAccount,
                                 winner: winner,
                                 artifactAuction: artifactAuction,
@@ -176,16 +170,14 @@ function ActiveArtifactAuction(props: Props) {
                                 forum: forum,
                                 forumAuthority: forumAuthority,
                                 leaderboard: leaderboard,
-                                rent: web3.SYSVAR_RENT_PUBKEY,
                                 clock: web3.SYSVAR_CLOCK_PUBKEY,
                                 tokenProgram: TOKEN_PROGRAM_ID,
-                                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
                                 systemProgram: SystemProgram.programId,
                             },
                         }
                     ),
                 ],
-                signers: [artifactMint],
+                signers: [artifactCardMint],
             });
         }).catch((e) => {
             console.log(e);
@@ -243,10 +235,6 @@ function ActiveArtifactAuction(props: Props) {
         );
     }
 
-    const countedToZero = () => {
-        window.location.reload();
-    }
-
     const styles = {
         grid: {
             paddingLeft: 0,
@@ -276,11 +264,10 @@ function ActiveArtifactAuction(props: Props) {
             history.push("/session/" + nextArtifact);
         }
     }
-
-    const didClickExpandBidElement = () => {
-        console.log("should be expanding now")
-        setIsExpanded(!isExpanded)
+    const clickedRight = () => {
+        console.log("u can't click right")
     }
+
 
     let headerElement;
     let bidElement;
@@ -290,31 +277,28 @@ function ActiveArtifactAuction(props: Props) {
             <div>
                 <div className="accent-text session-date">{estText}</div>
                 <div className="session-header">
-                    PRH {auction.session}
-                    <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button className="session-nav-button right active dead-button">→</button>
+                    Session #{auction.session}
+                    <button className="session-nav-button left" onClick={clickedLeft}>←</button> <button onClick={clickedRight} className="session-nav-button right">→</button>
                 </div>
             </div>
         );
         if (props.auctionPhase === AUCTION_PHASE.needsSettled) {
             actionElement = (
                 <div>
-                    <button className="wrap-session" onClick={didPressWrapSession}>finalize auction</button>
+                    <button className="wrap-session" onClick={didPressWrapSession}>wrap session</button>
                     <div className="bid-leader">winner: {toDisplayString(auction.leadingBidder)}</div>
                 </div>
             );
         } else if (props.auctionPhase === AUCTION_PHASE.isActive) {
             actionElement = (
                 <div className="bid-action">
-                    <div className="bid-input-parent">
-                        <div className="sol-bid-label">SOL</div>
-                        <input
-                            placeholder=""
-                            onChange={e => onPlaceBidAmountChange(e)}
-                            value={placeBidInput}
-                            className="bid-input"
-                        />
-                        <button className="bid-button" onClick={didPressBid}>bid</button>
-                    </div>
+                    <input
+                        placeholder=""
+                        onChange={e => onPlaceBidAmountChange(e)}
+                        value={placeBidInput}
+                        className="bid-input"
+                    />
+                    <button className="bid-button" onClick={didPressBid}>bid</button>
                     <div className="bid-leader">leader: {auction.bidLamports > 0
                         ? toDisplayString(auction.leadingBidder)
                         : <span></span>
@@ -322,56 +306,26 @@ function ActiveArtifactAuction(props: Props) {
                 </div>
             );
         }
-        let bidContent;
-        let auctionStatus = (
-            <Row className="m-1" >
-                <Col xl={3} style={styles.col}>
-                    <div className="accent-text">current bid</div>
-                    <div className="auction-number">{auction.bidLamports / web3.LAMPORTS_PER_SOL}<span className="auction-secondary-element"> sol</span></div>
-                </Col>
-                <Col style={styles.col}>
-                    <div className="time-remaining">
-                        <div className="accent-text">ends in</div>
-                        {auction && auction.endTimestamp - getNow() > 0
-                            ? <Countdown auctionEndTimestamp={auction.endTimestamp} countedToZero={countedToZero} />
-                            : <ZeroCountdown />
-                        }
-                    </div>
-                </Col>
-            </Row>
-        );
-        if (isExpanded || props.auctionPhase === AUCTION_PHASE.needsSettled) {
-            bidContent = (
-                <div>
-                    <div className="expandable-bid">
-                        <img src={chevrondown} alt="down" className="chev-up" />
-                    </div>
-                    <div className="collapsed-auction" onClick={didClickExpandBidElement}>
-                        {auctionStatus}
-                    </div>
-                    <div className="action-element">
-                        <div className="minimum-bid accent-text">min bid: {minBid(auction.bidLamports)} SOL</div>
-                        {actionElement}
-                    </div>
-                </div>
-            );
-
-        } else {
-            bidContent = (
-                <div>
-                    <div className="expandable-bid">
-                        <img src={chevrondown} alt="down" />
-                    </div>
-                    <div className="collapsed-auction" onClick={didClickExpandBidElement}>
-                        {auctionStatus}
-                    </div>
-                </div>
-            );
-        }
         bidElement = (
             <div className="bid-element">
                 <div className="bid-content">
-                    {bidContent}
+                    <Row className="m-1" >
+                        <Col xl={3} style={styles.col}>
+                            <div className="accent-text">current bid</div>
+                            <div className="auction-number">{auction.bidLamports / web3.LAMPORTS_PER_SOL}<span className="auction-secondary-element"> sol</span></div>
+                        </Col>
+                        <Col style={styles.col}>
+                            <div className="time-remaining">
+                                <div className="accent-text">ends in</div>
+                                <Countdown auctionEndTimestamp={auction.endTimestamp} />
+                            </div>
+                        </Col>
+                    </Row>
+                    <div className="action-element">
+                        <div className="minimum-bid">min bid: {minBid(auction.bidLamports)} SOL</div>
+                        {actionElement}
+                    </div>
+
                 </div>
             </div>
         );
