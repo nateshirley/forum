@@ -1,5 +1,9 @@
 [programs.localnet]
+<<<<<<< HEAD
 forum = "7LBXh2RuSNFrLrmX9iq3ZGunuqL94s5ZsXE8Ku3HgKAx"
+=======
+forum = "CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH"
+>>>>>>> metadata
 
 [registry]
 url = "https://anchor.projectserum.com"

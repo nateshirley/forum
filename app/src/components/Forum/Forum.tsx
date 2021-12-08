@@ -44,6 +44,10 @@ function Forum(props: Props) {
     const wallet = useWallet();
     const [postRefresh, doPostRefresh] = useState(0);
     const program = getForumProgram(wallet);
+<<<<<<< HEAD
+=======
+    const [sort, setSort] = useState("");
+>>>>>>> metadata
 
     const didSubmitNewPost = () => {
         props.setCanPost(false);
@@ -56,7 +60,38 @@ function Forum(props: Props) {
     } else {
         header = <MembershipHeader memberCardMint={props.memberCardMint} setMemberCardMint={props.setMemberCardMint} canPost={props.canPost} canLike={props.canLike}
             membership={props.membership} forumInfo={props.forumInfo} cardTokenAccount={props.cardTokenAccount} didSubmitNewPost={didSubmitNewPost}
+<<<<<<< HEAD
             activeUserPost={props.activeUserPost} activeUserLike={props.activeUserLike} artifactAuction={props.artifactAuction} />
+=======
+            activeUserPost={props.activeUserPost} activeUserLike={props.activeUserLike} artifactAuction={props.artifactAuction} auctionPhase={props.auctionPhase}
+        />
+    }
+
+    const didPressTop = () => {
+        setSort("top")
+    }
+    const didPressRecent = () => {
+        setSort("recent")
+    }
+
+
+    const sortButtons = () => {
+        if (sort === "top" || sort === "") {
+            return (
+                <>
+                    <button onClick={didPressRecent} className="sort-button recent inactive">recent</button>
+                    <button onClick={didPressTop} className="sort-button top active">top</button>
+                </>
+            )
+        } else {
+            return (
+                <>
+                    <button onClick={didPressRecent} className="sort-button recent active">recent</button>
+                    <button onClick={didPressTop} className="sort-button top inactive">top</button>
+                </>
+            )
+        }
+>>>>>>> metadata
     }
 
 

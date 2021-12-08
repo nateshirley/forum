@@ -3,7 +3,11 @@ import { useState, useEffect } from "react";
 import { getForumProgram, getProvider } from "../../api/config";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
+<<<<<<< HEAD
 import { getNow, posterLink, timeSince, toDisplayString } from "../../utils";
+=======
+import { tokenLink, timeSince, toDisplayString, toPostHref } from "../../utils";
+>>>>>>> metadata
 import { ForumInfo, Post } from "../../interfaces";
 import likeIcon from "../../assets/likeIcon.svg"
 import toast, { Toaster } from "react-hot-toast";
@@ -36,6 +40,26 @@ function ActivePosts(props: Props) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.refresh]);
 
+<<<<<<< HEAD
+=======
+    useEffect(() => {
+        if (props.sort === "top") {
+            if (activePosts) {
+                setActivePosts([...activePosts].sort((a, b) => {
+                    return b.sessionScore - a.sessionScore;
+                }));
+            }
+        } else if (props.sort === "recent") {
+            if (activePosts) {
+                setActivePosts([...activePosts].sort((a, b) => {
+                    return b.timestamp - a.timestamp;
+                }));
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.sort])
+
+>>>>>>> metadata
     const performRefresh = () => {
         if (props.forumInfo) {
             fetchAllActivePostsSortedByScore(props.forumInfo.session, provider.connection, program).then((posts) => {
@@ -66,8 +90,49 @@ function ActivePosts(props: Props) {
                 icon: '👀',
             });
         }
-
     }
+<<<<<<< HEAD
+=======
+
+
+    let postCards = () => {
+        if (activePosts && activePosts.length > 0) {
+            return activePosts.map((post, index) => {
+                return (
+                    <div key={index} className="post-outer">
+                        <div >
+                            <a
+                                href={tokenLink(post.cardMint)}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="poster-card"
+                            >
+                                {toDisplayString(post.cardMint, 3)}
+                            </a>
+                            <span className="dot-time"> · {timeSince(post.timestamp)}</span>
+                        </div>
+                        <div className="post-body">
+                            {post.body}
+                        </div>
+                        <div className="post-link">
+                            <a href={toPostHref(post.link)} target="_blank"
+                                rel="noreferrer noopener">{post.link}</a>
+                        </div>
+                        {props.canLike
+                            ? (
+                                <button className="like-button" onClick={() => didPressLike(post.publicKey, index)}>
+                                    <img src={likeIcon} className="like-icon-active" alt="like" />
+                                    {post.sessionScore}
+                                </button>
+                            )
+                            : (
+                                <div className="like-button-cant">
+                                    <img src={likeIconFill} className="like-icon-active" alt="like" />
+                                    {post.sessionScore}
+                                </div>
+                            )
+                        }
+>>>>>>> metadata
 
 
 

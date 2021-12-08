@@ -102,7 +102,7 @@ export type Forum = {
         },
         {
           "name": "forum",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -927,7 +927,7 @@ export const IDL: Forum = {
         },
         {
           "name": "forum",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {

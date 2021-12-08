@@ -4,7 +4,11 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useHistory } from "react-router";
 import qs from "qs";
 import { getForumProgram } from "../api/config";
+<<<<<<< HEAD
 import { numberArrayToString } from "../utils";
+=======
+import { numberArrayToString, tokenLink, timeSince, toDisplayString, toPostHref } from "../utils";
+>>>>>>> metadata
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from "../api/membership";
 import { fetchedPostAccountToPostObject } from "../api/posts";
 import { Post } from "../interfaces";
@@ -95,12 +99,26 @@ function PostDetails(props: Props) {
     if (postInfo) {
         postCard = (
             <div className="post-outer">
+<<<<<<< HEAD
                 <div>
                     {postInfo.body}
+=======
+                <div >
+                    <a
+                        href={tokenLink(post.cardMint)}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="poster-card"
+                    >
+                        {toDisplayString(post.cardMint, 3)}
+                    </a>
+                    <span className="dot-time"> · {timeSince(post.timestamp)}</span>
+>>>>>>> metadata
                 </div>
                 <div>
                     {postInfo.sessionScore}
                 </div>
+<<<<<<< HEAD
                 <div>
                     <a href={postInfo.link}>{postInfo.link}</a>
                 </div>
@@ -109,6 +127,11 @@ function PostDetails(props: Props) {
                         ? <button onClick={() => didPressLike(postInfo.publicKey)}>like</button>
                         : <div>not able</div>
                     }
+=======
+                <div className="post-link">
+                    <a href={toPostHref(post.link)} target="_blank"
+                        rel="noreferrer noopener">{post.link}</a>
+>>>>>>> metadata
                 </div>
             </div>
         )

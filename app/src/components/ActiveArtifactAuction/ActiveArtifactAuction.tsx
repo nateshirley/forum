@@ -206,6 +206,7 @@ function ActiveArtifactAuction(props: Props) {
                         session: props.forumInfo.session,
                         lamports: amount * web3.LAMPORTS_PER_SOL,
                         bidder: wallet.publicKey?.toBase58(),
+                        txSignature: sig,
                     }).one();
                 }
                 props.refreshArtifactAuction();

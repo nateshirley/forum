@@ -7,8 +7,13 @@ import { getForumProgram } from "../../api/config";
 import { useHistory, useLocation } from "react-router";
 import { Artifact as ArtifactInterface, ArtifactAuction, Pda, ArtifactPost } from "../../interfaces";
 import qs from "qs";
+<<<<<<< HEAD
 import { numberArrayToString, posterLink, toDisplayString, endedTextFor } from "../../utils";
 import likeIcon from "../../assets/likeIcon.svg"
+=======
+import { numberArrayToString, tokenLink, toDisplayString, endedTextFor, toPostHref } from "../../utils";
+import likeIconFill from "../../assets/likeIconFill.svg"
+>>>>>>> metadata
 import { useEasybase } from 'easybase-react';
 import { Row, Col, Container } from "react-bootstrap";
 
@@ -174,7 +179,7 @@ function Artifact(props: Props) {
                 <div key={index} className="post-outer">
                     <div >
                         <a
-                            href={posterLink(post.cardMint)}
+                            href={tokenLink(post.cardMint)}
                             target="_blank"
                             rel="noreferrer noopener"
                             className="poster-card"
@@ -186,7 +191,7 @@ function Artifact(props: Props) {
                         {post.body}
                     </div>
                     <div>
-                        <a href={"http://" + post.link}>{post.link}</a>
+                        <a href={toPostHref(post.link)}>{post.link}</a>
                     </div>
                     <div >
                         <button className="like-button" ><img src={likeIcon} className="like-icon" alt="like" /> {post.score}</button>
@@ -217,8 +222,26 @@ function Artifact(props: Props) {
         if (sessionRecord) {
             winningBid = sessionRecord.winningLamports;
         }
+        let artifactTokenElement = () => {
+            if (artifactObject?.tokenMint) {
+                return (
+                    <div>
+                        <div className="artifact-token">
+                            <span className="artifact-token-label">asset &nbsp;</span>
+                            <a href={tokenLink(artifactObject.tokenMint)}
+                                className="artifact-token-mint"
+                                target="_blank"
+                                rel="noreferrer noopener">
+                                {toDisplayString(artifactObject.tokenMint)}
+                            </a>
+                        </div>
+                    </div>
+                )
+            }
+            return <div></div>
+        }
         artifactOwnerElement = (
-            <div>
+            <div className="bid-element">
                 <div className="bid-content">
                     <Row className="m-1" >
                         <Col xl={3} style={styles.col}>
@@ -232,6 +255,7 @@ function Artifact(props: Props) {
                             </div>
                         </Col>
                     </Row>
+                    {artifactTokenElement()}
                 </div>
             </div>
         )
