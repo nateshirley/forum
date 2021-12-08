@@ -9,6 +9,7 @@ import { mintMembership } from "../../api/membership";
 import { toDisplayString } from "../../utils"
 import { ArtifactAuction, AUCTION_PHASE, ForumInfo, Like, Membership, Post } from "../../interfaces";
 import { useHistory } from "react-router";
+import toast from "react-hot-toast";
 
 /*
 if member {
@@ -85,18 +86,14 @@ function MembershipHeader(props: Props) {
             didPressNewPost()
         }
     }
-
-
-    const membershipExplorerLink = (toPubkey: PublicKey, className: string, sliceLength?: number) => {
+    const membershipExplorerLink = (toPubkey: PublicKey, id: number, className: string, sliceLength?: number) => {
         //https://explorer.solana.com/address/Fs95oxtjcUdVqo6Zg1JJZ8orq3eGF8qF8cxdKeunD7U1?cluster=devnet
         let slice = sliceLength ? sliceLength : 3
-        let link = `https://solscan.io/token/${toPubkey.toBase58()}`
+        let link = `https://solscan.io/token/${toPubkey.toBase58()}?cluster=devnet`
         return (
-            <a href={link} target="_blank" rel="noreferrer noopener" className={className}>({toDisplayString(toPubkey, slice)})</a>
+            <a href={link} target="_blank" rel="noreferrer noopener" className={className}>member #{id}</a>
         )
     }
-
-
     const didPressYourPost = () => {
         if (props.activeUserPost) {
             history.push("/post/" + props.activeUserPost.publicKey.toBase58());
@@ -108,10 +105,27 @@ function MembershipHeader(props: Props) {
         }
     }
 
-
+    const didChangePostBody = (input: string) => {
+        if (input.length <= 140) {
+            setPostBody(input)
+        } else {
+            toast('too long', {
+                icon: '😵‍💫',
+            });
+        }
+    }
+    const didChangePostLink = (input: string) => {
+        if (input.length <= 88) {
+            setPostLink(input)
+        } else {
+            toast('too long', {
+                icon: '😵‍💫',
+            });
+        }
+    }
 
     //need to trigger post reload when i post, not working rn
-    if (props.memberCardMint) {
+    if (props.memberCardMint && props.membership) {
         let postElement = () => {
             if (props.canPost) {
                 return (
@@ -119,7 +133,7 @@ function MembershipHeader(props: Props) {
                         <div>
                             <textarea
                                 placeholder="what's up..."
-                                onChange={e => setPostBody(e.target.value)}
+                                onChange={e => didChangePostBody(e.target.value)}
                                 value={postBody}
                                 className="post-input body"
                             />
@@ -127,7 +141,7 @@ function MembershipHeader(props: Props) {
                         <div>
                             <input
                                 placeholder="add link"
-                                onChange={e => setPostLink(e.target.value)}
+                                onChange={e => didChangePostLink(e.target.value)}
                                 value={postLink}
                                 onKeyPress={onLinkKeyPress}
                                 className="post-input link"
@@ -172,7 +186,7 @@ function MembershipHeader(props: Props) {
         return (
             <div>
                 <div className="member-greeting">
-                    Hello, friend {membershipExplorerLink(props.memberCardMint, "friend-card-mint")}
+                    Hello, {membershipExplorerLink(props.memberCardMint, props.membership.id, "friend-card-mint")}
                 </div>
                 {postElement()}
                 {likeElement()}

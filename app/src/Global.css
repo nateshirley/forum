@@ -47,7 +47,7 @@
   border-radius: 8px;
   margin-top: 30px;
   max-width: 380px;
-  background: rgb(255, 255, 255, 0.75);
+  background: rgb(255, 255, 255, 1);
 }
 
 .bid-content {
@@ -75,11 +75,12 @@
 .bid-input {
   width: 75%;
   background: white;
-  border: none;
-  box-shadow: 0px 3px 9px rgb(0, 0, 0, 0.07);
+  border: 1.5px solid black;
+  box-shadow: 0px 3px 9px rgb(0, 0, 0, 0.08);
 }
 .bid-input:focus {
-  outline: 1.5px solid black;
+  outline: none;
+  box-shadow: 0px 3px 9px rgb(0, 0, 0, 0.23);
 }
 .sol-bid-label {
   position: absolute;
@@ -145,7 +146,8 @@
   font-family: "Ubuntu Mono";
 }
 .friend-card-mint {
-  color: rgb(0, 0, 0, 0.4);
+  color: black;
+  text-decoration: none;
 }
 .friend-card-mint:hover {
   color: #1000ea;
@@ -274,7 +276,7 @@
   margin-top: 15px;
   margin-bottom: 20px;
   padding: 14px 16px;
-  background-color: rgb(255, 255, 255, 0.75);
+  background-color: rgb(255, 255, 255, 0.45);
   position: relative;
 }
 .forum-outer {
@@ -342,7 +344,18 @@
   bottom: 8px;
   text-align: right;
 }
-
+.artifact-token {
+  margin-top: 8px;
+  font-size: 13px;
+}
+.artifact-token-label {
+  color: rgb(0, 0, 0, 0.4);
+}
+.artifact-token-mint {
+  text-decoration: underline;
+  font-weight: 400;
+  color: black;
+}
 .about {
   background-color: white;
   border: none;
