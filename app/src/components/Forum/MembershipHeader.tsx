@@ -199,7 +199,7 @@ function MembershipHeader(props: Props) {
                     not a member?
                 </div>
                 <button className="mint-membership-button" onClick={didPressMintMembership}>
-                    mint membership
+                    mint devnet membership
                 </button>
             </div>
         )

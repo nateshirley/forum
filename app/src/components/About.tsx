@@ -25,6 +25,10 @@ function About() {
             ---
             <br />
             p.s. community members can submit one post and one like per week. PRH is currently in beta on the solana devnet. try it <Link to="/">here</Link>
+            <br />
+            <br />
+            <br />
+            <br />
         </div>
     );
 }

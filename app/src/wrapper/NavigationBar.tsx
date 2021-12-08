@@ -35,6 +35,7 @@ const NavigationBar: FC = () => {
             <div>
                 <Link to="/" className="prh-link">ParisRadioHour</Link>
             </div>
+            <div style={{ fontSize: "11px", color: "rgb(0,0,0,0.4" }}>(devnet)</div>
         </div>
     )
 
