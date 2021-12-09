@@ -278,7 +278,7 @@
   margin-top: 15px;
   margin-bottom: 20px;
   padding: 14px 16px;
-  background-color: rgb(255, 255, 255, 0.8);
+  background-color: rgb(255, 255, 255, 1);
   position: relative;
 }
 .forum-outer {
@@ -365,7 +365,7 @@
   text-decoration: underline;
 }
 .about-div {
-  background: rgb(255, 255, 255, 0.8);
+  background: rgb(255, 255, 255, 1);
   padding: 25px 20px 25px 20px;
 }
 .airdrop {
