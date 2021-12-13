@@ -34,12 +34,12 @@ const getConnection = () => {
   const commitment: Commitment = "processed";
   return new Connection(endpoint, commitment);
 };
-// const envProgram = anchor.Provider.env();
-// const program = getForumProgram(anchor.Provider.env().wallet);
-// const provider = anchor.Provider.env();
-
+const envProgram = anchor.Provider.env();
+const program = getForumProgram(anchor.Provider.env().wallet);
 const provider = anchor.Provider.env();
-const program = anchor.workspace.Forum as Program<Forum>;
+
+// const provider = anchor.Provider.env();
+// const program = anchor.workspace.Forum as Program<Forum>;
 
 interface MintConfig {
   authority: PublicKey;

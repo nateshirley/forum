@@ -124,6 +124,7 @@ describe("forum", () => {
     // console.log(lb);
   });
 
+  /*
   it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 
@@ -138,7 +139,7 @@ describe("forum", () => {
       );
     assert.ok(cardTokenAccountBalance.value.uiAmount === 1);
   });
-  /*
+ 
   it("new post", async () => {
     const newBody = "fuuuuuuuuck yeah";
     const newLink = "https://yelllow.xyz/";
