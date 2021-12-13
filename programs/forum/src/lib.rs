@@ -7,11 +7,13 @@ mod anchor_transfer;
 mod artifact;
 mod bid;
 mod create_ix;
+mod ix_helpers;
 mod leaderboard;
 mod membership;
 mod string_helper;
 mod verify;
 use bid::Bid;
+use ix_helpers::{smack, vote};
 use leaderboard::{Leaderboard, LeaderboardPost};
 //solana address -k target/deploy/forum-keypair.json
 
