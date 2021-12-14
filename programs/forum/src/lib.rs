@@ -140,8 +140,8 @@ pub mod forum {
         //todo: set winners from the week for mint rewards
 
         //advance session
-        ctx.accounts.forum.session = ctx.accounts.forum.session + 1;
-        ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap(); //ctx.accounts.forum.last_dawn + session_LENGTH;
+        ctx.accounts.forum.session = ctx.accounts.forum.session.checked_add(1).unwrap();
+        ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap(); //ctx.accounts.forum.last_dawn.checked_add(session_LENGTH;
 
         //clear the leaderboard
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
@@ -150,7 +150,12 @@ pub mod forum {
 
         //sync auction account
         ctx.accounts.artifact_auction.session = ctx.accounts.forum.session;
-        ctx.accounts.artifact_auction.end_timestamp = ctx.accounts.forum.last_dawn + SESSION_LENGTH;
+        ctx.accounts.artifact_auction.end_timestamp = ctx
+            .accounts
+            .forum
+            .last_dawn
+            .checked_add(SESSION_LENGTH)
+            .unwrap();
         ctx.accounts.artifact_auction.leading_bid = Bid::default();
         Ok(())
     }
@@ -218,8 +223,8 @@ pub mod forum {
         let voter = &mut ctx.accounts.vote;
         if voter.session < current_session {
             let mut voted_post = ctx.accounts.post.load_mut()?;
-            voted_post.session_score += amount;
-            voted_post.all_time_score += amount;
+            voted_post.session_score = voted_post.session_score.checked_add(amount).unwrap();
+            voted_post.all_time_score = voted_post.all_time_score.checked_add(amount).unwrap();
             voter.session = current_session;
             voter.voted_for_card_mint = voted_post.card_mint.key();
 

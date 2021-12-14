@@ -21,11 +21,14 @@ pub fn verify_bid_amount(
     if artifact_auction.leading_bid.lamports > 0 {
         let lamps_to_clear = artifact_auction.leading_bid.lamports;
         min_bid = lamps_to_clear
-            + lamps_to_clear
-                .checked_mul(MIN_INCREMENT_PERCENTAGE)
-                .unwrap()
-                .checked_div(100)
-                .unwrap();
+            .checked_add(
+                lamps_to_clear
+                    .checked_mul(MIN_INCREMENT_PERCENTAGE)
+                    .unwrap()
+                    .checked_div(100)
+                    .unwrap(),
+            )
+            .unwrap();
         msg!("to clear: {}, min_bid: {}", lamps_to_clear, min_bid);
     } else {
         min_bid = MINIMUM_OPENING_BID
@@ -46,8 +49,12 @@ pub fn adjust_end_timestamp(ctx: Context<PlaceBidForArtifact>) -> ProgramResult 
         .unwrap()
         < 300
     {
-        ctx.accounts.artifact_auction.end_timestamp =
-            ctx.accounts.artifact_auction.end_timestamp + 300;
+        ctx.accounts.artifact_auction.end_timestamp = ctx
+            .accounts
+            .artifact_auction
+            .end_timestamp
+            .checked_add(300)
+            .unwrap();
     }
     Ok(())
 }

@@ -20,7 +20,7 @@ pub fn new_leading_posts_vec(
     mut leading_posts: Vec<LeaderboardPost>,
     newly_voted_post: std::cell::RefMut<Post>,
 ) -> Option<Vec<LeaderboardPost>> {
-    let lowest_scoring_index = leading_posts.len() - 1; //4
+    let lowest_scoring_index = leading_posts.len() - 1;
     let mut insert_marker = lowest_scoring_index; //last index in leaderboard
                                                   //wraparound check
     while (insert_marker < 100)

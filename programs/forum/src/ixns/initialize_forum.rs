@@ -20,7 +20,7 @@ pub fn init_forum_state(
     forum_authority.bump = forum_authority_bump;
 
     artifact_auction.session = 1;
-    artifact_auction.end_timestamp = forum.last_dawn + SESSION_LENGTH;
+    artifact_auction.end_timestamp = forum.last_dawn.checked_add(SESSION_LENGTH).unwrap();
     artifact_auction.leading_bid = Bid::default();
     artifact_auction.bump = artifact_auction_bump;
 
