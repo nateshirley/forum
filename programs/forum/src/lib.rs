@@ -4,16 +4,20 @@ use std::convert::TryFrom;
 declare_id!("CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH");
 mod anchor_token_metadata;
 mod anchor_transfer;
-mod artifact;
-mod bid;
-mod create_ix;
-mod leaderboard;
-mod membership;
-mod string_helper;
+mod ixns;
+mod structs;
 mod verify;
-use bid::Bid;
-use leaderboard::{Leaderboard, LeaderboardPost};
+use structs::artifact;
+use structs::bid::Bid;
+use structs::core::{
+    Forum, ForumAuthority, Leaderboard, LeaderboardPost, Membership, MembershipAttribution, Post,
+    Vote,
+};
 //solana address -k target/deploy/forum-keypair.json
+
+//to make sure it works i need to put it on devnet with different kp, run it through on 5 min loops, then we should be good
+//very light testing but i think we are good to go. just change timing, redeploy, test again to make sure
+//i already switched back the keys
 
 const MEMBERSHIP_SEED: &[u8] = b"member";
 const MEMBERSHIP_ATTRIBUTION_SEED: &[u8] = b"memberattribution";
@@ -22,7 +26,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 604800; //86400;
+const SESSION_LENGTH: u64 = 604800;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]
@@ -33,11 +37,8 @@ pub mod forum {
         ctx: Context<CreateLeaderboard>,
         leaderboard_bump: u8,
     ) -> ProgramResult {
-        create_ix::leaderboard_account(&ctx, leaderboard_bump)?;
-        let loader: Loader<Leaderboard> =
-            Loader::try_from_unchecked(ctx.program_id, &ctx.accounts.leaderboard).unwrap();
-        let mut leaderboard = loader.load_init()?;
-        leaderboard.bump = leaderboard_bump;
+        ixns::create_leaderboard::create_leaderboard_account(&ctx, leaderboard_bump)?;
+        ixns::create_leaderboard::set_leaderboard_bump(&ctx, leaderboard_bump)?;
         Ok(())
     }
     pub fn initialize_forum(
@@ -48,17 +49,15 @@ pub mod forum {
     ) -> ProgramResult {
         let mut leaderboard = ctx.accounts.leaderboard.load_init()?;
         verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
-
-        ctx.accounts.forum.bump = forum_bump;
-        ctx.accounts.forum.session = 1;
-        ctx.accounts.forum.last_dawn = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
-        ctx.accounts.forum_authority.bump = forum_authority_bump;
-
-        ctx.accounts.artifact_auction.session = 1;
-        ctx.accounts.artifact_auction.end_timestamp = ctx.accounts.forum.last_dawn + SESSION_LENGTH;
-        ctx.accounts.artifact_auction.leading_bid = Bid::default();
-        ctx.accounts.artifact_auction.bump = artifact_auction_bump;
-
+        ixns::initialize_forum::init_forum_state(
+            &mut ctx.accounts.forum,
+            &mut ctx.accounts.forum_authority,
+            &mut ctx.accounts.artifact_auction,
+            forum_bump,
+            forum_authority_bump,
+            artifact_auction_bump,
+            ctx.accounts.clock.unix_timestamp,
+        )?;
         leaderboard.posts = [LeaderboardPost::default(); 10];
         leaderboard.session = 0;
         Ok(())
@@ -70,35 +69,19 @@ pub mod forum {
     ) -> ProgramResult {
         verify::address::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         ctx.accounts.forum.membership = ctx.accounts.forum.membership.checked_add(1).unwrap();
-
-        let mut post = ctx.accounts.post.load_init()?;
-        post.card_mint = ctx.accounts.card_mint.key();
-        post.session = ctx.accounts.forum.session.checked_sub(1).unwrap();
-        post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
-
-        ctx.accounts.vote.authority_card_mint = ctx.accounts.card_mint.key();
-        ctx.accounts.vote.session = ctx.accounts.forum.session.checked_sub(1).unwrap();
-
-        ctx.accounts.membership.authority = ctx.accounts.authority.key();
-        ctx.accounts.membership.card_mint = ctx.accounts.card_mint.key();
-        ctx.accounts.membership.post = ctx.accounts.post.key();
-        ctx.accounts.membership.vote = ctx.accounts.vote.key();
-        ctx.accounts.membership.id = ctx.accounts.forum.membership;
-        ctx.accounts.membership.bump = member_bump;
-
-        ctx.accounts.membership_attribution.membership = ctx.accounts.membership.key();
-        ctx.accounts.membership_attribution.card_mint = ctx.accounts.card_mint.key();
-        ctx.accounts.membership_attribution.bump = member_attribution_bump;
-
+        ixns::mint_membership::init_membership_state(
+            ctx.accounts,
+            member_bump,
+            member_attribution_bump,
+        )?;
         let seeds = &[
             &FORUM_AUTHORITY_SEED[..],
             &[ctx.accounts.forum_authority.bump],
         ];
-
         //mint one subscription token to the subscriber
-        membership::mint_card_token_to_new_member(&ctx, seeds)?;
+        ixns::mint_membership::mint_card_token_to_new_member(&ctx, seeds)?;
         //create metadata for membership card
-        membership::create_card_token_metadata(&ctx, seeds)?;
+        ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
         Ok(())
     }
     //claim authority after a transfer
@@ -118,7 +101,7 @@ pub mod forum {
     }
     pub fn wrap_session(
         ctx: Context<WrapSession>,
-        _artifact_auction_house_bump: u8,
+        artifact_auction_house_bump: u8,
         _artifact_attribution_bump: u8,
         artifact_bump: u8,
     ) -> ProgramResult {
@@ -133,7 +116,7 @@ pub mod forum {
         )?;
 
         //build data store for new artifact
-        artifact::build_new(&ctx, artifact_bump, _artifact_auction_house_bump)?;
+        ixns::wrap_session::build_new_artifact(&ctx, artifact_bump, artifact_auction_house_bump)?;
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
 
         //mint the artifact token to the winner of the auction
@@ -147,8 +130,11 @@ pub mod forum {
                 .with_signer(&[auth_seeds]),
             1,
         )?;
-        artifact::create_artifact_metadata(&ctx, auth_seeds, _artifact_auction_house_bump)?;
-        //todo: create some metadata
+        ixns::wrap_session::create_artifact_metadata(
+            &ctx,
+            auth_seeds,
+            artifact_auction_house_bump,
+        )?;
         //todo: send funds to multisig,
         //todo: treasury cut
         //todo: set winners from the week for mint rewards
@@ -160,7 +146,7 @@ pub mod forum {
         //clear the leaderboard
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
         leaderboard.session = ctx.accounts.forum.session;
-        leaderboard.posts = [leaderboard::LeaderboardPost::default(); 10];
+        leaderboard.posts = [LeaderboardPost::default(); 10];
 
         //sync auction account
         ctx.accounts.artifact_auction.session = ctx.accounts.forum.session;
@@ -178,7 +164,7 @@ pub mod forum {
         artifact_auction_house_bump: u8,
         amount: u64,
     ) -> ProgramResult {
-        artifact::auction::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
+        ixns::place_bid_for_artifact::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
         verify::clock::to_place_bid(
             &ctx.accounts.clock,
             ctx.accounts.artifact_auction.end_timestamp,
@@ -188,14 +174,14 @@ pub mod forum {
             amount,
         )?;
         let losing_bid = ctx.accounts.artifact_auction.leading_bid;
-        artifact::auction::return_lamps_to_newest_loser(
+        ixns::place_bid_for_artifact::return_lamps_to_newest_loser(
             &ctx,
             losing_bid,
             artifact_auction_house_bump,
         )?;
         ctx.accounts.artifact_auction.leading_bid.bidder = ctx.accounts.bidder.key();
         ctx.accounts.artifact_auction.leading_bid.lamports = amount;
-        artifact::auction::adjust_end_timestamp(ctx)?;
+        ixns::place_bid_for_artifact::adjust_end_timestamp(ctx)?;
         Ok(())
     }
 
@@ -208,8 +194,8 @@ pub mod forum {
         let mut post = ctx.accounts.post.load_mut()?;
         let current_session = ctx.accounts.forum.session;
         if post.session < current_session {
-            post.body = string_helper::new_body(body);
-            post.link = string_helper::new_link(link);
+            post.body = ixns::new_post::new_body(body);
+            post.link = ixns::new_post::new_link(link);
             post.session_score = 0;
             post.session = current_session;
             post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
@@ -238,7 +224,7 @@ pub mod forum {
             voter.voted_for_card_mint = voted_post.card_mint.key();
 
             if let Some(new_leading_posts) =
-                leaderboard::updated_posts(leaderboard.posts.to_vec(), voted_post)
+                ixns::submit_vote::get_new_leading_posts(leaderboard.posts.to_vec(), voted_post)
             {
                 leaderboard.posts = new_leading_posts;
             }
@@ -531,71 +517,6 @@ pub struct SubmitVote<'info> {
     )]
     card_token_account: Account<'info, token::TokenAccount>,
     clock: Sysvar<'info, Clock>,
-}
-
-#[account]
-#[derive(Default)]
-pub struct Forum {
-    membership: u32,
-    session: u32,
-    last_dawn: u64,
-    bump: u8,
-}
-#[account]
-#[derive(Default)]
-pub struct ForumAuthority {
-    bump: u8,
-}
-//pda from ["member", card_mint.key()]
-#[account]
-#[derive(Default)]
-pub struct Membership {
-    authority: Pubkey,
-    card_mint: Pubkey,
-    post: Pubkey,
-    vote: Pubkey,
-    id: u32,
-    bump: u8,
-}
-/*
-if auction is ready to start, send to auction page
-*/
-//pda from ["memberattribution", authority.key()]
-#[account]
-#[derive(Default)]
-pub struct MembershipAttribution {
-    membership: Pubkey,
-    card_mint: Pubkey,
-    bump: u8,
-}
-//keyFromSeed: [cardMint, "post", programID]
-#[account(zero_copy)]
-pub struct Post {
-    card_mint: Pubkey,
-    body: [u8; 140],
-    link: [u8; 88],
-    timestamp: u64, //seconds since 1972
-    session: u32,
-    session_score: u32,
-    all_time_score: u32,
-}
-impl Post {
-    fn to_leaderboard(&self) -> LeaderboardPost {
-        LeaderboardPost {
-            card_mint: self.card_mint,
-            body: self.body,
-            link: self.link,
-            score: self.session_score,
-        }
-    }
-}
-//keyFromSeed: [cardMint, "vote", programID]
-#[account]
-#[derive(Default)]
-pub struct Vote {
-    authority_card_mint: Pubkey,
-    voted_for_card_mint: Pubkey,
-    session: u32,
 }
 
 #[error]

@@ -68,7 +68,6 @@ describe("forum", () => {
     let [_a_auction, _abump] = await getArtifactAuctionAddress();
     artifactAuction = _a_auction;
     artifactAuctionBump = _abump;
-    console.log(program.account.post.size);
   });
 
   it("transfer to auction house", async () => {
@@ -114,20 +113,25 @@ describe("forum", () => {
         ],
       }
     );
-    let newForum = await provider.connection.getAccountInfo(forum);
-    //console.log(newForum);
+    //everyth looks good. should write tests but too lazy rn
+    // let newForum = await program.account.forum.fetch(forum);
+    // console.log(newForum);
+    // let auction = await program.account.artifactAuction.fetch(artifactAuction);
+    // console.log(auction);
+    // let auth = await program.account.forumAuthority.fetch(forumAuthority);
+    // console.log(auth);
     // let lb = await program.account.leaderboard.fetch(leaderboard);
     // console.log(lb);
-    let lb = await provider.connection.getAccountInfo(leaderboard);
-    //console.log(lb);
   });
 
-    it("mint membership", async () => {
+ 
+  it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 
     let newMember = await program.account.membership.fetch(
       providerMintConfig.member
     );
+    //console.log(newMember);
     assert.ok(newMember.cardMint.equals(providerMintConfig.cardMint.publicKey));
     let cardTokenAccountBalance =
       await provider.connection.getTokenAccountBalance(
@@ -135,6 +139,7 @@ describe("forum", () => {
       );
     assert.ok(cardTokenAccountBalance.value.uiAmount === 1);
   });
+ 
   it("new post", async () => {
     const newBody = "fuuuuuuuuck yeah";
     const newLink = "https://yelllow.xyz/";

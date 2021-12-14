@@ -196,8 +196,6 @@ export const mintMembership = async (
     "minted membership for wallet address: ",
     mintConfig.authority.toBase58()
   );
-  let p = await program.account.post.fetch(mintConfig.post);
-  console.log(p);
 };
 
 export const fetchMemberAttribution = async (authority: PublicKey) => {

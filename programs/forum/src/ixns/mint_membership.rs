@@ -2,7 +2,33 @@ use crate::anchor_token_metadata;
 use crate::MintMembership;
 use anchor_lang::prelude::*;
 use anchor_spl::token;
+use std::convert::TryFrom;
+pub fn init_membership_state(
+    accounts: &mut MintMembership,
+    member_bump: u8,
+    member_attribution_bump: u8,
+) -> ProgramResult {
+    let mut post = accounts.post.load_init()?;
+    post.card_mint = accounts.card_mint.key();
+    post.session = accounts.forum.session.checked_sub(1).unwrap();
+    post.timestamp = u64::try_from(accounts.clock.unix_timestamp).unwrap();
 
+    accounts.vote.authority_card_mint = accounts.card_mint.key();
+    accounts.vote.session = accounts.forum.session.checked_sub(1).unwrap();
+
+    accounts.membership.authority = accounts.authority.key();
+    accounts.membership.card_mint = accounts.card_mint.key();
+    accounts.membership.post = accounts.post.key();
+    accounts.membership.vote = accounts.vote.key();
+    accounts.membership.id = accounts.forum.membership;
+    accounts.membership.bump = member_bump;
+
+    accounts.membership_attribution.membership = accounts.membership.key();
+    accounts.membership_attribution.card_mint = accounts.card_mint.key();
+    accounts.membership_attribution.bump = member_attribution_bump;
+
+    Ok(())
+}
 pub fn mint_card_token_to_new_member(
     ctx: &Context<MintMembership>,
     seeds: &[&[u8]; 2],

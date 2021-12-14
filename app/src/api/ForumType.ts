@@ -1,5 +1,5 @@
 export type Forum = {
-  "version": "0.0.0",
+  "version": "0.1.0",
   "name": "forum",
   "instructions": [
     {
@@ -801,52 +801,52 @@ export type Forum = {
   ],
   "errors": [
     {
-      "code": 300,
+      "code": 6000,
       "name": "UnauthorizedPostAccount",
       "msg": "post account does not match expected (fromSeed): authority pubky, 'post', programId"
     },
     {
-      "code": 301,
+      "code": 6001,
       "name": "UnauthorizedVoteAccount",
       "msg": "vote account does not match expected (fromSeed): authority pubky, 'vote', programId"
     },
     {
-      "code": 302,
+      "code": 6002,
       "name": "SinglePostPerSession",
       "msg": "post account has already submitted this session"
     },
     {
-      "code": 303,
+      "code": 6003,
       "name": "SingleVotePerSession",
       "msg": "vote account has already voted this session"
     },
     {
-      "code": 304,
+      "code": 6004,
       "name": "UnauthorizedLeaderboardAccount",
       "msg": "leaderboard account does not match expected, pda seed: 'leaderboard'"
     },
     {
-      "code": 305,
+      "code": 6005,
       "name": "UnauthorizedArtifactAccount",
       "msg": "artifact account does not match expected, pda seed: 'artifact', session"
     },
     {
-      "code": 306,
+      "code": 6006,
       "name": "SessionNotWrapped",
       "msg": "active session has not ended."
     },
     {
-      "code": 307,
+      "code": 6007,
       "name": "LowBallBid",
       "msg": "bid does not meet minimum"
     },
     {
-      "code": 308,
+      "code": 6008,
       "name": "BidOnExpiredAuction",
       "msg": "u are trying to bid on an auction that has expired"
     },
     {
-      "code": 309,
+      "code": 6009,
       "name": "SettleActiveAuction",
       "msg": "u are trying to settle an auction that's still open for bidding"
     }
@@ -854,7 +854,7 @@ export type Forum = {
 };
 
 export const IDL: Forum = {
-  "version": "0.0.0",
+  "version": "0.1.0",
   "name": "forum",
   "instructions": [
     {
@@ -1656,52 +1656,52 @@ export const IDL: Forum = {
   ],
   "errors": [
     {
-      "code": 300,
+      "code": 6000,
       "name": "UnauthorizedPostAccount",
       "msg": "post account does not match expected (fromSeed): authority pubky, 'post', programId"
     },
     {
-      "code": 301,
+      "code": 6001,
       "name": "UnauthorizedVoteAccount",
       "msg": "vote account does not match expected (fromSeed): authority pubky, 'vote', programId"
     },
     {
-      "code": 302,
+      "code": 6002,
       "name": "SinglePostPerSession",
       "msg": "post account has already submitted this session"
     },
     {
-      "code": 303,
+      "code": 6003,
       "name": "SingleVotePerSession",
       "msg": "vote account has already voted this session"
     },
     {
-      "code": 304,
+      "code": 6004,
       "name": "UnauthorizedLeaderboardAccount",
       "msg": "leaderboard account does not match expected, pda seed: 'leaderboard'"
     },
     {
-      "code": 305,
+      "code": 6005,
       "name": "UnauthorizedArtifactAccount",
       "msg": "artifact account does not match expected, pda seed: 'artifact', session"
     },
     {
-      "code": 306,
+      "code": 6006,
       "name": "SessionNotWrapped",
       "msg": "active session has not ended."
     },
     {
-      "code": 307,
+      "code": 6007,
       "name": "LowBallBid",
       "msg": "bid does not meet minimum"
     },
     {
-      "code": 308,
+      "code": 6008,
       "name": "BidOnExpiredAuction",
       "msg": "u are trying to bid on an auction that has expired"
     },
     {
-      "code": 309,
+      "code": 6009,
       "name": "SettleActiveAuction",
       "msg": "u are trying to settle an auction that's still open for bidding"
     }
