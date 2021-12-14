@@ -16,7 +16,7 @@ use structs::core::{
 //solana address -k target/deploy/forum-keypair.json
 
 //to make sure it works i need to put it on devnet with different kp, run it through on 5 min loops, then we should be good
-//very light testing but i think we are good to go. just redeploy, test again to make sure
+//very light testing but i think we are good to go. just change timing, redeploy, test again to make sure
 //i already switched back the keys
 
 const MEMBERSHIP_SEED: &[u8] = b"member";
@@ -26,7 +26,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 240; //604800;
+const SESSION_LENGTH: u64 = 604800;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 
 #[program]

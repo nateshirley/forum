@@ -9,7 +9,7 @@ export const FORUM_ENDPOINT =
   "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
 //"http://127.0.0.1:8899"
 //clusterApiUrl('devnet');
-export const SESSION_LENGTH = 240; //604800;
+export const SESSION_LENGTH = 604800;
 export const toDisplayString = (
   publicKey: PublicKey,
   sliceLength: number = 4
