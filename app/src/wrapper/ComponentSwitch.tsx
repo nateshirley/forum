@@ -111,9 +111,31 @@ const ComponentSwitch: FC = () => {
             setMemberCardMint(cardMint);
             console.log("(use effect) setting memberCardMint to ", cardMint?.toBase58())
         })
+        checkForAirdrop();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [wallet.connected])
 
+    const checkForAirdrop = () => {
+        if (wallet.connected && wallet.publicKey) {
+            program.provider.connection.getBalance(wallet.publicKey).then((devBalance) => {
+                if (devBalance < web3.LAMPORTS_PER_SOL) {
+                    console.log("airdropping some dev sol")
+                    airdrop();
+                }
+            })
+        }
+    }
+    const airdrop = async () => {
+        if (wallet.publicKey) {
+            await program.provider.connection.confirmTransaction(
+                await program.provider.connection.requestAirdrop(
+                    wallet.publicKey,
+                    1 * web3.LAMPORTS_PER_SOL
+                ),
+                "confirmed"
+            );
+        }
+    }
     useEffect(() => {
         if (memberCardMint) {
             fetchMembershipAccount(program, memberCardMint).then((membership) => {
