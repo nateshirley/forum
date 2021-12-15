@@ -126,7 +126,7 @@ pub mod forum {
         ];
         token::mint_to(
             ctx.accounts
-                .into_mint_artifact_context()
+                .into_mint_artifact_to_winner_context()
                 .with_signer(&[auth_seeds]),
             1,
         )?;
@@ -135,6 +135,8 @@ pub mod forum {
             auth_seeds,
             artifact_auction_house_bump,
         )?;
+        //if aux house minus fee is below 1 sol, save the cut? so take some out of the treasury and put it in the aux house
+        ixns::wrap_session::transfer_to_yelllow(&ctx, artifact_auction_house_bump)?;
         //todo: send funds to multisig,
         //todo: treasury cut
         //todo: set winners from the week for mint rewards
@@ -422,6 +424,8 @@ pub struct WrapSession<'info> {
     forum_authority: Account<'info, ForumAuthority>,
     #[account(mut)]
     leaderboard: Loader<'info, Leaderboard>,
+    forum_treasury: AccountInfo<'info>,
+    yelllow: AccountInfo<'info>,
     rent: Sysvar<'info, Rent>,
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,

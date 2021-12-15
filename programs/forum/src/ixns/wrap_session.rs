@@ -1,8 +1,11 @@
 use crate::anchor_token_metadata;
+use crate::anchor_transfer;
 use crate::structs::artifact::Artifact;
 use crate::{WrapSession, ARTIFACT_SEED, A_AUX_HOUSE_SEED};
 use anchor_lang::{prelude::*, solana_program::system_instruction};
 use anchor_spl::token;
+
+pub const YELLLOW_TAKE_RATE: u64 = 5;
 
 pub fn create_artifact_account(
     ctx: &Context<WrapSession>,
@@ -89,6 +92,50 @@ pub fn create_artifact_metadata(
         true,
     )
 }
+pub fn transfer_to_yelllow(ctx: &Context<WrapSession>, auction_house_bump: u8) -> ProgramResult {
+    let seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];
+    let sale_price = ctx.accounts.artifact_auction.leading_bid.lamports;
+    anchor_transfer::transfer_from_pda(
+        ctx.accounts
+            .into_transfer_to_yelllow_context()
+            .with_signer(&[seeds]),
+        yelllow_take(sale_price),
+    )?;
+    Ok(())
+}
+pub fn transfer_to_forum_treasury(
+    ctx: &Context<WrapSession>,
+    auction_house_bump: u8,
+) -> ProgramResult {
+    let seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];
+    let sale_price = ctx.accounts.artifact_auction.leading_bid.lamports;
+    let mut treasury_take = sale_price.checked_sub(yelllow_take(sale_price)).unwrap();
+    //dont take it out if it's going to push the balance below one
+    if ctx
+        .accounts
+        .artifact_auction_house
+        .lamports()
+        .checked_sub(treasury_take)
+        .unwrap()
+        < 10000
+    {
+        treasury_take = treasury_take.checked_add(300).unwrap();
+    }
+    anchor_transfer::transfer_from_pda(
+        ctx.accounts
+            .into_transfer_to_yelllow_context()
+            .with_signer(&[seeds]),
+        treasury_take,
+    )?;
+    Ok(())
+}
+pub fn yelllow_take(sale_price: u64) -> u64 {
+    sale_price
+        .checked_mul(YELLLOW_TAKE_RATE)
+        .unwrap()
+        .checked_div(100)
+        .unwrap()
+}
 impl<'info> WrapSession<'info> {
     pub fn into_create_artifact_metadata_context(
         &self,
@@ -106,10 +153,7 @@ impl<'info> WrapSession<'info> {
         };
         CpiContext::new(cpi_program, cpi_accounts)
     }
-}
-
-impl<'info> WrapSession<'info> {
-    pub fn into_mint_artifact_context(
+    pub fn into_mint_artifact_to_winner_context(
         &self,
     ) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
         let cpi_program = self.token_program.to_account_info();
@@ -117,6 +161,28 @@ impl<'info> WrapSession<'info> {
             mint: self.artifact_mint.to_account_info(),
             to: self.artifact_token_account.to_account_info(),
             authority: self.forum_authority.to_account_info(),
+        };
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
+    pub fn into_transfer_to_yelllow_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, anchor_transfer::TransferLamports<'info>> {
+        let cpi_program = self.system_program.to_account_info();
+        let cpi_accounts = anchor_transfer::TransferLamports {
+            from: self.artifact_auction_house.to_account_info(),
+            to: self.yelllow.to_account_info(),
+            system_program: self.system_program.clone(),
+        };
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
+    pub fn into_transfer_to_forum_treasury_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, anchor_transfer::TransferLamports<'info>> {
+        let cpi_program = self.system_program.to_account_info();
+        let cpi_accounts = anchor_transfer::TransferLamports {
+            from: self.artifact_auction_house.to_account_info(),
+            to: self.forum_treasury.to_account_info(),
+            system_program: self.system_program.clone(),
         };
         CpiContext::new(cpi_program, cpi_accounts)
     }
