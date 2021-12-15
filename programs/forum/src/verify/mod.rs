@@ -37,6 +37,23 @@ pub mod address {
             Err(ErrorCode::UnauthorizedArtifactAccount.into())
         }
     }
+    // pub fn leaderboardd(bump: u8) -> Pubkey {
+    //     let seeds = &[&LEADERBOARD_SEED[..], &[bump]];
+    //     Pubkey::create_program_address(seeds, &id()).unwrap()
+    // }
+    //hardcoded here --- tbd
+    pub fn forum_treasury() -> Pubkey {
+        Pubkey::new(&[
+            229, 220, 49, 71, 11, 110, 112, 197, 103, 131, 44, 77, 39, 81, 157, 127, 207, 235, 157,
+            178, 221, 185, 185, 17, 137, 81, 36, 210, 16, 78, 99, 80,
+        ])
+    }
+    pub fn yelllow_treasury() -> Pubkey {
+        Pubkey::new(&[
+            11, 145, 152, 14, 80, 173, 57, 102, 93, 189, 35, 47, 193, 201, 92, 125, 28, 98, 11, 59,
+            5, 4, 92, 42, 20, 173, 137, 68, 4, 238, 126, 101,
+        ])
+    }
 }
 
 pub mod clock {
