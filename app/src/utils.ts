@@ -16,6 +16,7 @@ export const FORUM_TREASURY_ADDRESS = new PublicKey(
 export const YELLLOW_TREASURY_ADDRESS = new PublicKey(
   "nAFRh5zcrsiRka8hNTM4Auu6prBKvpv6zPLMefHFB8x"
 );
+
 export const toDisplayString = (
   publicKey: PublicKey,
   sliceLength: number = 4
