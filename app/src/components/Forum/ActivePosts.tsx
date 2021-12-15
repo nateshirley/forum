@@ -32,6 +32,10 @@ function ActivePosts(props: Props) {
     }, [props.forumInfo])
 
     useEffect(() => {
+        console.log("test")
+    }, []);
+
+    useEffect(() => {
         if (props.refresh > 0) {
             performRefresh();
         }
