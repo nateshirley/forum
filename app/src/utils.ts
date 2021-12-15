@@ -10,6 +10,12 @@ export const FORUM_ENDPOINT =
 //"http://127.0.0.1:8899"
 //clusterApiUrl('devnet');
 export const SESSION_LENGTH = 604800;
+export const FORUM_TREASURY_ADDRESS = new PublicKey(
+  "GUH6vc8SJ2DtWJndjz7Y9984zAqAsFYEuLUBFX8jdopK"
+);
+export const YELLLOW_TREASURY_ADDRESS = new PublicKey(
+  "nAFRh5zcrsiRka8hNTM4Auu6prBKvpv6zPLMefHFB8x"
+);
 export const toDisplayString = (
   publicKey: PublicKey,
   sliceLength: number = 4

@@ -1,8 +1,11 @@
 use crate::anchor_token_metadata;
+use crate::anchor_transfer;
 use crate::structs::artifact::Artifact;
 use crate::{WrapSession, ARTIFACT_SEED, A_AUX_HOUSE_SEED};
 use anchor_lang::{prelude::*, solana_program::system_instruction};
 use anchor_spl::token;
+
+pub const YELLLOW_ROYALTY: u64 = 5;
 
 pub fn create_artifact_account(
     ctx: &Context<WrapSession>,
@@ -89,6 +92,63 @@ pub fn create_artifact_metadata(
         true,
     )
 }
+pub fn transfer_to_yelllow(
+    ctx: &Context<WrapSession>,
+    yelllow_royalty: u64,
+    auction_house_bump: u8,
+) -> ProgramResult {
+    let seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];
+    msg!("THE TAKE IS: {}", yelllow_royalty);
+    anchor_transfer::transfer_from_pda(
+        ctx.accounts
+            .into_transfer_to_yelllow_context()
+            .with_signer(&[seeds]),
+        yelllow_royalty,
+    )?;
+    Ok(())
+}
+pub fn transfer_to_forum_treasury(
+    ctx: &Context<WrapSession>,
+    yelllow_royalty: u64,
+    auction_house_bump: u8,
+) -> ProgramResult {
+    let seeds = &[&A_AUX_HOUSE_SEED[..], &[auction_house_bump]];
+    let treasury_take = calculate_treasury_take(
+        &ctx.accounts.artifact_auction_house,
+        &yelllow_royalty,
+        &ctx.accounts.artifact_auction.leading_bid.lamports,
+    );
+
+    anchor_transfer::transfer_from_pda(
+        ctx.accounts
+            .into_transfer_to_forum_treasury_context()
+            .with_signer(&[seeds]),
+        treasury_take,
+    )?;
+    Ok(())
+}
+pub fn calculate_yelllow_royalty(sale_price: &u64) -> u64 {
+    sale_price
+        .checked_mul(YELLLOW_ROYALTY)
+        .unwrap()
+        .checked_div(100)
+        .unwrap()
+}
+pub fn calculate_treasury_take(
+    auction_house: &AccountInfo,
+    yelllow_royalty: &u64,
+    sale_price: &u64,
+) -> u64 {
+    let mut treasury_take = sale_price.checked_sub(*yelllow_royalty).unwrap();
+    let next_aux_house_balance = auction_house.lamports().checked_sub(treasury_take).unwrap();
+    let half_sol: u64 = 500000000;
+    if next_aux_house_balance < half_sol {
+        treasury_take = treasury_take
+            .checked_sub(half_sol.checked_sub(next_aux_house_balance).unwrap())
+            .unwrap();
+    }
+    treasury_take
+}
 impl<'info> WrapSession<'info> {
     pub fn into_create_artifact_metadata_context(
         &self,
@@ -106,10 +166,7 @@ impl<'info> WrapSession<'info> {
         };
         CpiContext::new(cpi_program, cpi_accounts)
     }
-}
-
-impl<'info> WrapSession<'info> {
-    pub fn into_mint_artifact_context(
+    pub fn into_mint_artifact_to_winner_context(
         &self,
     ) -> CpiContext<'_, '_, '_, 'info, token::MintTo<'info>> {
         let cpi_program = self.token_program.to_account_info();
@@ -117,6 +174,28 @@ impl<'info> WrapSession<'info> {
             mint: self.artifact_mint.to_account_info(),
             to: self.artifact_token_account.to_account_info(),
             authority: self.forum_authority.to_account_info(),
+        };
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
+    pub fn into_transfer_to_yelllow_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, anchor_transfer::TransferLamports<'info>> {
+        let cpi_program = self.system_program.to_account_info();
+        let cpi_accounts = anchor_transfer::TransferLamports {
+            from: self.artifact_auction_house.to_account_info(),
+            to: self.yelllow_treasury.to_account_info(),
+            system_program: self.system_program.clone(),
+        };
+        CpiContext::new(cpi_program, cpi_accounts)
+    }
+    pub fn into_transfer_to_forum_treasury_context(
+        &self,
+    ) -> CpiContext<'_, '_, '_, 'info, anchor_transfer::TransferLamports<'info>> {
+        let cpi_program = self.system_program.to_account_info();
+        let cpi_accounts = anchor_transfer::TransferLamports {
+            from: self.artifact_auction_house.to_account_info(),
+            to: self.forum_treasury.to_account_info(),
+            system_program: self.system_program.clone(),
         };
         CpiContext::new(cpi_program, cpi_accounts)
     }

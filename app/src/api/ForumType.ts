@@ -282,6 +282,16 @@ export type Forum = {
           "isSigner": false
         },
         {
+          "name": "forumTreasury",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "yelllowTreasury",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "rent",
           "isMut": false,
           "isSigner": false
@@ -1133,6 +1143,16 @@ export const IDL: Forum = {
         },
         {
           "name": "leaderboard",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forumTreasury",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "yelllowTreasury",
           "isMut": true,
           "isSigner": false
         },

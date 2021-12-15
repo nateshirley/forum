@@ -81,6 +81,7 @@ pub mod forum {
         //mint one subscription token to the subscriber
         ixns::mint_membership::mint_card_token_to_new_member(&ctx, seeds)?;
         //create metadata for membership card
+        //LOCALNET MARK
         ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
         Ok(())
     }
@@ -105,6 +106,7 @@ pub mod forum {
         _artifact_attribution_bump: u8,
         artifact_bump: u8,
     ) -> ProgramResult {
+        //LOCALNET MARK
         verify::clock::to_wrap_session(
             &ctx.accounts.clock,
             ctx.accounts.artifact_auction.end_timestamp,
@@ -126,17 +128,30 @@ pub mod forum {
         ];
         token::mint_to(
             ctx.accounts
-                .into_mint_artifact_context()
+                .into_mint_artifact_to_winner_context()
                 .with_signer(&[auth_seeds]),
             1,
         )?;
+        //LOCALNET MARK
         ixns::wrap_session::create_artifact_metadata(
             &ctx,
             auth_seeds,
             artifact_auction_house_bump,
         )?;
-        //todo: send funds to multisig,
-        //todo: treasury cut
+        //if aux house minus fee is below 1 sol, save the cut? so take some out of the treasury and put it in the aux house
+        let yelllow_royalty = ixns::wrap_session::calculate_yelllow_royalty(
+            &ctx.accounts.artifact_auction.leading_bid.lamports,
+        );
+        ixns::wrap_session::transfer_to_yelllow(
+            &ctx,
+            yelllow_royalty,
+            artifact_auction_house_bump,
+        )?;
+        ixns::wrap_session::transfer_to_forum_treasury(
+            &ctx,
+            yelllow_royalty,
+            artifact_auction_house_bump,
+        )?;
         //todo: set winners from the week for mint rewards
 
         //advance session
@@ -169,6 +184,7 @@ pub mod forum {
         artifact_auction_house_bump: u8,
         amount: u64,
     ) -> ProgramResult {
+        //LOCALNET MARK
         ixns::place_bid_for_artifact::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
         verify::clock::to_place_bid(
             &ctx.accounts.clock,
@@ -191,6 +207,7 @@ pub mod forum {
     }
 
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
+        //LOCALNET MARK
         verify::clock::to_edit_leaderboard(
             &ctx.accounts.clock,
             ctx.accounts.artifact_auction.end_timestamp,
@@ -211,6 +228,7 @@ pub mod forum {
     }
     pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
         //i actually could move this to the param declaration
+        //LOCALNET MARK
         verify::clock::to_edit_leaderboard(
             &ctx.accounts.clock,
             ctx.accounts.artifact_auction.end_timestamp,
@@ -395,7 +413,7 @@ pub struct WrapSession<'info> {
         seeds = [ARTIFACT_AUCTION_SEED],
         bump = artifact_auction.bump,
     )]
-    artifact_auction: Account<'info, artifact::ArtifactAuction>,
+    artifact_auction: Box<Account<'info, artifact::ArtifactAuction>>,
     #[account(
         init,
         seeds = [ARTIFACT_SEED, artifact_mint.key().as_ref()],
@@ -422,6 +440,16 @@ pub struct WrapSession<'info> {
     forum_authority: Account<'info, ForumAuthority>,
     #[account(mut)]
     leaderboard: Loader<'info, Leaderboard>,
+    #[account(
+        mut,
+        address = verify::address::forum_treasury()
+    )]
+    forum_treasury: AccountInfo<'info>,
+    #[account(
+        mut,
+        address = verify::address::yelllow_treasury()
+    )]
+    yelllow_treasury: AccountInfo<'info>,
     rent: Sysvar<'info, Rent>,
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,
@@ -429,6 +457,7 @@ pub struct WrapSession<'info> {
     token_metadata_program: AccountInfo<'info>,
     system_program: Program<'info, System>,
 }
+
 #[derive(Accounts)]
 pub struct AssertArtifactDiscriminator<'info> {
     #[account(zero)]
