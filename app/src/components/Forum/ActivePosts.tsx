@@ -1,4 +1,4 @@
-import { fetchAllActivePostsSortedByScore } from "../../api/posts";
+import { fetchAllActivePostsSortedByScore, sortByTime } from "../../api/posts";
 import { useState, useEffect } from "react";
 import { getForumProgram, getProvider } from "../../api/config";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -8,6 +8,7 @@ import { ForumInfo, Post } from "../../interfaces";
 import likeIcon from "../../assets/likeIcon.svg"
 import likeIconFill from "../../assets/likeIconFill.svg"
 import toast, { Toaster } from "react-hot-toast";
+import { useHistory } from "react-router-dom";
 
 interface Props {
     forumInfo: ForumInfo | undefined,
@@ -23,6 +24,7 @@ interface Props {
 function ActivePosts(props: Props) {
     const wallet = useWallet()
     const [activePosts, setActivePosts] = useState<undefined | Post[]>(undefined);
+    const history = useHistory();
     let provider = getProvider(wallet)
     let program = getForumProgram(wallet);
 
@@ -41,9 +43,7 @@ function ActivePosts(props: Props) {
     useEffect(() => {
         if (props.sort === "top") {
             if (activePosts) {
-                setActivePosts([...activePosts].sort((a, b) => {
-                    return b.sessionScore - a.sessionScore;
-                }));
+                setActivePostsByScore([...activePosts])
             }
         } else if (props.sort === "recent") {
             if (activePosts) {
@@ -54,6 +54,12 @@ function ActivePosts(props: Props) {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.sort])
+
+    const setActivePostsByScore = (posts: Post[]) => {
+        setActivePosts(posts.sort((a, b) => {
+            return b.sessionScore - a.sessionScore;
+        }));
+    }
 
     const performRefresh = () => {
         if (props.forumInfo) {
@@ -70,7 +76,7 @@ function ActivePosts(props: Props) {
                 const posts = [...activePosts];
                 posts[index].sessionScore += 1;
                 posts[index].allTimeScore += 1;
-                setActivePosts(posts);
+                setActivePostsByScore(posts);
             }
         } else if (!wallet.connected) {
             toast('wallet not connected', {
@@ -87,12 +93,16 @@ function ActivePosts(props: Props) {
         }
     }
 
+    const didClickPostOuter = (postAddress: PublicKey) => {
+        history.push("/post/" + postAddress.toBase58())
+    }
+
 
     let postCards = () => {
         if (activePosts && activePosts.length > 0) {
             return activePosts.map((post, index) => {
                 return (
-                    <div key={index} className="post-outer">
+                    <div key={index} className="post-outer active" onClick={() => didClickPostOuter(post.publicKey)}>
                         <div >
                             <a
                                 href={tokenLink(post.cardMint)}
@@ -108,7 +118,7 @@ function ActivePosts(props: Props) {
                             {post.body}
                         </div>
                         <div className="post-link">
-                            <a href={toPostHref(post.link)} target="_blank"
+                            <a href={toPostHref(post.link)} target="_blank" className="post-a"
                                 rel="noreferrer noopener">{post.link}</a>
                         </div>
                         {props.canLike

@@ -46,24 +46,26 @@ function MembershipHeader(props: Props) {
     const [postLink, setPostLink] = useState('');
 
     const didPressNewPost = async () => {
-        if (wallet.publicKey && props.memberCardMint && props.membership && props.forumInfo && props.cardTokenAccount && props.artifactAuction) {
-            let program = getForumProgram(wallet);
-            const tx = await program.rpc.newPost(postBody, postLink, {
-                accounts: {
-                    authority: wallet.publicKey,
-                    membership: props.membership.publicKey,
-                    forum: props.forumInfo.publicKey,
-                    artifactAuction: props.artifactAuction.address,
-                    post: props.membership.post,
-                    cardMint: props.membership.cardMint,
-                    cardTokenAccount: props.cardTokenAccount,
-                    clock: SYSVAR_CLOCK_PUBKEY,
-                },
-            });
-            console.log("submitted post w/ sig: ", tx)
-            setPostBody('');
-            setPostLink('');
-            props.didSubmitNewPost();
+        if (postBody.length > 0) {
+            if (wallet.publicKey && props.memberCardMint && props.membership && props.forumInfo && props.cardTokenAccount && props.artifactAuction) {
+                let program = getForumProgram(wallet);
+                const tx = await program.rpc.newPost(postBody, postLink, {
+                    accounts: {
+                        authority: wallet.publicKey,
+                        membership: props.membership.publicKey,
+                        forum: props.forumInfo.publicKey,
+                        artifactAuction: props.artifactAuction.address,
+                        post: props.membership.post,
+                        cardMint: props.membership.cardMint,
+                        cardTokenAccount: props.cardTokenAccount,
+                        clock: SYSVAR_CLOCK_PUBKEY,
+                    },
+                });
+                console.log("submitted post w/ sig: ", tx)
+                setPostBody('');
+                setPostLink('');
+                props.didSubmitNewPost();
+            }
         }
     }
 
