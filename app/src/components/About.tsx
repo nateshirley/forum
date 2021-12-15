@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 function About() {
     return (
         <div className="component-parent">
-            prh
+            prh.
             <br />
             <br />
             <br />
