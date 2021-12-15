@@ -38,7 +38,6 @@ function PostDetails(props: Props) {
     const parseUri = (uri: String) => {
         try {
             let publicKey = new PublicKey(uri);
-            console.log("making a q")
             queryForPostAtAddress(publicKey).then((result) => {
                 if (!result) {
                     queryForPostFromCardMint(publicKey).then((result) => {
@@ -136,7 +135,7 @@ function PostDetails(props: Props) {
     return (
         <div className="component-parent">
             <div className="posts-details-header">
-                <div className="posts-header-title">POST</div>
+                <div className="posts-header-title">DETAILS</div>
             </div>
             {postCard}
         </div>
