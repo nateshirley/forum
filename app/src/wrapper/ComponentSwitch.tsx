@@ -195,7 +195,7 @@ const ComponentSwitch: FC = () => {
 
     const submitLike = async (post: PublicKey) => {
         if (wallet.publicKey && forumInfo && artifactAuction && membership && cardTokenAccount && leaderboard) {
-            return program.rpc.submitVote(1, {
+            return program.rpc.submitVote({
                 accounts: {
                     authority: wallet.publicKey,
                     membership: membership.publicKey,

@@ -226,7 +226,7 @@ pub mod forum {
             Err(ErrorCode::SinglePostPerSession.into())
         }
     }
-    pub fn submit_vote(ctx: Context<SubmitVote>, amount: u32) -> ProgramResult {
+    pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
         //i actually could move this to the param declaration
         //LOCALNET MARK
         verify::clock::to_edit_leaderboard(
@@ -241,8 +241,8 @@ pub mod forum {
         let voter = &mut ctx.accounts.vote;
         if voter.session < current_session {
             let mut voted_post = ctx.accounts.post.load_mut()?;
-            voted_post.session_score = voted_post.session_score.checked_add(amount).unwrap();
-            voted_post.all_time_score = voted_post.all_time_score.checked_add(amount).unwrap();
+            voted_post.session_score = voted_post.session_score.checked_add(1).unwrap();
+            voted_post.all_time_score = voted_post.all_time_score.checked_add(1).unwrap();
             voter.session = current_session;
             voter.voted_for_card_mint = voted_post.card_mint.key();
 
