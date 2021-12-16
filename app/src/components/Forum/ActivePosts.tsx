@@ -68,7 +68,8 @@ function ActivePosts(props: Props) {
             });
         }
     }
-    const didPressLike = async (post: PublicKey, index: number) => {
+    const didPressLike = async (post: PublicKey, index: number, e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.stopPropagation();
         if (props.canLike) {
             const tx = await props.submitLike(post);
             if (activePosts && tx) {
@@ -96,6 +97,9 @@ function ActivePosts(props: Props) {
     const didClickPostOuter = (postAddress: PublicKey) => {
         history.push("/post/" + postAddress.toBase58())
     }
+    const stopPropagation = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+        e.stopPropagation()
+    }
 
 
     let postCards = () => {
@@ -109,6 +113,7 @@ function ActivePosts(props: Props) {
                                 target="_blank"
                                 rel="noreferrer noopener"
                                 className="poster-card"
+                                onClick={(e) => stopPropagation(e)}
                             >
                                 {toDisplayString(post.cardMint, 3)}
                             </a>
@@ -119,11 +124,12 @@ function ActivePosts(props: Props) {
                         </div>
                         <div className="post-link">
                             <a href={toPostHref(post.link)} target="_blank" className="post-a"
-                                rel="noreferrer noopener">{post.link}</a>
+                                rel="noreferrer noopener" onClick={(e) => stopPropagation(e)}
+                            >{post.link}</a>
                         </div>
                         {props.canLike
                             ? (
-                                <button className="like-button" onClick={() => didPressLike(post.publicKey, index)}>
+                                <button className="like-button" onClick={(e) => didPressLike(post.publicKey, index, e)}>
                                     <img src={likeIcon} className="like-icon-active" alt="like" />
                                     {post.sessionScore}
                                 </button>

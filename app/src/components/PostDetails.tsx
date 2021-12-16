@@ -11,6 +11,7 @@ import { Post } from "../interfaces";
 import { useLocation } from "react-router-dom";
 import likeIcon from "../assets/likeIcon.svg"
 import likeIconFill from "../assets/likeIconFill.svg"
+import toast, { Toaster } from "react-hot-toast";
 
 interface Props {
     canLike: boolean,
@@ -87,8 +88,12 @@ function PostDetails(props: Props) {
 
     const didPressLike = (postAddress: PublicKey) => {
         props.submitLike(postAddress).then((sig) => {
-            queryForPostAtAddress(postAddress);
-            console.log("did a like with sig: ", sig);
+            if (sig !== undefined) {
+                queryForPostAtAddress(postAddress);
+                console.log("did a like with sig: ", sig);
+            } else {
+                console.log("tx sig undefined")
+            }
         });
     }
 
@@ -134,6 +139,7 @@ function PostDetails(props: Props) {
 
     return (
         <div className="component-parent">
+            <div><Toaster /></div>
             <div className="posts-details-header">
                 <div className="posts-header-title">DETAILS</div>
             </div>
