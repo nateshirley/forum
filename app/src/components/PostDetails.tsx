@@ -88,7 +88,7 @@ function PostDetails(props: Props) {
 
     const didPressLike = (postAddress: PublicKey) => {
         props.submitLike(postAddress).then((sig) => {
-            if (sig !== undefined) {
+            if (sig) {
                 queryForPostAtAddress(postAddress);
                 console.log("did a like with sig: ", sig);
             } else {
