@@ -34,7 +34,6 @@ const base58 = require("base58-encode");
 
 //1 lamp =  0.000000001 sol
 
-//https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/
 describe("forum", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.Provider.env();
@@ -95,7 +94,7 @@ describe("forum", () => {
     //   []
     // );
   });
-  /*
+
   //can put init and leaderboard into one later on
   it("initialize forum", async () => {
     const tx = await program.rpc.initializeForum(
@@ -133,7 +132,7 @@ describe("forum", () => {
     // let lb = await program.account.leaderboard.fetch(leaderboard);
     // console.log(lb);
   });
- 
+
   it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 
@@ -288,8 +287,7 @@ describe("forum", () => {
     return lamps * 0.000000001;
   };
 
-
-  
+  /*
   it("mint dif", async () => {
     let wallet = Keypair.generate();
     await provider.connection.confirmTransaction(

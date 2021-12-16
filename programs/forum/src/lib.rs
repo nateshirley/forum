@@ -82,7 +82,7 @@ pub mod forum {
         ixns::mint_membership::mint_card_token_to_new_member(&ctx, seeds)?;
         //create metadata for membership card
         //LOCALNET MARK
-        ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
+        // ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
         Ok(())
     }
     //claim authority after a transfer
@@ -107,10 +107,10 @@ pub mod forum {
         artifact_bump: u8,
     ) -> ProgramResult {
         //LOCALNET MARK
-        verify::clock::to_wrap_session(
-            &ctx.accounts.clock,
-            ctx.accounts.artifact_auction.end_timestamp,
-        )?;
+        // verify::clock::to_wrap_session(
+        //     &ctx.accounts.clock,
+        //     ctx.accounts.artifact_auction.end_timestamp,
+        // )?;
         verify::address::artifact(
             ctx.accounts.artifact.key(),
             ctx.accounts.forum.session,
@@ -133,11 +133,11 @@ pub mod forum {
             1,
         )?;
         //LOCALNET MARK
-        ixns::wrap_session::create_artifact_metadata(
-            &ctx,
-            auth_seeds,
-            artifact_auction_house_bump,
-        )?;
+        // ixns::wrap_session::create_artifact_metadata(
+        //     &ctx,
+        //     auth_seeds,
+        //     artifact_auction_house_bump,
+        // )?;
         //if aux house minus fee is below 1 sol, save the cut? so take some out of the treasury and put it in the aux house
         let yelllow_royalty = ixns::wrap_session::calculate_yelllow_royalty(
             &ctx.accounts.artifact_auction.leading_bid.lamports,
@@ -184,7 +184,6 @@ pub mod forum {
         artifact_auction_house_bump: u8,
         amount: u64,
     ) -> ProgramResult {
-        //LOCALNET MARK
         ixns::place_bid_for_artifact::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
         verify::clock::to_place_bid(
             &ctx.accounts.clock,
@@ -208,10 +207,10 @@ pub mod forum {
 
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
         //LOCALNET MARK
-        verify::clock::to_edit_leaderboard(
-            &ctx.accounts.clock,
-            ctx.accounts.artifact_auction.end_timestamp,
-        )?;
+        // verify::clock::to_edit_leaderboard(
+        //     &ctx.accounts.clock,
+        //     ctx.accounts.artifact_auction.end_timestamp,
+        // )?;
         verify::address::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_session = ctx.accounts.forum.session;
@@ -229,10 +228,10 @@ pub mod forum {
     pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
         //i actually could move this to the param declaration
         //LOCALNET MARK
-        verify::clock::to_edit_leaderboard(
-            &ctx.accounts.clock,
-            ctx.accounts.artifact_auction.end_timestamp,
-        )?;
+        // verify::clock::to_edit_leaderboard(
+        //     &ctx.accounts.clock,
+        //     ctx.accounts.artifact_auction.end_timestamp,
+        // )?;
         verify::address::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
         verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
@@ -256,15 +255,44 @@ pub mod forum {
             Err(ErrorCode::SingleVotePerSession.into())
         }
     }
+    pub fn claim_post_reward(ctx: Context<ClaimPostReward>, index: usize) -> ProgramResult {
+        let leaderboard = ctx.accounts.leaderboard.load()?;
+        let is_on_leaderboard =
+            leaderboard.posts[index].card_mint == ctx.accounts.membership.card_mint;
+        let has_claimed = ctx.accounts.claim_schedule.has_claimed[index];
+        if is_on_leaderboard && !has_claimed {
+            //mint new tokens
+        }
+        Ok(())
+    }
+}
+/*
+i think what i need to do is
+tuck the create claim command into the wrap session?
+yeah i think that will work
+*/
+#[derive(Accounts)]
+pub struct ClaimPostReward<'info> {
+    claimer: Signer<'info>,
+    membership: Account<'info, Membership>,
+    fractional_membership_token_account: Account<'info, token::TokenAccount>,
+    leaderboard: Loader<'info, Leaderboard>,
+    claim_schedule: Account<'info, ClaimSchedule>,
+}
+
+#[account]
+pub struct ClaimSchedule {
+    session: u32,
+    has_claimed: [bool; 10],
 }
 
 #[derive(Accounts)]
 pub struct CreateLeaderboard<'info> {
     #[account(mut)]
-    pub initializer: Signer<'info>,
+    initializer: Signer<'info>,
     #[account(mut)]
-    pub leaderboard: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
+    leaderboard: AccountInfo<'info>,
+    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
