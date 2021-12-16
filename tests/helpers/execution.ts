@@ -241,7 +241,6 @@ export const submitVote = async (
   authority: PublicKey,
   forum: PublicKey,
   leaderboard: PublicKey,
-  amount: number,
   signer?: Keypair
 ) => {
   let memberAttribution = await fetchMemberAttribution(authority);
@@ -252,7 +251,7 @@ export const submitVote = async (
   let [artifactAuction, aBump] = await getArtifactAuctionAddress();
   let vote = await getVoteAddress(memberAttribution.cardMint);
   let signers = signer ? [signer] : [];
-  const tx = await program.rpc.submitVote(amount, {
+  const tx = await program.rpc.submitVote({
     accounts: {
       authority: authority,
       membership: memberAttribution.membership,

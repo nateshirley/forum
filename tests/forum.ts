@@ -161,7 +161,7 @@ describe("forum", () => {
 
   it("submit vote", async () => {
     let post = await getPostAddress(providerMintConfig.cardMint.publicKey);
-    await submitVote(post, providerMintConfig.authority, forum, leaderboard, 1);
+    await submitVote(post, providerMintConfig.authority, forum, leaderboard);
 
     // let vote = await getVoteAddress(providerMintConfig.cardMint.publicKey);
     // let updatedVote = await program.account.vote.fetch(vote);
@@ -309,7 +309,6 @@ describe("forum", () => {
       mintConfig.authority,
       forum,
       leaderboard,
-      3,
       wallet
     );
 
@@ -326,7 +325,6 @@ describe("forum", () => {
       mintConfig.authority,
       forum,
       leaderboard,
-      5,
       wallet
     );
 
@@ -335,7 +333,6 @@ describe("forum", () => {
       mintConfig.authority,
       forum,
       leaderboard,
-      3,
       wallet
     );
 

@@ -497,12 +497,7 @@ export type Forum = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u32"
-        }
-      ]
+      "args": []
     }
   ],
   "accounts": [
@@ -1362,12 +1357,7 @@ export const IDL: Forum = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u32"
-        }
-      ]
+      "args": []
     }
   ],
   "accounts": [
