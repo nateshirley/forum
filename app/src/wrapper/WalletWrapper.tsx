@@ -43,7 +43,6 @@ const WalletWrapper: FC = () => {
                 <WalletModalProvider>
                     <div className="modal-wrapper">
                         <NavigationBar />
-                        <DevnetDisclaimer />
                         <ComponentSwitch />
                         <Footer />
                     </div>

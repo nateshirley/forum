@@ -6,6 +6,7 @@ import { ArtifactAuction, ForumInfo, Like, Membership, Post } from "../interface
 import Forum from "../components/Forum/Forum";
 import ActiveArtifactAuction from '../components/ActiveArtifactAuction/ActiveArtifactAuction';
 import { getNow } from "../utils";
+import DevnetDisclaimer from "./DevnetDisclaimer";
 
 interface Props {
     forumInfo: ForumInfo | undefined,
@@ -53,6 +54,7 @@ function Home(props: Props) {
 
     return (
         <div className="component-parent">
+            <DevnetDisclaimer />
             <div>
                 <ActiveArtifactAuction forumInfo={props.forumInfo} memberCardMint={props.memberCardMint} membership={props.membership}
                     leaderboard={props.leaderboard} cardTokenAccount={props.cardTokenAccount} activeUserPost={props.activeUserPost} artifactAuction={props.artifactAuction}

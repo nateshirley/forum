@@ -404,12 +404,8 @@
 .devnet-disclaimer {
   margin-left: auto;
   margin-right: auto;
-  width: 90%;
-  max-width: 540px;
-  color: black;
-  font-size: 16px;
-  font-family: "IBM Plex Sans";
-  margin-bottom: 60px;
+  width: 100%;
+  margin-bottom: 80px;
   background: rgb(255, 255, 255, 0.28);
 }
 .disclaimer-content-outer {
@@ -425,6 +421,7 @@
   border: none;
   text-decoration: underline;
   color: inherit;
+  padding-left: 0px;
 }
 .disclaimer-learn-more:hover {
   color: black;

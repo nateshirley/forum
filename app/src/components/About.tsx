@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 function About() {
     return (
         <div className="component-parent">
-            prh.
+            prh
             <br />
             <br />
             <br />
@@ -23,7 +23,7 @@ function About() {
                 <br />
                 ---
                 <br />
-                p.s. community members can submit one post and one like per week. the top 10 posts from each week are included in the historical PRH. we are currently in beta on the solana devnet. try it <Link to="/">here</Link>
+                p.s. community members can submit one post and one like per week. the top 10 posts from each week are included in the historical PRH. the PRH is currently in beta on the solana devnet. try it <Link to="/">here</Link>
             </div>
 
         </div>
