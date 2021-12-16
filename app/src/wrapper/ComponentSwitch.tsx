@@ -211,6 +211,8 @@ const ComponentSwitch: FC = () => {
             }).then((sig) => {
                 refreshActiveUserLike();
                 return sig;
+            }).catch(() => {
+                return undefined;
             });
         }
     }
