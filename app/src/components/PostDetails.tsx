@@ -116,7 +116,7 @@ function PostDetails(props: Props) {
                     {post.body}
                 </div>
                 <div className="post-link">
-                    <a href={toPostHref(post.link)} target="_blank"
+                    <a href={toPostHref(post.link)} target="_blank" className="post-a"
                         rel="noreferrer noopener">{post.link}</a>
                 </div>
                 {props.canLike

@@ -299,6 +299,9 @@
   font-weight: 500;
   text-decoration: none;
 }
+.poster-card:hover {
+  color: blue;
+}
 .post-body {
   margin-top: 7px;
 }
@@ -308,7 +311,7 @@
   overflow: hidden;
 }
 .post-a {
-  color: rgb(16, 100, 255);
+  color: rgb(14, 89, 252);
 }
 .post-a:hover {
   color: blue;
