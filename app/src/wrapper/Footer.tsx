@@ -2,6 +2,7 @@ import { getProvider } from '../api/config';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useHistory } from 'react-router-dom';
+import toast, { Toaster } from "react-hot-toast";
 
 function Footer() {
     let wallet = useWallet();
@@ -9,6 +10,7 @@ function Footer() {
 
     const airdrop = async () => {
         if (wallet.publicKey) {
+            toast("confirming...")
             const provider = getProvider(wallet);
             await provider.connection.confirmTransaction(
                 await provider.connection.requestAirdrop(
@@ -17,6 +19,13 @@ function Footer() {
                 ),
                 "confirmed"
             );
+            toast("airdropped 5 sol", {
+                icon: '💸'
+            })
+        } else {
+            toast('wallet not connected', {
+                icon: '🪙',
+            });
         }
     }
     const about = () => {

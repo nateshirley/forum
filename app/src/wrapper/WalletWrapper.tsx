@@ -13,6 +13,8 @@ import ComponentSwitch from './ComponentSwitch';
 import "../index.css";
 import { FORUM_ENDPOINT } from '../utils';
 import Footer from './Footer';
+import DevnetDisclaimer from '../components/DevnetDisclaimer';
+import DevnetWarning from '../components/DevnetDisclaimer';
 
 const WalletWrapper: FC = () => {
     const network = WalletAdapterNetwork.Devnet;
@@ -41,6 +43,7 @@ const WalletWrapper: FC = () => {
                 <WalletModalProvider>
                     <div className="modal-wrapper">
                         <NavigationBar />
+                        <DevnetDisclaimer />
                         <ComponentSwitch />
                         <Footer />
                     </div>
