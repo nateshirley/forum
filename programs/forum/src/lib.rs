@@ -28,6 +28,7 @@ const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
 const SESSION_LENGTH: u64 = 604800;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
+const POST_REWARDS_CLAIM_SEED: &[u8] = b"pr_claim";
 
 #[program]
 pub mod forum {
@@ -82,7 +83,7 @@ pub mod forum {
         ixns::mint_membership::mint_card_token_to_new_member(&ctx, seeds)?;
         //create metadata for membership card
         //LOCALNET MARK
-        ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
+        //ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
         Ok(())
     }
     //claim authority after a transfer
@@ -107,10 +108,10 @@ pub mod forum {
         artifact_bump: u8,
     ) -> ProgramResult {
         //LOCALNET MARK
-        verify::clock::to_wrap_session(
-            &ctx.accounts.clock,
-            ctx.accounts.artifact_auction.end_timestamp,
-        )?;
+        // verify::clock::to_wrap_session(
+        //     &ctx.accounts.clock,
+        //     ctx.accounts.artifact_auction.end_timestamp,
+        // )?;
         verify::address::artifact(
             ctx.accounts.artifact.key(),
             ctx.accounts.forum.session,
@@ -133,11 +134,11 @@ pub mod forum {
             1,
         )?;
         //LOCALNET MARK
-        ixns::wrap_session::create_artifact_metadata(
-            &ctx,
-            auth_seeds,
-            artifact_auction_house_bump,
-        )?;
+        // ixns::wrap_session::create_artifact_metadata(
+        //     &ctx,
+        //     auth_seeds,
+        //     artifact_auction_house_bump,
+        // )?;
         //if aux house minus fee is below 1 sol, save the cut? so take some out of the treasury and put it in the aux house
         ixns::wrap_session::transfer_to_forum_treasury(&ctx, artifact_auction_house_bump)?;
         //todo: set winners from the week for mint rewards
@@ -162,17 +163,12 @@ pub mod forum {
         ctx.accounts.artifact_auction.leading_bid = Bid::default();
         Ok(())
     }
-    pub fn assert_artifact_discriminator(
-        _ctx: Context<AssertArtifactDiscriminator>,
-    ) -> ProgramResult {
-        Ok(())
-    }
+
     pub fn place_bid_for_artifact(
         ctx: Context<PlaceBidForArtifact>,
         artifact_auction_house_bump: u8,
         amount: u64,
     ) -> ProgramResult {
-        //LOCALNET MARK
         ixns::place_bid_for_artifact::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
         verify::clock::to_place_bid(
             &ctx.accounts.clock,
@@ -195,7 +191,6 @@ pub mod forum {
     }
 
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
-        //LOCALNET MARK
         verify::clock::to_edit_leaderboard(
             &ctx.accounts.clock,
             ctx.accounts.artifact_auction.end_timestamp,
@@ -216,7 +211,6 @@ pub mod forum {
     }
     pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
         //i actually could move this to the param declaration
-        //LOCALNET MARK
         verify::clock::to_edit_leaderboard(
             &ctx.accounts.clock,
             ctx.accounts.artifact_auction.end_timestamp,
@@ -244,15 +238,91 @@ pub mod forum {
             Err(ErrorCode::SingleVotePerSession.into())
         }
     }
+    pub fn assert_wrap_session(
+        ctx: Context<AssertWrapSession>,
+        claim_schedule_bump: u8,
+    ) -> ProgramResult {
+        let artifact = ctx.accounts.artifact.load_init()?;
+        if ctx.accounts.claim_schedule.key()
+            == Pubkey::create_program_address(
+                &[
+                    POST_REWARDS_CLAIM_SEED,
+                    &artifact.session.to_le_bytes(),
+                    &[claim_schedule_bump],
+                ],
+                ctx.program_id,
+            )?
+        {
+        } else {
+            panic!();
+        }
+        Ok(())
+    }
+    pub fn claim_post_reward(ctx: Context<ClaimPostReward>, index: u8) -> ProgramResult {
+        // let leaderboard = ctx.accounts.leaderboard.load()?;
+        // let is_on_leaderboard =
+        //     leaderboard.posts[index].card_mint == ctx.accounts.membership.card_mint;
+        // let has_claimed = ctx.accounts.claim_schedule.has_claimed[index];
+        // if is_on_leaderboard && !has_claimed {
+        //     //mint new tokens
+        // }
+        Ok(())
+    }
+}
+
+/*
+i think what i need to do is
+tuck the create claim command into the wrap session?
+yeah i think that will work
+*/
+#[derive(Accounts)]
+pub struct ClaimPostReward<'info> {
+    claimer: Signer<'info>,
+    membership: Account<'info, Membership>,
+    fractional_membership_token_account: Account<'info, token::TokenAccount>,
+    leaderboard: Loader<'info, Leaderboard>,
+    claim_schedule: Account<'info, post_rewards::ClaimSchedule>,
+}
+
+mod post_rewards {
+    use super::*;
+    #[account]
+    pub struct ClaimSchedule {
+        pub session: u32,
+        pub has_claimed: [bool; 10],
+        pub bump: u8,
+    }
+    impl Default for ClaimSchedule {
+        fn default() -> ClaimSchedule {
+            ClaimSchedule {
+                session: 0,
+                has_claimed: [false; 10],
+                bump: 0,
+            }
+        }
+    }
+}
+
+//this makes sure the artifact has its discriminator set
+#[derive(Accounts)]
+#[instruction(claim_schedule_bump: u8)]
+pub struct AssertWrapSession<'info> {
+    authority: Signer<'info>,
+    #[account(zero)]
+    artifact: Loader<'info, artifact::Artifact>,
+    //i have to verify in the ix because i can't access the artifact here
+    #[account(mut)]
+    claim_schedule: AccountInfo<'info>,
+    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct CreateLeaderboard<'info> {
     #[account(mut)]
-    pub initializer: Signer<'info>,
+    initializer: Signer<'info>,
     #[account(mut)]
-    pub leaderboard: AccountInfo<'info>,
-    pub system_program: Program<'info, System>,
+    leaderboard: AccountInfo<'info>,
+    system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -441,11 +511,6 @@ pub struct WrapSession<'info> {
     system_program: Program<'info, System>,
 }
 
-#[derive(Accounts)]
-pub struct AssertArtifactDiscriminator<'info> {
-    #[account(zero)]
-    artifact: Loader<'info, artifact::Artifact>,
-}
 #[derive(Accounts)]
 #[instruction(artifact_auction_house_bump: u8)]
 pub struct PlaceBidForArtifact<'info> {

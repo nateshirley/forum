@@ -5,7 +5,7 @@ forum = "CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "/Users/nathanshirley/.config/solana/id.json"
 
 [scripts]

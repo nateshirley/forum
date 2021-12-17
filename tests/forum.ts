@@ -26,6 +26,7 @@ import {
   getArtifactAttributionAddress,
   getArtifactAuctionAddress,
   getArtifactAuctionHouseAddress,
+  getClaimScheduleAddress,
 } from "./helpers/execution";
 import { getAssociatedTokenAccountAddress } from "../app/src/api/tokenHelpers";
 import { createAssociatedTokenAccountInstruction } from "./helpers/tokenHelpers";
@@ -92,7 +93,7 @@ describe("forum", () => {
     //   []
     // );
   });
-  /*
+
   //can put init and leaderboard into one later on
   it("initialize forum", async () => {
     const tx = await program.rpc.initializeForum(
@@ -130,7 +131,7 @@ describe("forum", () => {
     // let lb = await program.account.leaderboard.fetch(leaderboard);
     // console.log(lb);
   });
- 
+
   it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 
@@ -210,12 +211,16 @@ describe("forum", () => {
     );
     let [artifactAttribution, artifactAttributionBump] =
       await getArtifactAttributionAddress(artifactCardMint.publicKey);
-    console.log(artifactCardMint.publicKey.toBase58());
+    let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(1);
+    console.log("CLAIM", claimSchedule);
     let [auctionHouse, auctionHouseBump] =
       await getArtifactAuctionHouseAddress();
-    const tx = await program.rpc.assertArtifactDiscriminator({
+    const tx = await program.rpc.assertWrapSession(claimScheduleBump, {
       accounts: {
+        authority: authority.publicKey,
         artifact: artifact,
+        claimSchedule: claimSchedule,
+        systemProgram: web3.SystemProgram.programId,
       },
       instructions: [
         //create artifact mint
@@ -274,7 +279,6 @@ describe("forum", () => {
       signers: [artifactCardMint],
     });
 
-  
     let forumBalance = await provider.connection.getBalance(forumTreasury);
     console.log("forum balance:", lampsToSol(forumBalance));
   });
@@ -283,8 +287,7 @@ describe("forum", () => {
     return lamps * 0.000000001;
   };
 
-
-  
+  /*
   it("mint dif", async () => {
     let wallet = Keypair.generate();
     await provider.connection.confirmTransaction(

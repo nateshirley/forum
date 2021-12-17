@@ -328,17 +328,6 @@ export type Forum = {
       ]
     },
     {
-      "name": "assertArtifactDiscriminator",
-      "accounts": [
-        {
-          "name": "artifact",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "placeBidForArtifact",
       "accounts": [
         {
@@ -493,6 +482,75 @@ export type Forum = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "assertWrapSession",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "claimSchedule",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "claimScheduleBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "claimPostReward",
+      "accounts": [
+        {
+          "name": "claimer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "membership",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "fractionalMembershipTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "leaderboard",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "claimSchedule",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": {
+            "defined": "usize"
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -735,6 +793,31 @@ export type Forum = {
                 {
                   "defined": "LeaderboardPost"
                 },
+                10
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "claimSchedule",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "u32"
+          },
+          {
+            "name": "hasClaimed",
+            "type": {
+              "array": [
+                "bool",
                 10
               ]
             }
@@ -1183,17 +1266,6 @@ export const IDL: Forum = {
       ]
     },
     {
-      "name": "assertArtifactDiscriminator",
-      "accounts": [
-        {
-          "name": "artifact",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "placeBidForArtifact",
       "accounts": [
         {
@@ -1348,6 +1420,75 @@ export const IDL: Forum = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "assertWrapSession",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "claimSchedule",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "claimScheduleBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "claimPostReward",
+      "accounts": [
+        {
+          "name": "claimer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "membership",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "fractionalMembershipTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "leaderboard",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "claimSchedule",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "index",
+          "type": {
+            "defined": "usize"
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1590,6 +1731,31 @@ export const IDL: Forum = {
                 {
                   "defined": "LeaderboardPost"
                 },
+                10
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "claimSchedule",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "u32"
+          },
+          {
+            "name": "hasClaimed",
+            "type": {
+              "array": [
+                "bool",
                 10
               ]
             }

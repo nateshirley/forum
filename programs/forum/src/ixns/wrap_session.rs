@@ -39,6 +39,9 @@ pub fn create_artifact_account(
     )
 }
 
+//i should just make a generalized create_ix inside here
+//takes in seeds and creates the acct
+
 pub fn build_new_artifact(
     ctx: &Context<WrapSession>,
     artifact_bump: u8,

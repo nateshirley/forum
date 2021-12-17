@@ -34,12 +34,12 @@ const getConnection = () => {
   const commitment: Commitment = "processed";
   return new Connection(endpoint, commitment);
 };
-const envProgram = anchor.Provider.env();
-const program = getForumProgram(anchor.Provider.env().wallet);
-const provider = anchor.Provider.env();
-
+// const envProgram = anchor.Provider.env();
+// const program = getForumProgram(anchor.Provider.env().wallet);
 // const provider = anchor.Provider.env();
-// const program = anchor.workspace.Forum as Program<Forum>;
+
+const provider = anchor.Provider.env();
+const program = anchor.workspace.Forum as Program<Forum>;
 
 interface MintConfig {
   authority: PublicKey;
@@ -66,6 +66,15 @@ export const getArtifactAddress = async (session: number) => {
 export const getArtifactAttributionAddress = async (cardMint: PublicKey) => {
   return await PublicKey.findProgramAddress(
     [anchor.utils.bytes.utf8.encode("artifact"), cardMint.toBuffer()], //
+    program.programId
+  );
+};
+
+export const getClaimScheduleAddress = async (session: number) => {
+  let toArrayLike = new Int32Array([session]).buffer;
+  let sessionArray = new Uint8Array(toArrayLike);
+  return await PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("pr_claim"), sessionArray], //
     program.programId
   );
 };
