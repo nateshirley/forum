@@ -139,19 +139,7 @@ pub mod forum {
             artifact_auction_house_bump,
         )?;
         //if aux house minus fee is below 1 sol, save the cut? so take some out of the treasury and put it in the aux house
-        let yelllow_royalty = ixns::wrap_session::calculate_yelllow_royalty(
-            &ctx.accounts.artifact_auction.leading_bid.lamports,
-        );
-        ixns::wrap_session::transfer_to_yelllow(
-            &ctx,
-            yelllow_royalty,
-            artifact_auction_house_bump,
-        )?;
-        ixns::wrap_session::transfer_to_forum_treasury(
-            &ctx,
-            yelllow_royalty,
-            artifact_auction_house_bump,
-        )?;
+        ixns::wrap_session::transfer_to_forum_treasury(&ctx, artifact_auction_house_bump)?;
         //todo: set winners from the week for mint rewards
 
         //advance session
@@ -445,11 +433,6 @@ pub struct WrapSession<'info> {
         address = verify::address::forum_treasury()
     )]
     forum_treasury: AccountInfo<'info>,
-    #[account(
-        mut,
-        address = verify::address::yelllow_treasury()
-    )]
-    yelllow_treasury: AccountInfo<'info>,
     rent: Sysvar<'info, Rent>,
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,

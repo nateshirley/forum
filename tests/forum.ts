@@ -57,9 +57,6 @@ describe("forum", () => {
   let forumTreasury = new PublicKey(
     "GUH6vc8SJ2DtWJndjz7Y9984zAqAsFYEuLUBFX8jdopK"
   );
-  let yelllowTreasury = new PublicKey(
-    "nAFRh5zcrsiRka8hNTM4Auu6prBKvpv6zPLMefHFB8x"
-  );
 
   it("config", async () => {
     let [_forum, _forumBump] = await getForumAddress();
@@ -265,7 +262,6 @@ describe("forum", () => {
               forumAuthority: forumAuthority,
               leaderboard: leaderboard,
               forumTreasury: forumTreasury,
-              yelllowTreasury: yelllowTreasury,
               rent: web3.SYSVAR_RENT_PUBKEY,
               clock: web3.SYSVAR_CLOCK_PUBKEY,
               tokenProgram: TOKEN_PROGRAM_ID,
@@ -278,8 +274,7 @@ describe("forum", () => {
       signers: [artifactCardMint],
     });
 
-    let yelllowBalance = await provider.connection.getBalance(yelllowTreasury);
-    console.log("yelllow balance: ", lampsToSol(yelllowBalance));
+  
     let forumBalance = await provider.connection.getBalance(forumTreasury);
     console.log("forum balance:", lampsToSol(forumBalance));
   });
