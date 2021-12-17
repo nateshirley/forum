@@ -7,7 +7,7 @@ import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import "../../Global.css";
 import chevrondown from "../../assets/chevrondown.svg"
 import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority, getMetadataAddress, TOKEN_METADATA_PROGRAM_ID } from "../../api/addresses";
-import { establishedTextFor, FORUM_TREASURY_ADDRESS, getNow, minBid, numberArrayToString, toDisplayString, YELLLOW_TREASURY_ADDRESS } from "../../utils";
+import { establishedTextFor, FORUM_TREASURY_ADDRESS, getNow, minBid, numberArrayToString, toDisplayString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
 import { Artifact, ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Pda, Post } from "../../interfaces";
 import { TOKEN_PROGRAM_ID, Token, MintLayout } from "@solana/spl-token";
@@ -177,7 +177,6 @@ function ActiveArtifactAuction(props: Props) {
                                 forumAuthority: forumAuthority,
                                 leaderboard: leaderboard,
                                 forumTreasury: FORUM_TREASURY_ADDRESS,
-                                yelllowTreasury: YELLLOW_TREASURY_ADDRESS,
                                 rent: web3.SYSVAR_RENT_PUBKEY,
                                 clock: web3.SYSVAR_CLOCK_PUBKEY,
                                 tokenProgram: TOKEN_PROGRAM_ID,
