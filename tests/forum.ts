@@ -31,6 +31,7 @@ import {
 import { getAssociatedTokenAccountAddress } from "../app/src/api/tokenHelpers";
 import { createAssociatedTokenAccountInstruction } from "./helpers/tokenHelpers";
 import { TOKEN_METADATA_PROGRAM_ID } from "../app/src/api/addresses";
+import { artifactAuctionTime } from "../app/src/utils";
 const base58 = require("base58-encode");
 
 //1 lamp =  0.000000001 sol
@@ -212,73 +213,79 @@ describe("forum", () => {
     let [artifactAttribution, artifactAttributionBump] =
       await getArtifactAttributionAddress(artifactCardMint.publicKey);
     let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(1);
-    console.log("CLAIM", claimSchedule);
+    console.log("CLAIM", claimSchedule.toBase58());
     let [auctionHouse, auctionHouseBump] =
       await getArtifactAuctionHouseAddress();
-    const tx = await program.rpc.assertWrapSession(claimScheduleBump, {
-      accounts: {
-        authority: authority.publicKey,
-        artifact: artifact,
-        claimSchedule: claimSchedule,
-        systemProgram: web3.SystemProgram.programId,
-      },
-      instructions: [
-        //create artifact mint
-        SystemProgram.createAccount({
-          fromPubkey: authority.publicKey,
-          newAccountPubkey: artifactCardMint.publicKey,
-          space: MintLayout.span,
-          lamports: await provider.connection.getMinimumBalanceForRentExemption(
-            MintLayout.span
+    const tx = await program.rpc.assertWrapSession(
+      claimScheduleBump,
+      auctionHouseBump,
+      {
+        accounts: {
+          authority: authority.publicKey,
+          artifact: artifact,
+          artifactAuctionHouse: auctionHouse,
+          claimSchedule: claimSchedule,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        instructions: [
+          //create artifact mint
+          SystemProgram.createAccount({
+            fromPubkey: authority.publicKey,
+            newAccountPubkey: artifactCardMint.publicKey,
+            space: MintLayout.span,
+            lamports:
+              await provider.connection.getMinimumBalanceForRentExemption(
+                MintLayout.span
+              ),
+            programId: TOKEN_PROGRAM_ID,
+          }),
+          //init the mint
+          Token.createInitMintInstruction(
+            TOKEN_PROGRAM_ID,
+            artifactCardMint.publicKey,
+            0,
+            forumAuthority,
+            forumAuthority
           ),
-          programId: TOKEN_PROGRAM_ID,
-        }),
-        //init the mint
-        Token.createInitMintInstruction(
-          TOKEN_PROGRAM_ID,
-          artifactCardMint.publicKey,
-          0,
-          forumAuthority,
-          forumAuthority
-        ),
-        //create token account for winner
-        createAssociatedTokenAccountInstruction(
-          artifactCardMint.publicKey,
-          artifactTokenAccount,
-          winner,
-          authority.publicKey
-        ),
-        program.instruction.wrapSession(
-          auctionHouseBump,
-          artifactAttributionBump,
-          artifactBump,
-          {
-            accounts: {
-              initializer: authority.publicKey,
-              artifact: artifact,
-              artifactMint: artifactCardMint.publicKey,
-              artifactMetadata: artifactCardMint.publicKey,
-              artifactTokenAccount: artifactTokenAccount,
-              winner: winner,
-              artifactAuction: artifactAuction,
-              artifactAttribution: artifactAttribution,
-              artifactAuctionHouse: auctionHouse,
-              forum: forum,
-              forumAuthority: forumAuthority,
-              leaderboard: leaderboard,
-              forumTreasury: forumTreasury,
-              rent: web3.SYSVAR_RENT_PUBKEY,
-              clock: web3.SYSVAR_CLOCK_PUBKEY,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-            },
-          }
-        ),
-      ],
-      signers: [artifactCardMint],
-    });
-
+          //create token account for winner
+          createAssociatedTokenAccountInstruction(
+            artifactCardMint.publicKey,
+            artifactTokenAccount,
+            winner,
+            authority.publicKey
+          ),
+          program.instruction.wrapSession(
+            auctionHouseBump,
+            artifactAttributionBump,
+            artifactBump,
+            {
+              accounts: {
+                initializer: authority.publicKey,
+                artifact: artifact,
+                artifactMint: artifactCardMint.publicKey,
+                artifactMetadata: artifactCardMint.publicKey,
+                artifactTokenAccount: artifactTokenAccount,
+                winner: winner,
+                artifactAuction: artifactAuction,
+                artifactAttribution: artifactAttribution,
+                artifactAuctionHouse: auctionHouse,
+                forum: forum,
+                forumAuthority: forumAuthority,
+                leaderboard: leaderboard,
+                forumTreasury: forumTreasury,
+                rent: web3.SYSVAR_RENT_PUBKEY,
+                clock: web3.SYSVAR_CLOCK_PUBKEY,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+                systemProgram: SystemProgram.programId,
+              },
+            }
+          ),
+        ],
+        signers: [artifactCardMint],
+      }
+    );
+    console.log(program.account.claimSchedule.size);
     let forumBalance = await provider.connection.getBalance(forumTreasury);
     console.log("forum balance:", lampsToSol(forumBalance));
   });

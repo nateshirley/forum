@@ -130,7 +130,7 @@ function ActiveArtifactAuction(props: Props) {
                 bump: values[4][1]
             }
             let artifactMetadata = values[5][0]
-            return await program.rpc.assertArtifactDiscriminator({
+            return await program.rpc.assertWrapSession({
                 accounts: {
                     artifact: artifact.address,
                 },

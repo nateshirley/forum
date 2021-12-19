@@ -241,21 +241,16 @@ pub mod forum {
     pub fn assert_wrap_session(
         ctx: Context<AssertWrapSession>,
         claim_schedule_bump: u8,
+        artifact_auction_house_bump: u8,
     ) -> ProgramResult {
         let artifact = ctx.accounts.artifact.load_init()?;
-        if ctx.accounts.claim_schedule.key()
-            == Pubkey::create_program_address(
-                &[
-                    POST_REWARDS_CLAIM_SEED,
-                    &artifact.session.to_le_bytes(),
-                    &[claim_schedule_bump],
-                ],
-                ctx.program_id,
-            )?
-        {
-        } else {
-            panic!();
-        }
+        ixns::wrap_session::create_claim_schedule_account(
+            &ctx,
+            artifact.session,
+            claim_schedule_bump,
+            artifact_auction_house_bump
+        )?;
+    
         Ok(())
     }
     pub fn claim_post_reward(ctx: Context<ClaimPostReward>, index: u8) -> ProgramResult {
@@ -304,12 +299,15 @@ mod post_rewards {
 }
 
 //this makes sure the artifact has its discriminator set
+//you would have to call this before putting the artifact into any other func that expects the discriminator (right now there are none)
+//this also requires the artifact to have reached the session 
 #[derive(Accounts)]
 #[instruction(claim_schedule_bump: u8)]
 pub struct AssertWrapSession<'info> {
     authority: Signer<'info>,
     #[account(zero)]
     artifact: Loader<'info, artifact::Artifact>,
+    artifact_auction_house: AccountInfo<'info>,
     //i have to verify in the ix because i can't access the artifact here
     #[account(mut)]
     claim_schedule: AccountInfo<'info>,
