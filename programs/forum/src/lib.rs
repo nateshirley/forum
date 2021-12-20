@@ -102,6 +102,64 @@ pub mod forum {
             .close(ctx.accounts.authority.to_account_info())?;
         Ok(())
     }
+    pub fn place_bid_for_artifact(
+        ctx: Context<PlaceBidForArtifact>,
+        artifact_auction_house_bump: u8,
+        amount: u64,
+    ) -> ProgramResult {
+        ixns::place_bid_for_artifact::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
+        anchor_transfer::transfer_from_signer(
+            ctx.accounts.into_receive_artifact_bid_context(),
+            amount,
+        )?;
+        let losing_bid = ctx.accounts.artifact_auction.leading_bid;
+        ixns::place_bid_for_artifact::return_lamps_to_newest_loser(
+            &ctx,
+            losing_bid,
+            artifact_auction_house_bump,
+        )?;
+        ctx.accounts.artifact_auction.leading_bid.bidder = ctx.accounts.bidder.key();
+        ctx.accounts.artifact_auction.leading_bid.lamports = amount;
+        ixns::place_bid_for_artifact::adjust_end_timestamp(ctx)?;
+        Ok(())
+    }
+    pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
+        let mut post = ctx.accounts.post.load_mut()?;
+        let current_session = ctx.accounts.forum.session;
+        if post.session < current_session {
+            post.body = ixns::new_post::new_body(body);
+            post.link = ixns::new_post::new_link(link);
+            post.session_score = 0;
+            post.session = current_session;
+            post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
+            Ok(())
+        } else {
+            Err(ErrorCode::SinglePostPerSession.into())
+        }
+    }
+    pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
+        let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
+        verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
+
+        let current_session = ctx.accounts.forum.session;
+        let voter = &mut ctx.accounts.vote;
+        if voter.session < current_session {
+            let mut voted_post = ctx.accounts.post.load_mut()?;
+            voted_post.session_score = voted_post.session_score.checked_add(1).unwrap();
+            voted_post.all_time_score = voted_post.all_time_score.checked_add(1).unwrap();
+            voter.session = current_session;
+            voter.voted_for_card_mint = voted_post.card_mint.key();
+
+            if let Some(new_leading_posts) =
+                ixns::submit_vote::get_new_leading_posts(leaderboard.posts.to_vec(), voted_post)
+            {
+                leaderboard.posts = new_leading_posts;
+            }
+            Ok(())
+        } else {
+            Err(ErrorCode::SingleVotePerSession.into())
+        }
+    }
     pub fn wrap_session(
         ctx: Context<WrapSession>,
         artifact_auction_house_bump: u8,
@@ -152,66 +210,6 @@ pub mod forum {
         ctx.accounts.artifact_auction.leading_bid = Bid::default();
         Ok(())
     }
-
-    pub fn place_bid_for_artifact(
-        ctx: Context<PlaceBidForArtifact>,
-        artifact_auction_house_bump: u8,
-        amount: u64,
-    ) -> ProgramResult {
-        ixns::place_bid_for_artifact::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
-        anchor_transfer::transfer_from_signer(
-            ctx.accounts.into_receive_artifact_bid_context(),
-            amount,
-        )?;
-        let losing_bid = ctx.accounts.artifact_auction.leading_bid;
-        ixns::place_bid_for_artifact::return_lamps_to_newest_loser(
-            &ctx,
-            losing_bid,
-            artifact_auction_house_bump,
-        )?;
-        ctx.accounts.artifact_auction.leading_bid.bidder = ctx.accounts.bidder.key();
-        ctx.accounts.artifact_auction.leading_bid.lamports = amount;
-        ixns::place_bid_for_artifact::adjust_end_timestamp(ctx)?;
-        Ok(())
-    }
-
-    pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
-        let mut post = ctx.accounts.post.load_mut()?;
-        let current_session = ctx.accounts.forum.session;
-        if post.session < current_session {
-            post.body = ixns::new_post::new_body(body);
-            post.link = ixns::new_post::new_link(link);
-            post.session_score = 0;
-            post.session = current_session;
-            post.timestamp = u64::try_from(ctx.accounts.clock.unix_timestamp).unwrap();
-            Ok(())
-        } else {
-            Err(ErrorCode::SinglePostPerSession.into())
-        }
-    }
-    pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
-        let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
-        verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
-
-        let current_session = ctx.accounts.forum.session;
-        let voter = &mut ctx.accounts.vote;
-        if voter.session < current_session {
-            let mut voted_post = ctx.accounts.post.load_mut()?;
-            voted_post.session_score = voted_post.session_score.checked_add(1).unwrap();
-            voted_post.all_time_score = voted_post.all_time_score.checked_add(1).unwrap();
-            voter.session = current_session;
-            voter.voted_for_card_mint = voted_post.card_mint.key();
-
-            if let Some(new_leading_posts) =
-                ixns::submit_vote::get_new_leading_posts(leaderboard.posts.to_vec(), voted_post)
-            {
-                leaderboard.posts = new_leading_posts;
-            }
-            Ok(())
-        } else {
-            Err(ErrorCode::SingleVotePerSession.into())
-        }
-    }
     pub fn assert_wrap_session(
         ctx: Context<AssertWrapSession>,
         claim_schedule_bump: u8,
@@ -243,7 +241,7 @@ pub mod forum {
     }
     pub fn claim_post_reward(ctx: Context<ClaimPostReward>, _index: u8) -> ProgramResult {
         let index = usize::try_from(_index).unwrap();
-        ixns::claim_post_reward::verify_claimer_can_mint_post_rewards(&ctx, index)?;
+        ixns::claim_post_reward::verify_claimer_can_mint_post_reward(&ctx, index)?;
         ctx.accounts.claim_schedule.has_claimed[index] = true;
         ixns::claim_post_reward::mint_fractional_membership_to_claimer(&ctx)?;
         Ok(())
@@ -253,10 +251,17 @@ pub mod forum {
 #[derive(Accounts)]
 pub struct ClaimPostReward<'info> {
     claimer: Signer<'info>,
+    #[account(
+        constraint = membership.authority == claimer.key()
+    )]
     membership: Account<'info, Membership>,
-    #[account(mut)]
+    #[account(mut)] //add a check on the address, then get rid of signer req
     fractional_membership_mint: Account<'info, token::Mint>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = fm_token_account.owner == claimer.key(),
+        constraint = fm_token_account.mint == fractional_membership_mint.key()
+    )]
     fm_token_account: Account<'info, token::TokenAccount>,
     artifact: Loader<'info, artifact::Artifact>,
     #[account(mut)]
@@ -280,8 +285,7 @@ pub struct AssertWrapSession<'info> {
         bump = artifact_auction_house_bump
     )]
     artifact_auction_house: AccountInfo<'info>,
-    //address verified by create account ix
-    #[account(mut)]
+    #[account(mut)] //address verified by create account ix
     claim_schedule: AccountInfo<'info>,
     system_program: Program<'info, System>,
 }
@@ -492,6 +496,7 @@ pub struct WrapSession<'info> {
     // )]
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,
+    //token_metadata_program: Program<'info, anchor_token_metadata::TokenMetadata>,
     #[account(address = spl_token_metadata::id())]
     token_metadata_program: AccountInfo<'info>,
     system_program: Program<'info, System>,

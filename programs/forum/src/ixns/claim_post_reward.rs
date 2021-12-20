@@ -3,7 +3,7 @@ use crate::{ClaimPostReward, FORUM_AUTHORITY_SEED};
 use anchor_spl::token;
 use crate::ErrorCode;
 
-pub fn verify_claimer_can_mint_post_rewards(
+pub fn verify_claimer_can_mint_post_reward(
     ctx: &Context<ClaimPostReward>,
     index: usize
 ) -> ProgramResult {
