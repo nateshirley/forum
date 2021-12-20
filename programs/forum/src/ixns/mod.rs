@@ -5,3 +5,5 @@ pub mod new_post;
 pub mod place_bid_for_artifact;
 pub mod submit_vote;
 pub mod wrap_session;
+pub mod assert_wrap_session;
+pub mod claim_post_reward;

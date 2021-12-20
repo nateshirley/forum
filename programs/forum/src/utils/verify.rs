@@ -1,89 +1,38 @@
-use crate::{id, ErrorCode, ARTIFACT_SEED, LEADERBOARD_SEED};
+use crate::{id, ErrorCode, LEADERBOARD_SEED};
 use anchor_lang::prelude::*;
 use std::convert::TryFrom;
 
 pub mod address {
     use super::*;
-
-    pub fn post(post_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
-        if post_address.eq(&Pubkey::create_with_seed(&card_mint, "post", &id())?) {
-            Ok(())
-        } else {
-            Err(ErrorCode::UnauthorizedPostAccount.into())
-        }
-    }
-    pub fn vote(vote_address: Pubkey, card_mint: Pubkey) -> ProgramResult {
-        if vote_address == Pubkey::create_with_seed(&card_mint, "vote", &id())? {
-            Ok(())
-        } else {
-            Err(ErrorCode::UnauthorizedVoteAccount.into())
-        }
-    }
     pub fn leaderboard(leaderboard_address: Pubkey, bump: u8) -> ProgramResult {
         let seeds = &[&LEADERBOARD_SEED[..], &[bump]];
         let _leaderboard = Pubkey::create_program_address(seeds, &id())?;
         if _leaderboard.eq(&leaderboard_address) {
             Ok(())
         } else {
-            Err(ErrorCode::UnauthorizedVoteAccount.into())
+            Err(ErrorCode::UnauthorizedLeaderboardAccount.into())
         }
-    }
-    pub fn artifact(artifact_address: Pubkey, session: u32, bump: u8) -> ProgramResult {
-        let seeds = &[ARTIFACT_SEED, &session.to_le_bytes(), &[bump]];
-        let _artifact = Pubkey::create_program_address(seeds, &id())?;
-        if _artifact.eq(&artifact_address) {
-            Ok(())
-        } else {
-            Err(ErrorCode::UnauthorizedArtifactAccount.into())
-        }
-    }
-    // pub fn leaderboardd(bump: u8) -> Pubkey {
-    //     let seeds = &[&LEADERBOARD_SEED[..], &[bump]];
-    //     Pubkey::create_program_address(seeds, &id()).unwrap()
-    // }
-    //hardcoded here --- tbd
-    pub fn forum_treasury() -> Pubkey {
-        Pubkey::new(&[
-            229, 220, 49, 71, 11, 110, 112, 197, 103, 131, 44, 77, 39, 81, 157, 127, 207, 235, 157,
-            178, 221, 185, 185, 17, 137, 81, 36, 210, 16, 78, 99, 80,
-        ])
     }
 }
 
 pub mod clock {
     use super::*;
-    pub fn to_place_bid(
-        clock: &Sysvar<anchor_lang::prelude::Clock>,
-        auction_end_timestamp: u64,
-    ) -> ProgramResult {
-        let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now < auction_end_timestamp {
-            Ok(())
-        } else {
-            Err(ErrorCode::BidOnExpiredAuction.into())
-        }
-    }
-    pub fn to_edit_leaderboard(
-        clock: &Sysvar<anchor_lang::prelude::Clock>,
-        auction_end_timestamp: u64,
-    ) -> ProgramResult {
-        let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now < auction_end_timestamp {
-            Ok(())
-        } else {
-            Err(ErrorCode::SessionNotWrapped.into())
-        }
+    pub fn to_edit_session(
+        unix_timestamp: i64,
+        auction_end_timestamp: &u64,
+    ) -> bool {
+        let now = as_u64(unix_timestamp);
+        now < *auction_end_timestamp
     }
     pub fn to_wrap_session(
-        clock: &Sysvar<anchor_lang::prelude::Clock>,
-        auction_end_timestamp: u64,
-    ) -> ProgramResult {
-        let now = u64::try_from(clock.unix_timestamp).unwrap();
-        if now > auction_end_timestamp {
-            Ok(())
-        } else {
-            Err(ErrorCode::SettleActiveAuction.into())
-        }
+        unix_timestamp: i64,
+        auction_end_timestamp: &u64,
+    ) -> bool {
+        let now = as_u64(unix_timestamp);
+        now > *auction_end_timestamp
+    }
+    pub fn as_u64(unix_timestamp: i64) -> u64 {
+        u64::try_from(unix_timestamp).unwrap()
     }
 }
 

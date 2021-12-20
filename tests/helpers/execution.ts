@@ -70,6 +70,15 @@ export const getArtifactAttributionAddress = async (cardMint: PublicKey) => {
   );
 };
 
+export const getClaimScheduleAddress = async (session: number) => {
+  let toArrayLike = new Int32Array([session]).buffer;
+  let sessionArray = new Uint8Array(toArrayLike);
+  return await PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("pr_claim"), sessionArray], //
+    program.programId
+  );
+};
+
 export const getMintConfig = async (authority: PublicKey) => {
   let cardMint = Keypair.generate();
   let cardTokenAccount = await getCardTokenAccount(

@@ -6,7 +6,7 @@ import * as web3 from "@solana/web3.js";
 import { Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import "../../Global.css";
 import chevrondown from "../../assets/chevrondown.svg"
-import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getForumAuthority, getMetadataAddress, TOKEN_METADATA_PROGRAM_ID } from "../../api/addresses";
+import { getArtifactAddress, getArtifactAttributionAddress, getArtifactAuctionAddress, getArtifactAuctionHouseAddress, getClaimScheduleAddress, getForumAuthority, getMetadataAddress, TOKEN_METADATA_PROGRAM_ID } from "../../api/addresses";
 import { establishedTextFor, FORUM_TREASURY_ADDRESS, getNow, minBid, numberArrayToString, toDisplayString } from "../../utils";
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAccountAddress } from "../../api/tokenHelpers";
 import { Artifact, ArtifactAuction, AUCTION_PHASE, ForumInfo, Membership, Pda, Post } from "../../interfaces";
@@ -119,7 +119,9 @@ function ActiveArtifactAuction(props: Props) {
         )
         const fetchArtifact = getArtifactAddress(session);
         const metadata = getMetadataAddress(artifactMint.publicKey);
-        let response = await Promise.all([attr, auth, mintRent, winnerTokenAccount, fetchArtifact, metadata]).then(async (values) => {
+        const claimSchedule = getClaimScheduleAddress(session);
+        // return ""
+        let response = await Promise.all([attr, auth, mintRent, winnerTokenAccount, fetchArtifact, metadata, claimSchedule]).then(async (values) => {
             let artifactAttribution = values[0][0];
             let artifactAttributionBump = values[0][1];
             let forumAuthority = values[1][0]
@@ -130,64 +132,76 @@ function ActiveArtifactAuction(props: Props) {
                 bump: values[4][1]
             }
             let artifactMetadata = values[5][0]
-            return await program.rpc.assertArtifactDiscriminator({
-                accounts: {
-                    artifact: artifact.address,
-                },
-                instructions: [
-                    //create artifact mint
-                    SystemProgram.createAccount({
-                        fromPubkey: payer,
-                        newAccountPubkey: artifactMint.publicKey,
-                        space: MintLayout.span,
-                        lamports: mintRent,
-                        programId: TOKEN_PROGRAM_ID,
-                    }),
-                    //init the mint
-                    Token.createInitMintInstruction(
-                        TOKEN_PROGRAM_ID,
-                        artifactMint.publicKey,
-                        0,
-                        forumAuthority,
-                        forumAuthority
-                    ),
-                    //create token account for winner
-                    createAssociatedTokenAccountInstruction(
-                        artifactMint.publicKey,
-                        winnerTokenAccount,
-                        winner,
-                        payer
-                    ),
-                    program.instruction.wrapSession(
-                        artifactAuctionHouse.bump,
-                        artifactAttributionBump,
-                        artifact.bump,
-                        {
-                            accounts: {
-                                initializer: payer,
-                                artifact: artifact.address,
-                                artifactMint: artifactMint.publicKey,
-                                artifactMetadata: artifactMetadata,
-                                artifactTokenAccount: winnerTokenAccount,
-                                winner: winner,
-                                artifactAuction: artifactAuction,
-                                artifactAttribution: artifactAttribution,
-                                artifactAuctionHouse: artifactAuctionHouse.address,
-                                forum: forum,
-                                forumAuthority: forumAuthority,
-                                leaderboard: leaderboard,
-                                forumTreasury: FORUM_TREASURY_ADDRESS,
-                                rent: web3.SYSVAR_RENT_PUBKEY,
-                                clock: web3.SYSVAR_CLOCK_PUBKEY,
-                                tokenProgram: TOKEN_PROGRAM_ID,
-                                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-                                systemProgram: SystemProgram.programId,
-                            },
-                        }
-                    ),
-                ],
-                signers: [artifactMint],
-            });
+            let claimSchedule = {
+                address: values[6][0],
+                bump: values[6][1]
+            }
+            return await program.rpc.assertWrapSession(
+                claimSchedule.bump,
+                artifactAuctionHouse.bump,
+                artifact.bump,
+                session,
+                {
+                    accounts: {
+                        artifact: artifact.address,
+                        artifactAuctionHouse: artifactAuctionHouse.address,
+                        claimSchedule: claimSchedule.address,
+                        systemProgram: web3.SystemProgram.programId,
+                    },
+                    instructions: [
+                        //create artifact mint
+                        SystemProgram.createAccount({
+                            fromPubkey: payer,
+                            newAccountPubkey: artifactMint.publicKey,
+                            space: MintLayout.span,
+                            lamports: mintRent,
+                            programId: TOKEN_PROGRAM_ID,
+                        }),
+                        //init the mint
+                        Token.createInitMintInstruction(
+                            TOKEN_PROGRAM_ID,
+                            artifactMint.publicKey,
+                            0,
+                            forumAuthority,
+                            forumAuthority
+                        ),
+                        //create token account for winner
+                        createAssociatedTokenAccountInstruction(
+                            artifactMint.publicKey,
+                            winnerTokenAccount,
+                            winner,
+                            payer
+                        ),
+                        program.instruction.wrapSession(
+                            artifactAuctionHouse.bump,
+                            artifactAttributionBump,
+                            artifact.bump,
+                            {
+                                accounts: {
+                                    initializer: payer,
+                                    artifact: artifact.address,
+                                    artifactMint: artifactMint.publicKey,
+                                    artifactMetadata: artifactMetadata,
+                                    artifactTokenAccount: winnerTokenAccount,
+                                    winner: winner,
+                                    artifactAuction: artifactAuction,
+                                    artifactAttribution: artifactAttribution,
+                                    artifactAuctionHouse: artifactAuctionHouse.address,
+                                    forum: forum,
+                                    forumAuthority: forumAuthority,
+                                    leaderboard: leaderboard,
+                                    forumTreasury: FORUM_TREASURY_ADDRESS,
+                                    rent: web3.SYSVAR_RENT_PUBKEY,
+                                    clock: web3.SYSVAR_CLOCK_PUBKEY,
+                                    tokenProgram: TOKEN_PROGRAM_ID,
+                                    tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+                                    systemProgram: SystemProgram.programId,
+                                },
+                            }
+                        ),
+                    ],
+                    signers: [artifactMint],
+                });
         }).catch((e) => {
             console.log(e);
             console.log("GOT AN ERR")

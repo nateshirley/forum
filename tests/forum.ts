@@ -26,10 +26,12 @@ import {
   getArtifactAttributionAddress,
   getArtifactAuctionAddress,
   getArtifactAuctionHouseAddress,
+  getClaimScheduleAddress,
 } from "./helpers/execution";
 import { getAssociatedTokenAccountAddress } from "../app/src/api/tokenHelpers";
 import { createAssociatedTokenAccountInstruction } from "./helpers/tokenHelpers";
 import { TOKEN_METADATA_PROGRAM_ID } from "../app/src/api/addresses";
+import { artifactAuctionTime } from "../app/src/utils";
 const base58 = require("base58-encode");
 
 //1 lamp =  0.000000001 sol
@@ -53,9 +55,16 @@ describe("forum", () => {
   let artifactAuction = null;
   let artifactAuctionBump = null;
   let artifactCardMint = Keypair.generate();
+  let fractionalMembershipMint = Keypair.generate();
 
   let forumTreasury = new PublicKey(
     "GUH6vc8SJ2DtWJndjz7Y9984zAqAsFYEuLUBFX8jdopK"
+  );
+  let FMToken = new Token(
+    provider.connection,
+    fractionalMembershipMint.publicKey,
+    TOKEN_PROGRAM_ID,
+    artifactCardMint
   );
 
   it("config", async () => {
@@ -117,7 +126,27 @@ describe("forum", () => {
               systemProgram: SystemProgram.programId,
             },
           }),
+          //create fractional membership mint
+          SystemProgram.createAccount({
+            fromPubkey: authority.publicKey,
+            newAccountPubkey: fractionalMembershipMint.publicKey,
+            space: MintLayout.span,
+            lamports:
+              await program.provider.connection.getMinimumBalanceForRentExemption(
+                MintLayout.span
+              ),
+            programId: TOKEN_PROGRAM_ID,
+          }),
+          //init the mint
+          Token.createInitMintInstruction(
+            TOKEN_PROGRAM_ID,
+            fractionalMembershipMint.publicKey,
+            0,
+            forumAuthority,
+            forumAuthority
+          ),
         ],
+        signers: [fractionalMembershipMint],
       }
     );
     //everyth looks good. should write tests but too lazy rn
@@ -210,79 +239,152 @@ describe("forum", () => {
     );
     let [artifactAttribution, artifactAttributionBump] =
       await getArtifactAttributionAddress(artifactCardMint.publicKey);
-    console.log(artifactCardMint.publicKey.toBase58());
+    let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(
+      _forumAccount.session
+    );
     let [auctionHouse, auctionHouseBump] =
       await getArtifactAuctionHouseAddress();
-    const tx = await program.rpc.assertArtifactDiscriminator({
-      accounts: {
-        artifact: artifact,
-      },
-      instructions: [
-        //create artifact mint
-        SystemProgram.createAccount({
-          fromPubkey: authority.publicKey,
-          newAccountPubkey: artifactCardMint.publicKey,
-          space: MintLayout.span,
-          lamports: await provider.connection.getMinimumBalanceForRentExemption(
-            MintLayout.span
+    const tx = await program.rpc.assertWrapSession(
+      claimScheduleBump,
+      auctionHouseBump,
+      artifactBump,
+      _forumAccount.session,
+      {
+        accounts: {
+          artifact: artifact,
+          artifactAuctionHouse: auctionHouse,
+          claimSchedule: claimSchedule,
+          systemProgram: web3.SystemProgram.programId,
+        },
+        instructions: [
+          //create artifact mint
+          SystemProgram.createAccount({
+            fromPubkey: authority.publicKey,
+            newAccountPubkey: artifactCardMint.publicKey,
+            space: MintLayout.span,
+            lamports:
+              await provider.connection.getMinimumBalanceForRentExemption(
+                MintLayout.span
+              ),
+            programId: TOKEN_PROGRAM_ID,
+          }),
+          //init the mint
+          Token.createInitMintInstruction(
+            TOKEN_PROGRAM_ID,
+            artifactCardMint.publicKey,
+            0,
+            forumAuthority,
+            forumAuthority
           ),
-          programId: TOKEN_PROGRAM_ID,
-        }),
-        //init the mint
-        Token.createInitMintInstruction(
-          TOKEN_PROGRAM_ID,
-          artifactCardMint.publicKey,
-          0,
-          forumAuthority,
-          forumAuthority
-        ),
-        //create token account for winner
-        createAssociatedTokenAccountInstruction(
-          artifactCardMint.publicKey,
-          artifactTokenAccount,
-          winner,
-          authority.publicKey
-        ),
-        program.instruction.wrapSession(
-          auctionHouseBump,
-          artifactAttributionBump,
-          artifactBump,
-          {
-            accounts: {
-              initializer: authority.publicKey,
-              artifact: artifact,
-              artifactMint: artifactCardMint.publicKey,
-              artifactMetadata: artifactCardMint.publicKey,
-              artifactTokenAccount: artifactTokenAccount,
-              winner: winner,
-              artifactAuction: artifactAuction,
-              artifactAttribution: artifactAttribution,
-              artifactAuctionHouse: auctionHouse,
-              forum: forum,
-              forumAuthority: forumAuthority,
-              leaderboard: leaderboard,
-              forumTreasury: forumTreasury,
-              rent: web3.SYSVAR_RENT_PUBKEY,
-              clock: web3.SYSVAR_CLOCK_PUBKEY,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-            },
-          }
-        ),
-      ],
-      signers: [artifactCardMint],
-    });
-
-  
+          //create token account for winner
+          createAssociatedTokenAccountInstruction(
+            artifactCardMint.publicKey,
+            artifactTokenAccount,
+            winner,
+            authority.publicKey
+          ),
+          program.instruction.wrapSession(
+            auctionHouseBump,
+            artifactAttributionBump,
+            artifactBump,
+            {
+              accounts: {
+                initializer: authority.publicKey,
+                artifact: artifact,
+                artifactMint: artifactCardMint.publicKey,
+                artifactMetadata: artifactCardMint.publicKey,
+                artifactTokenAccount: artifactTokenAccount,
+                winner: winner,
+                artifactAuction: artifactAuction,
+                artifactAttribution: artifactAttribution,
+                artifactAuctionHouse: auctionHouse,
+                forum: forum,
+                forumAuthority: forumAuthority,
+                leaderboard: leaderboard,
+                forumTreasury: forumTreasury,
+                rent: web3.SYSVAR_RENT_PUBKEY,
+                clock: web3.SYSVAR_CLOCK_PUBKEY,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+                systemProgram: SystemProgram.programId,
+              },
+            }
+          ),
+        ],
+        signers: [artifactCardMint],
+      }
+    );
     let forumBalance = await provider.connection.getBalance(forumTreasury);
     console.log("forum balance:", lampsToSol(forumBalance));
+
+    let newClaimSched = await program.account.claimSchedule.fetch(
+      claimSchedule
+    );
+    console.log(newClaimSched);
   });
+
+  it("claim rewards", async () => {
+    let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(1);
+    let [artifact, artifactBump] = await getArtifactAddress(1);
+    let claimer = authority.publicKey;
+
+    let fmTokenAccountAddress = await getAssociatedTokenAccountAddress(
+      claimer,
+      fractionalMembershipMint.publicKey
+    );
+
+    let fetchedTokenAccount = await fetchFractionalMembershipTokenAccount(
+      fmTokenAccountAddress
+    );
+    let instructions = [];
+    if (!fetchedTokenAccount) {
+      instructions.push(
+        createAssociatedTokenAccountInstruction(
+          fractionalMembershipMint.publicKey,
+          fmTokenAccountAddress,
+          claimer,
+          claimer
+        )
+      );
+    }
+    await program.rpc.claimPostReward(0, {
+      accounts: {
+        claimer: claimer,
+        membership: providerMintConfig.member,
+        fractionalMembershipMint: fractionalMembershipMint.publicKey,
+        fmTokenAccount: fmTokenAccountAddress,
+        artifact: artifact,
+        claimSchedule: claimSchedule,
+        forumAuthority: forumAuthority,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      instructions: instructions,
+    });
+
+    let newClaimSched = await program.account.claimSchedule.fetch(
+      claimSchedule
+    );
+    console.log(newClaimSched);
+    let tokenAccount = await FMToken.getAccountInfo(fmTokenAccountAddress);
+    console.log("balance: ", tokenAccount.amount.toNumber());
+  });
+
+  const fetchFractionalMembershipTokenAccount = async (
+    tokenAccountAddress: PublicKey
+  ): Promise<anchor.web3.AccountInfo<Buffer> | undefined> => {
+    return provider.connection
+      .getAccountInfo(tokenAccountAddress)
+      .then((accountInfo) => {
+        return accountInfo;
+      })
+      .catch((err) => {
+        return undefined;
+      });
+  };
 
   const lampsToSol = (lamps: number) => {
     return lamps * 0.000000001;
   };
-
 
   
   it("mint dif", async () => {

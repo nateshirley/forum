@@ -11,6 +11,23 @@ use {
     },
 };
 
+#[derive(Clone)]
+pub struct TokenMetadata;
+impl anchor_lang::AccountDeserialize for TokenMetadata {
+    fn try_deserialize(buf: &mut &[u8]) -> Result<Self, ProgramError> {
+        TokenMetadata::try_deserialize_unchecked(buf)
+    }
+
+    fn try_deserialize_unchecked(_buf: &mut &[u8]) -> Result<Self, ProgramError> {
+        Ok(TokenMetadata)
+    }
+}
+impl anchor_lang::Id for TokenMetadata {
+    fn id() -> Pubkey {
+        spl_token_metadata::id()
+    }
+}
+
 pub fn create_metadata<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, CreateMetadata<'info>>,
     name: String,

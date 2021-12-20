@@ -3,13 +3,15 @@ import * as web3 from "@solana/web3.js";
 import BN from "bn.js";
 
 export const FORUM_PROGRAM_ID = new PublicKey(
-  "CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH"
+  "4HtdLU2WZA5axWwbo4QbRs36EgKX2atndUJeJ46vL5xV"
 );
 export const FORUM_ENDPOINT =
   "https://lingering-lingering-mountain.solana-devnet.quiknode.pro/fbbd36836095686bd9f580212e675aaab88204c9/";
-//"http://127.0.0.1:8899"
+//"http://127.0.0.1:8899";
+// "https://api.testnet.solana.com";
+
 //clusterApiUrl('devnet');
-export const SESSION_LENGTH = 604800;
+export const SESSION_LENGTH = 240; //604800;
 export const FORUM_TREASURY_ADDRESS = new PublicKey(
   "GUH6vc8SJ2DtWJndjz7Y9984zAqAsFYEuLUBFX8jdopK"
 );

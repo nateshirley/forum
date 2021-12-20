@@ -2,8 +2,9 @@ use crate::anchor_token_metadata;
 use crate::anchor_transfer;
 use crate::structs::artifact::Artifact;
 use crate::{WrapSession, ARTIFACT_SEED, A_AUX_HOUSE_SEED};
-use anchor_lang::{prelude::*, solana_program::system_instruction};
+use anchor_lang::{prelude::*};
 use anchor_spl::token;
+use crate::utils;
 
 pub fn create_artifact_account(
     ctx: &Context<WrapSession>,
@@ -16,26 +17,20 @@ pub fn create_artifact_account(
         &ctx.accounts.forum.session.to_le_bytes(),
         &[artifact_bump],
     ];
-    let _artifact = Pubkey::create_program_address(artifact_seeds, ctx.program_id).unwrap();
-    let __anchor_rent = Rent::get()?;
-    let lamports = __anchor_rent.minimum_balance(2685);
-
+    let artifact = Pubkey::create_program_address(artifact_seeds, ctx.program_id).unwrap();
     let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[artifact_auction_house_bump]];
 
-    anchor_lang::solana_program::program::invoke_signed(
-        &system_instruction::create_account(
-            &ctx.accounts.artifact_auction_house.key(),
-            &_artifact,
-            lamports,
-            2685,
-            ctx.program_id,
-        ),
+    utils::create_acct_from_pda::create_account(
+        ctx.accounts.artifact_auction_house.key,
+        &artifact,
+        ctx.program_id,
+        2685,
         &[
             ctx.accounts.artifact_auction_house.to_account_info(),
             ctx.accounts.artifact.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
         ],
-        &[artifact_seeds, house_seeds],
+        &[artifact_seeds, house_seeds]
     )
 }
 

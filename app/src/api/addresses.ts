@@ -91,3 +91,11 @@ export const getMetadataAddress = async (mintPubkey: PublicKey) => {
     TOKEN_METADATA_PROGRAM_ID
   );
 };
+export const getClaimScheduleAddress = async (session: number) => {
+  let toArrayLike = new Int32Array([session]).buffer;
+  let sessionArray = new Uint8Array(toArrayLike);
+  return await PublicKey.findProgramAddress(
+    [anchor.utils.bytes.utf8.encode("pr_claim"), sessionArray],
+    FORUM_PROGRAM_ID
+  );
+};
