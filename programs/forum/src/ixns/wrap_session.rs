@@ -20,7 +20,7 @@ pub fn create_artifact_account(
     let artifact = Pubkey::create_program_address(artifact_seeds, ctx.program_id).unwrap();
     let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[artifact_auction_house_bump]];
 
-    utils::create_account_from_pda(
+    utils::create_acct_from_pda::create_account(
         ctx.accounts.artifact_auction_house.key,
         &artifact,
         ctx.program_id,

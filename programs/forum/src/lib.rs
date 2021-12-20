@@ -2,13 +2,10 @@ use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
 use std::convert::TryFrom;
 declare_id!("CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH");
-mod anchor_token_metadata;
-mod anchor_transfer;
 mod ixns;
 mod structs;
 mod utils;
-mod verify;
-mod address_book;
+use utils::{address_book, anchor_token_metadata, anchor_transfer, verify};
 use anchor_lang::Discriminator;
 use structs::artifact;
 use structs::bid::Bid;
@@ -132,9 +129,7 @@ pub mod forum {
         //     auth_seeds,
         //     artifact_auction_house_bump,
         // )?;
-        //if aux house minus fee is below 1 sol, save the cut? so take some out of the treasury and put it in the aux house
         ixns::wrap_session::transfer_to_forum_treasury(&ctx, artifact_auction_house_bump)?;
-        //todo: set winners from the week for mint rewards
 
         //advance session
         ctx.accounts.forum.session = ctx.accounts.forum.session.checked_add(1).unwrap();
@@ -270,7 +265,7 @@ pub struct ClaimPostReward<'info> {
     token_program: Program<'info, token::Token>,
 }
 
-//called after wrap session. it creates claim schedule from the artifact
+//called after wrap session to create claim schedule from the artifact
 #[derive(Accounts)]
 #[instruction(claim_schedule_bump: u8, artifact_auction_house_bump: u8, artifact_bump: u8, session: u32)]
 pub struct AssertWrapSession<'info> {
@@ -616,8 +611,6 @@ pub enum ErrorCode {
     SingleVotePerSession,
     #[msg("leaderboard account does not match expected, pda seed: 'leaderboard'")]
     UnauthorizedLeaderboardAccount,
-    #[msg("artifact account does not match expected, pda seed: 'artifact', session")]
-    UnauthorizedArtifactAccount,
     #[msg("active session has not ended.")]
     SessionNotWrapped,
     #[msg("bid does not meet minimum")]

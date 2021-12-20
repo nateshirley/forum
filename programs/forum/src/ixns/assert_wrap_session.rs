@@ -16,7 +16,7 @@ pub fn create_claim_schedule_account(
     let claim_schedule = Pubkey::create_program_address(claim_schedule_seeds, ctx.program_id).unwrap();
     let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[artifact_auction_house_bump]];
 
-    utils::create_account_from_pda(
+    utils::create_acct_from_pda::create_account(
         ctx.accounts.artifact_auction_house.key,
         &claim_schedule,
         ctx.program_id,
