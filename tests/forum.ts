@@ -212,16 +212,18 @@ describe("forum", () => {
     );
     let [artifactAttribution, artifactAttributionBump] =
       await getArtifactAttributionAddress(artifactCardMint.publicKey);
-    let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(1);
-    console.log("CLAIM", claimSchedule.toBase58());
+    let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(
+      _forumAccount.session
+    );
     let [auctionHouse, auctionHouseBump] =
       await getArtifactAuctionHouseAddress();
     const tx = await program.rpc.assertWrapSession(
       claimScheduleBump,
       auctionHouseBump,
+      artifactBump,
+      _forumAccount.session,
       {
         accounts: {
-          authority: authority.publicKey,
           artifact: artifact,
           artifactAuctionHouse: auctionHouse,
           claimSchedule: claimSchedule,
@@ -285,10 +287,30 @@ describe("forum", () => {
         signers: [artifactCardMint],
       }
     );
-    console.log(program.account.claimSchedule.size);
     let forumBalance = await provider.connection.getBalance(forumTreasury);
     console.log("forum balance:", lampsToSol(forumBalance));
+
+    // let rawClaimSched = await provider.connection.getAccountInfo(claimSchedule);
+    // console.log(rawClaimSched);
+    let newClaimSched = await program.account.claimSchedule.fetch(
+      claimSchedule
+    );
+    console.log(newClaimSched);
   });
+
+  // it("claim rewards", async () => {
+  //   let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(1);
+  //   await program.rpc.claimPostReward(1, {
+  //     accounts: {
+  //       claimer: authority.publicKey,
+  //       claimSchedule: claimSchedule,
+  //     },
+  //   });
+  //   let newClaimSched = await program.account.claimSchedule.fetch(
+  //     claimSchedule
+  //   );
+  //   console.log(newClaimSched);
+  // });
 
   const lampsToSol = (lamps: number) => {
     return lamps * 0.000000001;

@@ -13,6 +13,8 @@ use structs::core::{
     Forum, ForumAuthority, Leaderboard, LeaderboardPost, Membership, MembershipAttribution, Post,
     Vote,
 };
+use anchor_lang::Discriminator;
+//use anchor_syn;
 //solana address -k target/deploy/forum-keypair.json
 
 //to make sure it works i need to put it on devnet with different kp, run it through on 5 min loops, then we should be good
@@ -242,15 +244,26 @@ pub mod forum {
         ctx: Context<AssertWrapSession>,
         claim_schedule_bump: u8,
         artifact_auction_house_bump: u8,
+        _artifact_bump: u8, 
+        _session: u32
     ) -> ProgramResult {
         let artifact = ctx.accounts.artifact.load_init()?;
+        //creating in the ix because it's a pda with seeds from loader data (session number)
         ixns::wrap_session::create_claim_schedule_account(
             &ctx,
             artifact.session,
             claim_schedule_bump,
             artifact_auction_house_bump
         )?;
-    
+        let mut claim_account_data = ctx.accounts.claim_schedule.try_borrow_mut_data()?;
+        //manually set discriminator
+        for (i, disciminator_byte) in post_rewards::ClaimSchedule::discriminator().iter().enumerate() {
+            claim_account_data[i] = *disciminator_byte
+        }
+        //set session for claim schedule from artifact
+        for (i, sesstion_byte) in artifact.session.to_le_bytes().iter().enumerate() {
+            claim_account_data[i + 8] = *sesstion_byte;
+        }
         Ok(())
     }
     pub fn claim_post_reward(ctx: Context<ClaimPostReward>, index: u8) -> ProgramResult {
@@ -273,9 +286,9 @@ yeah i think that will work
 #[derive(Accounts)]
 pub struct ClaimPostReward<'info> {
     claimer: Signer<'info>,
-    membership: Account<'info, Membership>,
-    fractional_membership_token_account: Account<'info, token::TokenAccount>,
-    leaderboard: Loader<'info, Leaderboard>,
+    // membership: Account<'info, Membership>,
+    // fractional_membership_token_account: Account<'info, token::TokenAccount>,
+    // leaderboard: Loader<'info, Leaderboard>,
     claim_schedule: Account<'info, post_rewards::ClaimSchedule>,
 }
 
@@ -301,14 +314,26 @@ mod post_rewards {
 //this makes sure the artifact has its discriminator set
 //you would have to call this before putting the artifact into any other func that expects the discriminator (right now there are none)
 //this also requires the artifact to have reached the session 
+/*
+- can't create claimschedule with client side ix because it's a pda, so keypair would have to sign on client
+- can't create in the account declaration (here), because i can't get the session
+- that's why i'm creating it with the magic that appears above. might as well let the aux house pay
+*/
 #[derive(Accounts)]
-#[instruction(claim_schedule_bump: u8)]
+#[instruction(claim_schedule_bump: u8, artifact_auction_house_bump: u8, artifact_bump: u8, session: u32)]
 pub struct AssertWrapSession<'info> {
-    authority: Signer<'info>,
-    #[account(zero)]
+    #[account(
+        zero,
+        seeds = [ARTIFACT_SEED, &session.to_le_bytes()],
+        bump = artifact_bump,
+    )]
     artifact: Loader<'info, artifact::Artifact>,
+    #[account(
+        seeds = [A_AUX_HOUSE_SEED],
+        bump = artifact_auction_house_bump
+    )]
     artifact_auction_house: AccountInfo<'info>,
-    //i have to verify in the ix because i can't access the artifact here
+    //address verified by create account ix
     #[account(mut)]
     claim_schedule: AccountInfo<'info>,
     system_program: Program<'info, System>,
@@ -622,3 +647,18 @@ pub enum ErrorCode {
     #[msg("u are trying to settle an auction that's still open for bidding")]
     SettleActiveAuction,
 }
+
+
+
+
+                // msg!("claim data, {:?}", ctx.accounts.claim_schedule.data);
+                // let aa = dd.deref_mut();
+        // let nn = dd[2];
+        // ctx.accounts.claim_schedule.deserialize_data()
+        // ctx.accounts.claim_schedule.data = claim_schedule;
+        // let d = post_rewards::ClaimSchedule::try_deserialize();
+        // let a = post_rewards::ClaimSchedule::try_from_unchecked();
+        // let claim_schedule = post_rewards::ClaimSchedule::try_from(ctx.accounts.claim_schedule)?;
+        //let claim: Account<post_rewards::ClaimSchedule> = ctx.accounts.claim_schedule;
+        //let g = post_rewards::ClaimSchedule::from_account_info_unchecked(ctx.accounts.claim_schedule)?;
+        //let g = post_rewards::ClaimSchedule::try_from_unchecked(ctx.accounts.claim_schedule)?;
