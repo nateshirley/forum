@@ -55,9 +55,16 @@ describe("forum", () => {
   let artifactAuction = null;
   let artifactAuctionBump = null;
   let artifactCardMint = Keypair.generate();
+  let fractionalMembershipMint = Keypair.generate();
 
   let forumTreasury = new PublicKey(
     "GUH6vc8SJ2DtWJndjz7Y9984zAqAsFYEuLUBFX8jdopK"
+  );
+  let FMToken = new Token(
+    provider.connection,
+    fractionalMembershipMint.publicKey,
+    TOKEN_PROGRAM_ID,
+    artifactCardMint
   );
 
   it("config", async () => {
@@ -119,7 +126,27 @@ describe("forum", () => {
               systemProgram: SystemProgram.programId,
             },
           }),
+          //create fractional membership mint
+          SystemProgram.createAccount({
+            fromPubkey: authority.publicKey,
+            newAccountPubkey: fractionalMembershipMint.publicKey,
+            space: MintLayout.span,
+            lamports:
+              await program.provider.connection.getMinimumBalanceForRentExemption(
+                MintLayout.span
+              ),
+            programId: TOKEN_PROGRAM_ID,
+          }),
+          //init the mint
+          Token.createInitMintInstruction(
+            TOKEN_PROGRAM_ID,
+            fractionalMembershipMint.publicKey,
+            0,
+            forumAuthority,
+            forumAuthority
+          ),
         ],
+        signers: [fractionalMembershipMint],
       }
     );
     //everyth looks good. should write tests but too lazy rn
@@ -290,27 +317,70 @@ describe("forum", () => {
     let forumBalance = await provider.connection.getBalance(forumTreasury);
     console.log("forum balance:", lampsToSol(forumBalance));
 
-    // let rawClaimSched = await provider.connection.getAccountInfo(claimSchedule);
-    // console.log(rawClaimSched);
     let newClaimSched = await program.account.claimSchedule.fetch(
       claimSchedule
     );
     console.log(newClaimSched);
   });
 
-  // it("claim rewards", async () => {
-  //   let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(1);
-  //   await program.rpc.claimPostReward(1, {
-  //     accounts: {
-  //       claimer: authority.publicKey,
-  //       claimSchedule: claimSchedule,
-  //     },
-  //   });
-  //   let newClaimSched = await program.account.claimSchedule.fetch(
-  //     claimSchedule
-  //   );
-  //   console.log(newClaimSched);
-  // });
+  it("claim rewards", async () => {
+    let [claimSchedule, claimScheduleBump] = await getClaimScheduleAddress(1);
+    let [artifact, artifactBump] = await getArtifactAddress(1);
+    let claimer = authority.publicKey;
+
+    let fmTokenAccountAddress = await getAssociatedTokenAccountAddress(
+      claimer,
+      fractionalMembershipMint.publicKey
+    );
+
+    let fetchedTokenAccount = await fetchFractionalMembershipTokenAccount(
+      fmTokenAccountAddress
+    );
+    let instructions = [];
+    if (!fetchedTokenAccount) {
+      instructions.push(
+        createAssociatedTokenAccountInstruction(
+          fractionalMembershipMint.publicKey,
+          fmTokenAccountAddress,
+          claimer,
+          claimer
+        )
+      );
+    }
+    await program.rpc.claimPostReward(0, {
+      accounts: {
+        claimer: claimer,
+        membership: providerMintConfig.member,
+        fractionalMembershipMint: fractionalMembershipMint.publicKey,
+        fmTokenAccount: fmTokenAccountAddress,
+        artifact: artifact,
+        claimSchedule: claimSchedule,
+        forumAuthority: forumAuthority,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      },
+      instructions: instructions,
+    });
+
+    let newClaimSched = await program.account.claimSchedule.fetch(
+      claimSchedule
+    );
+    console.log(newClaimSched);
+    let tokenAccount = await FMToken.getAccountInfo(fmTokenAccountAddress);
+    console.log("balance: ", tokenAccount.amount.toNumber());
+  });
+
+  const fetchFractionalMembershipTokenAccount = async (
+    tokenAccountAddress: PublicKey
+  ): Promise<anchor.web3.AccountInfo<Buffer> | undefined> => {
+    return provider.connection
+      .getAccountInfo(tokenAccountAddress)
+      .then((accountInfo) => {
+        return accountInfo;
+      })
+      .catch((err) => {
+        return undefined;
+      });
+  };
 
   const lampsToSol = (lamps: number) => {
     return lamps * 0.000000001;

@@ -6,14 +6,17 @@ mod anchor_token_metadata;
 mod anchor_transfer;
 mod ixns;
 mod structs;
+mod utils;
 mod verify;
+mod address_book;
+use anchor_lang::Discriminator;
 use structs::artifact;
 use structs::bid::Bid;
 use structs::core::{
     Forum, ForumAuthority, Leaderboard, LeaderboardPost, Membership, MembershipAttribution, Post,
     Vote,
 };
-use anchor_lang::Discriminator;
+use structs::post_rewards;
 //use anchor_syn;
 //solana address -k target/deploy/forum-keypair.json
 
@@ -70,7 +73,6 @@ pub mod forum {
         member_bump: u8,
         member_attribution_bump: u8,
     ) -> ProgramResult {
-        verify::address::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         ctx.accounts.forum.membership = ctx.accounts.forum.membership.checked_add(1).unwrap();
         ixns::mint_membership::init_membership_state(
             ctx.accounts,
@@ -109,17 +111,6 @@ pub mod forum {
         _artifact_attribution_bump: u8,
         artifact_bump: u8,
     ) -> ProgramResult {
-        //LOCALNET MARK
-        // verify::clock::to_wrap_session(
-        //     &ctx.accounts.clock,
-        //     ctx.accounts.artifact_auction.end_timestamp,
-        // )?;
-        verify::address::artifact(
-            ctx.accounts.artifact.key(),
-            ctx.accounts.forum.session,
-            artifact_bump,
-        )?;
-
         //build data store for new artifact
         ixns::wrap_session::build_new_artifact(&ctx, artifact_bump, artifact_auction_house_bump)?;
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
@@ -151,6 +142,7 @@ pub mod forum {
 
         //clear the leaderboard
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
+        verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
         leaderboard.session = ctx.accounts.forum.session;
         leaderboard.posts = [LeaderboardPost::default(); 10];
 
@@ -172,10 +164,6 @@ pub mod forum {
         amount: u64,
     ) -> ProgramResult {
         ixns::place_bid_for_artifact::verify_bid_amount(amount, &ctx.accounts.artifact_auction)?;
-        verify::clock::to_place_bid(
-            &ctx.accounts.clock,
-            ctx.accounts.artifact_auction.end_timestamp,
-        )?;
         anchor_transfer::transfer_from_signer(
             ctx.accounts.into_receive_artifact_bid_context(),
             amount,
@@ -193,11 +181,6 @@ pub mod forum {
     }
 
     pub fn new_post(ctx: Context<NewPost>, body: String, link: String) -> ProgramResult {
-        verify::clock::to_edit_leaderboard(
-            &ctx.accounts.clock,
-            ctx.accounts.artifact_auction.end_timestamp,
-        )?;
-        verify::address::post(ctx.accounts.post.key(), ctx.accounts.card_mint.key())?;
         let mut post = ctx.accounts.post.load_mut()?;
         let current_session = ctx.accounts.forum.session;
         if post.session < current_session {
@@ -212,12 +195,6 @@ pub mod forum {
         }
     }
     pub fn submit_vote(ctx: Context<SubmitVote>) -> ProgramResult {
-        //i actually could move this to the param declaration
-        verify::clock::to_edit_leaderboard(
-            &ctx.accounts.clock,
-            ctx.accounts.artifact_auction.end_timestamp,
-        )?;
-        verify::address::vote(ctx.accounts.vote.key(), ctx.accounts.card_mint.key())?;
         let mut leaderboard = ctx.accounts.leaderboard.load_mut()?;
         verify::address::leaderboard(ctx.accounts.leaderboard.key(), leaderboard.bump)?;
 
@@ -244,20 +221,23 @@ pub mod forum {
         ctx: Context<AssertWrapSession>,
         claim_schedule_bump: u8,
         artifact_auction_house_bump: u8,
-        _artifact_bump: u8, 
-        _session: u32
+        _artifact_bump: u8,
+        _session: u32,
     ) -> ProgramResult {
         let artifact = ctx.accounts.artifact.load_init()?;
         //creating in the ix because it's a pda with seeds from loader data (session number)
-        ixns::wrap_session::create_claim_schedule_account(
+        ixns::assert_wrap_session::create_claim_schedule_account(
             &ctx,
             artifact.session,
             claim_schedule_bump,
-            artifact_auction_house_bump
+            artifact_auction_house_bump,
         )?;
         let mut claim_account_data = ctx.accounts.claim_schedule.try_borrow_mut_data()?;
         //manually set discriminator
-        for (i, disciminator_byte) in post_rewards::ClaimSchedule::discriminator().iter().enumerate() {
+        for (i, disciminator_byte) in post_rewards::ClaimSchedule::discriminator()
+            .iter()
+            .enumerate()
+        {
             claim_account_data[i] = *disciminator_byte
         }
         //set session for claim schedule from artifact
@@ -266,59 +246,31 @@ pub mod forum {
         }
         Ok(())
     }
-    pub fn claim_post_reward(ctx: Context<ClaimPostReward>, index: u8) -> ProgramResult {
-        // let leaderboard = ctx.accounts.leaderboard.load()?;
-        // let is_on_leaderboard =
-        //     leaderboard.posts[index].card_mint == ctx.accounts.membership.card_mint;
-        // let has_claimed = ctx.accounts.claim_schedule.has_claimed[index];
-        // if is_on_leaderboard && !has_claimed {
-        //     //mint new tokens
-        // }
+    pub fn claim_post_reward(ctx: Context<ClaimPostReward>, _index: u8) -> ProgramResult {
+        let index = usize::try_from(_index).unwrap();
+        ixns::claim_post_reward::verify_claimer_can_mint_post_rewards(&ctx, index)?;
+        ctx.accounts.claim_schedule.has_claimed[index] = true;
+        ixns::claim_post_reward::mint_fractional_membership_to_claimer(&ctx)?;
         Ok(())
     }
 }
 
-/*
-i think what i need to do is
-tuck the create claim command into the wrap session?
-yeah i think that will work
-*/
 #[derive(Accounts)]
 pub struct ClaimPostReward<'info> {
     claimer: Signer<'info>,
-    // membership: Account<'info, Membership>,
-    // fractional_membership_token_account: Account<'info, token::TokenAccount>,
-    // leaderboard: Loader<'info, Leaderboard>,
+    membership: Account<'info, Membership>,
+    #[account(mut)]
+    fractional_membership_mint: Account<'info, token::Mint>,
+    #[account(mut)]
+    fm_token_account: Account<'info, token::TokenAccount>,
+    artifact: Loader<'info, artifact::Artifact>,
+    #[account(mut)]
     claim_schedule: Account<'info, post_rewards::ClaimSchedule>,
+    forum_authority: Account<'info, ForumAuthority>,
+    token_program: Program<'info, token::Token>,
 }
 
-mod post_rewards {
-    use super::*;
-    #[account]
-    pub struct ClaimSchedule {
-        pub session: u32,
-        pub has_claimed: [bool; 10],
-        pub bump: u8,
-    }
-    impl Default for ClaimSchedule {
-        fn default() -> ClaimSchedule {
-            ClaimSchedule {
-                session: 0,
-                has_claimed: [false; 10],
-                bump: 0,
-            }
-        }
-    }
-}
-
-//this makes sure the artifact has its discriminator set
-//you would have to call this before putting the artifact into any other func that expects the discriminator (right now there are none)
-//this also requires the artifact to have reached the session 
-/*
-- can't create claimschedule with client side ix because it's a pda, so keypair would have to sign on client
-- can't create in the account declaration (here), because i can't get the session
-- that's why i'm creating it with the magic that appears above. might as well let the aux house pay
-*/
+//called after wrap session. it creates claim schedule from the artifact
 #[derive(Accounts)]
 #[instruction(claim_schedule_bump: u8, artifact_auction_house_bump: u8, artifact_bump: u8, session: u32)]
 pub struct AssertWrapSession<'info> {
@@ -408,9 +360,15 @@ pub struct MintMembership<'info> {
         bump = forum_authority.bump,
     )]
     forum_authority: Account<'info, ForumAuthority>,
-    #[account(zero)]
+    #[account(
+        zero,
+        address = address_book::post(card_mint.key())
+    )]
     post: Loader<'info, Post>,
-    #[account(zero)]
+    #[account(
+        zero,
+        address = address_book::vote(card_mint.key())
+    )]
     vote: Account<'info, Vote>,
     #[account(
         constraint = card_mint.decimals == 0,
@@ -466,17 +424,23 @@ pub struct ClaimMembershipAuthority<'info> {
     system_program: Program<'info, System>,
 }
 #[derive(Accounts)]
-#[instruction(artifact_auction_house_bump: u8, artifact_attribution_bump: u8)]
+#[instruction(artifact_auction_house_bump: u8, artifact_attribution_bump: u8, artifact_bump: u8)]
 pub struct WrapSession<'info> {
     initializer: Signer<'info>,
-    #[account(mut)]
-    artifact: UncheckedAccount<'info>,
     #[account(
         mut,
-        constraint = artifact_mint.supply == 0
+        seeds = [ARTIFACT_SEED, &forum.session.to_le_bytes()],
+        bump = artifact_bump,
+    )]
+    artifact: AccountInfo<'info>,
+    #[account(
+        mut,
+        constraint = artifact_mint.supply == 0,
+        constraint = artifact_mint.freeze_authority.unwrap() == forum_authority.key(),
+        constraint = artifact_mint.mint_authority.unwrap() == forum_authority.key(),
     )]
     artifact_mint: Account<'info, token::Mint>,
-    #[account(mut)]
+    #[account(mut)] //verified in cpi to the metadata program
     artifact_metadata: AccountInfo<'info>,
     #[account(
         mut,
@@ -523,10 +487,14 @@ pub struct WrapSession<'info> {
     leaderboard: Loader<'info, Leaderboard>,
     #[account(
         mut,
-        address = verify::address::forum_treasury()
+        address = address_book::forum_treasury()
     )]
     forum_treasury: AccountInfo<'info>,
     rent: Sysvar<'info, Rent>,
+    //LOCALNET MARK
+    // #[account(
+    //     constraint = verify::clock::to_wrap_session(clock.unix_timestamp, &artifact_auction.end_timestamp)
+    // )]
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,
     #[account(address = spl_token_metadata::id())]
@@ -538,7 +506,7 @@ pub struct WrapSession<'info> {
 #[instruction(artifact_auction_house_bump: u8)]
 pub struct PlaceBidForArtifact<'info> {
     bidder: Signer<'info>,
-    #[account(mut)]
+    #[account(mut)] //verified bc it's pulled directly off the leaderboard
     newest_loser: AccountInfo<'info>,
     #[account(
         mut,
@@ -552,6 +520,9 @@ pub struct PlaceBidForArtifact<'info> {
         bump = artifact_auction_house_bump
     )]
     artifact_auction_house: AccountInfo<'info>,
+    #[account(
+        constraint = verify::clock::to_edit_session(clock.unix_timestamp, &artifact_auction.end_timestamp)
+    )]
     clock: Sysvar<'info, Clock>,
     system_program: Program<'info, System>,
 }
@@ -574,7 +545,10 @@ pub struct NewPost<'info> {
         bump = artifact_auction.bump,
     )]
     artifact_auction: Account<'info, artifact::ArtifactAuction>,
-    #[account(mut)]
+    #[account(
+        mut,
+        address = address_book::post(card_mint.key())
+    )]
     post: Loader<'info, Post>,
     #[account(
         constraint = card_mint.key() == membership.card_mint,
@@ -586,6 +560,9 @@ pub struct NewPost<'info> {
         constraint = card_token_account.owner == authority.key()
     )]
     card_token_account: Account<'info, token::TokenAccount>,
+    #[account(
+        constraint = verify::clock::to_edit_session(clock.unix_timestamp, &artifact_auction.end_timestamp)
+    )]
     clock: Sysvar<'info, Clock>,
 }
 #[derive(Accounts)]
@@ -608,8 +585,12 @@ pub struct SubmitVote<'info> {
     )]
     artifact_auction: Account<'info, artifact::ArtifactAuction>,
     #[account(mut)]
+    //no checks, u can submit a vote for whatever post u like
     post: Loader<'info, Post>,
-    #[account(mut)]
+    #[account(
+        mut,
+        address = address_book::vote(membership.card_mint)
+    )]
     vote: Account<'info, Vote>,
     #[account(
         constraint = card_mint.key() == membership.card_mint,
@@ -621,15 +602,14 @@ pub struct SubmitVote<'info> {
         constraint = card_token_account.owner == authority.key()
     )]
     card_token_account: Account<'info, token::TokenAccount>,
+    #[account(
+        constraint = verify::clock::to_edit_session(clock.unix_timestamp, &artifact_auction.end_timestamp)
+    )]
     clock: Sysvar<'info, Clock>,
 }
 
 #[error]
 pub enum ErrorCode {
-    #[msg("post account does not match expected (fromSeed): authority pubky, 'post', programId")]
-    UnauthorizedPostAccount,
-    #[msg("vote account does not match expected (fromSeed): authority pubky, 'vote', programId")]
-    UnauthorizedVoteAccount,
     #[msg("post account has already submitted this session")]
     SinglePostPerSession,
     #[msg("vote account has already voted this session")]
@@ -646,19 +626,23 @@ pub enum ErrorCode {
     BidOnExpiredAuction,
     #[msg("u are trying to settle an auction that's still open for bidding")]
     SettleActiveAuction,
+    #[msg("u are claiming post rewards that don't belong to you")]
+    UnathorizedPostRewards,
 }
 
-
-
-
-                // msg!("claim data, {:?}", ctx.accounts.claim_schedule.data);
-                // let aa = dd.deref_mut();
-        // let nn = dd[2];
-        // ctx.accounts.claim_schedule.deserialize_data()
-        // ctx.accounts.claim_schedule.data = claim_schedule;
-        // let d = post_rewards::ClaimSchedule::try_deserialize();
-        // let a = post_rewards::ClaimSchedule::try_from_unchecked();
-        // let claim_schedule = post_rewards::ClaimSchedule::try_from(ctx.accounts.claim_schedule)?;
-        //let claim: Account<post_rewards::ClaimSchedule> = ctx.accounts.claim_schedule;
-        //let g = post_rewards::ClaimSchedule::from_account_info_unchecked(ctx.accounts.claim_schedule)?;
-        //let g = post_rewards::ClaimSchedule::try_from_unchecked(ctx.accounts.claim_schedule)?;
+// msg!("claim data, {:?}", ctx.accounts.claim_schedule.data);
+// let aa = dd.deref_mut();
+// let nn = dd[2];
+// ctx.accounts.claim_schedule.deserialize_data()
+// ctx.accounts.claim_schedule.data = claim_schedule;
+// let d = post_rewards::ClaimSchedule::try_deserialize();
+// let a = post_rewards::ClaimSchedule::try_from_unchecked();
+// let claim_schedule = post_rewards::ClaimSchedule::try_from(ctx.accounts.claim_schedule)?;
+//let claim: Account<post_rewards::ClaimSchedule> = ctx.accounts.claim_schedule;
+//let g = post_rewards::ClaimSchedule::from_account_info_unchecked(ctx.accounts.claim_schedule)?;
+//let g = post_rewards::ClaimSchedule::try_from_unchecked(ctx.accounts.claim_schedule)?;
+/*
+- can't create claimschedule with client side ix because it's a pda, so keypair would have to sign on client
+- can't create in the account declaration (here), because i can't get the session
+- that's why i'm creating it with the magic that appears above. might as well let the aux house pay
+*/

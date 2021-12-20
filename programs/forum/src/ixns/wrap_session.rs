@@ -1,10 +1,10 @@
 use crate::anchor_token_metadata;
 use crate::anchor_transfer;
 use crate::structs::artifact::Artifact;
-use crate::{WrapSession, AssertWrapSession, POST_REWARDS_CLAIM_SEED, ARTIFACT_SEED, A_AUX_HOUSE_SEED};
-use anchor_lang::{prelude::*, solana_program::system_instruction};
+use crate::{WrapSession, ARTIFACT_SEED, A_AUX_HOUSE_SEED};
+use anchor_lang::{prelude::*};
 use anchor_spl::token;
-use std::convert::TryFrom;
+use crate::utils;
 
 pub fn create_artifact_account(
     ctx: &Context<WrapSession>,
@@ -20,7 +20,7 @@ pub fn create_artifact_account(
     let artifact = Pubkey::create_program_address(artifact_seeds, ctx.program_id).unwrap();
     let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[artifact_auction_house_bump]];
 
-    create_account_from_pda(
+    utils::create_account_from_pda(
         ctx.accounts.artifact_auction_house.key,
         &artifact,
         ctx.program_id,
@@ -33,62 +33,6 @@ pub fn create_artifact_account(
         &[artifact_seeds, house_seeds]
     )
 }
-
-pub fn create_claim_schedule_account(
-    ctx: &Context<AssertWrapSession>,
-    session: u32,
-    claim_schedule_bump: u8,
-    artifact_auction_house_bump: u8,
-) -> ProgramResult {
-    let claim_schedule_seeds = &[
-        POST_REWARDS_CLAIM_SEED,
-        &session.to_le_bytes(),
-        &[claim_schedule_bump],
-    ];
-    let claim_schedule = Pubkey::create_program_address(claim_schedule_seeds, ctx.program_id).unwrap();
-    let house_seeds = &[&A_AUX_HOUSE_SEED[..], &[artifact_auction_house_bump]];
-
-    create_account_from_pda(
-        ctx.accounts.artifact_auction_house.key,
-        &claim_schedule,
-        ctx.program_id,
-        23,
-        &[
-            ctx.accounts.artifact_auction_house.to_account_info(),
-            ctx.accounts.claim_schedule.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-        ],
-        &[claim_schedule_seeds, house_seeds]
-    )
-}
-
-pub fn create_account_from_pda(
-    from_pda_pubkey: &Pubkey,
-    to_pubkey: &Pubkey,
-    program_id: &Pubkey,
-    space: u64,
-    account_infos: &[AccountInfo],
-    signers_seeds: &[&[&[u8]]]
-) -> ProgramResult {
-    let __anchor_rent = Rent::get()?;
-    let lamports = __anchor_rent.minimum_balance(usize::try_from(space).unwrap());
-    anchor_lang::solana_program::program::invoke_signed(
-        &system_instruction::create_account(
-            from_pda_pubkey,
-            to_pubkey,
-            lamports,
-            space,
-            program_id,
-        ),
-        account_infos,
-        signers_seeds,
-    )
-}
-
-//need to write a func that executes general create program ixns
-
-//i should just make a generalized create_ix inside here
-//takes in seeds and creates the acct
 
 pub fn build_new_artifact(
     ctx: &Context<WrapSession>,
