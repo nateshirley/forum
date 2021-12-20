@@ -219,115 +219,6 @@ export type Forum = {
       ]
     },
     {
-      "name": "wrapSession",
-      "accounts": [
-        {
-          "name": "initializer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "artifact",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactMetadata",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactTokenAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "winner",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuction",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAttribution",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuctionHouse",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forum",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forumAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "leaderboard",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forumTreasury",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "clock",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMetadataProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "artifactAuctionHouseBump",
-          "type": "u8"
-        },
-        {
-          "name": "artifactAttributionBump",
-          "type": "u8"
-        },
-        {
-          "name": "artifactBump",
-          "type": "u8"
-        }
-      ]
-    },
-    {
       "name": "placeBidForArtifact",
       "accounts": [
         {
@@ -484,16 +375,125 @@ export type Forum = {
       "args": []
     },
     {
-      "name": "assertWrapSession",
+      "name": "wrapSession",
       "accounts": [
         {
-          "name": "authority",
+          "name": "initializer",
           "isMut": false,
           "isSigner": true
         },
         {
           "name": "artifact",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactMetadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "winner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAttribution",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "leaderboard",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forumTreasury",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMetadataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactAttributionBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "assertWrapSession",
+      "accounts": [
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -511,6 +511,18 @@ export type Forum = {
         {
           "name": "claimScheduleBump",
           "type": "u8"
+        },
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactBump",
+          "type": "u8"
+        },
+        {
+          "name": "session",
+          "type": "u32"
         }
       ]
     },
@@ -528,17 +540,32 @@ export type Forum = {
           "isSigner": false
         },
         {
-          "name": "fractionalMembershipTokenAccount",
-          "isMut": false,
+          "name": "fractionalMembershipMint",
+          "isMut": true,
           "isSigner": false
         },
         {
-          "name": "leaderboard",
+          "name": "fmTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifact",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "claimSchedule",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -546,9 +573,7 @@ export type Forum = {
       "args": [
         {
           "name": "index",
-          "type": {
-            "defined": "usize"
-          }
+          "type": "u8"
         }
       ]
     }
@@ -885,53 +910,43 @@ export type Forum = {
   "errors": [
     {
       "code": 6000,
-      "name": "UnauthorizedPostAccount",
-      "msg": "post account does not match expected (fromSeed): authority pubky, 'post', programId"
-    },
-    {
-      "code": 6001,
-      "name": "UnauthorizedVoteAccount",
-      "msg": "vote account does not match expected (fromSeed): authority pubky, 'vote', programId"
-    },
-    {
-      "code": 6002,
       "name": "SinglePostPerSession",
       "msg": "post account has already submitted this session"
     },
     {
-      "code": 6003,
+      "code": 6001,
       "name": "SingleVotePerSession",
       "msg": "vote account has already voted this session"
     },
     {
-      "code": 6004,
+      "code": 6002,
       "name": "UnauthorizedLeaderboardAccount",
       "msg": "leaderboard account does not match expected, pda seed: 'leaderboard'"
     },
     {
-      "code": 6005,
-      "name": "UnauthorizedArtifactAccount",
-      "msg": "artifact account does not match expected, pda seed: 'artifact', session"
-    },
-    {
-      "code": 6006,
+      "code": 6003,
       "name": "SessionNotWrapped",
       "msg": "active session has not ended."
     },
     {
-      "code": 6007,
+      "code": 6004,
       "name": "LowBallBid",
       "msg": "bid does not meet minimum"
     },
     {
-      "code": 6008,
+      "code": 6005,
       "name": "BidOnExpiredAuction",
       "msg": "u are trying to bid on an auction that has expired"
     },
     {
-      "code": 6009,
+      "code": 6006,
       "name": "SettleActiveAuction",
       "msg": "u are trying to settle an auction that's still open for bidding"
+    },
+    {
+      "code": 6007,
+      "name": "UnathorizedPostRewards",
+      "msg": "u are claiming post rewards that don't belong to you"
     }
   ]
 };
@@ -1157,115 +1172,6 @@ export const IDL: Forum = {
       ]
     },
     {
-      "name": "wrapSession",
-      "accounts": [
-        {
-          "name": "initializer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "artifact",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactMetadata",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactTokenAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "winner",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuction",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAttribution",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "artifactAuctionHouse",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forum",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forumAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "leaderboard",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "forumTreasury",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "clock",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMetadataProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "artifactAuctionHouseBump",
-          "type": "u8"
-        },
-        {
-          "name": "artifactAttributionBump",
-          "type": "u8"
-        },
-        {
-          "name": "artifactBump",
-          "type": "u8"
-        }
-      ]
-    },
-    {
       "name": "placeBidForArtifact",
       "accounts": [
         {
@@ -1422,16 +1328,125 @@ export const IDL: Forum = {
       "args": []
     },
     {
-      "name": "assertWrapSession",
+      "name": "wrapSession",
       "accounts": [
         {
-          "name": "authority",
+          "name": "initializer",
           "isMut": false,
           "isSigner": true
         },
         {
           "name": "artifact",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactMetadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "winner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAttribution",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forum",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "leaderboard",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forumTreasury",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "clock",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMetadataProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactAttributionBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactBump",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "assertWrapSession",
+      "accounts": [
+        {
+          "name": "artifact",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifactAuctionHouse",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1449,6 +1464,18 @@ export const IDL: Forum = {
         {
           "name": "claimScheduleBump",
           "type": "u8"
+        },
+        {
+          "name": "artifactAuctionHouseBump",
+          "type": "u8"
+        },
+        {
+          "name": "artifactBump",
+          "type": "u8"
+        },
+        {
+          "name": "session",
+          "type": "u32"
         }
       ]
     },
@@ -1466,17 +1493,32 @@ export const IDL: Forum = {
           "isSigner": false
         },
         {
-          "name": "fractionalMembershipTokenAccount",
-          "isMut": false,
+          "name": "fractionalMembershipMint",
+          "isMut": true,
           "isSigner": false
         },
         {
-          "name": "leaderboard",
+          "name": "fmTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "artifact",
           "isMut": false,
           "isSigner": false
         },
         {
           "name": "claimSchedule",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "forumAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -1484,9 +1526,7 @@ export const IDL: Forum = {
       "args": [
         {
           "name": "index",
-          "type": {
-            "defined": "usize"
-          }
+          "type": "u8"
         }
       ]
     }
@@ -1823,53 +1863,43 @@ export const IDL: Forum = {
   "errors": [
     {
       "code": 6000,
-      "name": "UnauthorizedPostAccount",
-      "msg": "post account does not match expected (fromSeed): authority pubky, 'post', programId"
-    },
-    {
-      "code": 6001,
-      "name": "UnauthorizedVoteAccount",
-      "msg": "vote account does not match expected (fromSeed): authority pubky, 'vote', programId"
-    },
-    {
-      "code": 6002,
       "name": "SinglePostPerSession",
       "msg": "post account has already submitted this session"
     },
     {
-      "code": 6003,
+      "code": 6001,
       "name": "SingleVotePerSession",
       "msg": "vote account has already voted this session"
     },
     {
-      "code": 6004,
+      "code": 6002,
       "name": "UnauthorizedLeaderboardAccount",
       "msg": "leaderboard account does not match expected, pda seed: 'leaderboard'"
     },
     {
-      "code": 6005,
-      "name": "UnauthorizedArtifactAccount",
-      "msg": "artifact account does not match expected, pda seed: 'artifact', session"
-    },
-    {
-      "code": 6006,
+      "code": 6003,
       "name": "SessionNotWrapped",
       "msg": "active session has not ended."
     },
     {
-      "code": 6007,
+      "code": 6004,
       "name": "LowBallBid",
       "msg": "bid does not meet minimum"
     },
     {
-      "code": 6008,
+      "code": 6005,
       "name": "BidOnExpiredAuction",
       "msg": "u are trying to bid on an auction that has expired"
     },
     {
-      "code": 6009,
+      "code": 6006,
       "name": "SettleActiveAuction",
       "msg": "u are trying to settle an auction that's still open for bidding"
+    },
+    {
+      "code": 6007,
+      "name": "UnathorizedPostRewards",
+      "msg": "u are claiming post rewards that don't belong to you"
     }
   ]
 };

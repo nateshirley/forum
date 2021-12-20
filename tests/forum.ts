@@ -101,7 +101,7 @@ describe("forum", () => {
     //   []
     // );
   });
-
+  /*
   //can put init and leaderboard into one later on
   it("initialize forum", async () => {
     const tx = await program.rpc.initializeForum(
@@ -159,7 +159,7 @@ describe("forum", () => {
     // let lb = await program.account.leaderboard.fetch(leaderboard);
     // console.log(lb);
   });
-
+ 
   it("mint membership", async () => {
     await mintMembership(providerMintConfig);
 
@@ -386,7 +386,7 @@ describe("forum", () => {
     return lamps * 0.000000001;
   };
 
-  /*
+  
   it("mint dif", async () => {
     let wallet = Keypair.generate();
     await provider.connection.confirmTransaction(

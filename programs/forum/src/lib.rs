@@ -1,7 +1,7 @@
 use anchor_lang::{prelude::*, AccountsClose};
 use anchor_spl::token;
 use std::convert::TryFrom;
-declare_id!("CcssQs9DoZFQUq2nUygcFxKVFZUPvdsux7pBE9dqa2YH");
+declare_id!("4HtdLU2WZA5axWwbo4QbRs36EgKX2atndUJeJ46vL5xV");
 mod ixns;
 mod structs;
 mod utils;
@@ -28,7 +28,7 @@ const FORUM_SEED: &[u8] = b"forum";
 const FORUM_AUTHORITY_SEED: &[u8] = b"authority";
 const LEADERBOARD_SEED: &[u8] = b"leaderboard";
 const ARTIFACT_SEED: &[u8] = b"artifact";
-const SESSION_LENGTH: u64 = 604800;
+const SESSION_LENGTH: u64 = 240;//604800;
 const A_AUX_HOUSE_SEED: &[u8] = b"a_aux_house";
 const POST_REWARDS_CLAIM_SEED: &[u8] = b"pr_claim";
 
@@ -80,11 +80,9 @@ pub mod forum {
             &FORUM_AUTHORITY_SEED[..],
             &[ctx.accounts.forum_authority.bump],
         ];
-        //mint one subscription token to the subscriber
         ixns::mint_membership::mint_card_token_to_new_member(&ctx, seeds)?;
-        //create metadata for membership card
         //LOCALNET MARK
-        //ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
+        ixns::mint_membership::create_card_token_metadata(&ctx, seeds)?;
         Ok(())
     }
     //claim authority after a transfer
@@ -170,7 +168,6 @@ pub mod forum {
         ixns::wrap_session::build_new_artifact(&ctx, artifact_bump, artifact_auction_house_bump)?;
         ctx.accounts.artifact_attribution.artifact = ctx.accounts.artifact.key();
 
-        //mint the artifact token to the winner of the auction
         let auth_seeds = &[
             &FORUM_AUTHORITY_SEED[..],
             &[ctx.accounts.forum_authority.bump],
@@ -182,11 +179,11 @@ pub mod forum {
             1,
         )?;
         //LOCALNET MARK
-        // ixns::wrap_session::create_artifact_metadata(
-        //     &ctx,
-        //     auth_seeds,
-        //     artifact_auction_house_bump,
-        // )?;
+        ixns::wrap_session::create_artifact_metadata(
+            &ctx,
+            auth_seeds,
+            artifact_auction_house_bump,
+        )?;
         ixns::wrap_session::transfer_to_forum_treasury(&ctx, artifact_auction_house_bump)?;
 
         //advance session
@@ -263,7 +260,7 @@ pub struct ClaimPostReward<'info> {
         constraint = fm_token_account.mint == fractional_membership_mint.key()
     )]
     fm_token_account: Account<'info, token::TokenAccount>,
-    artifact: Loader<'info, artifact::Artifact>,
+    artifact: AccountLoader<'info, artifact::Artifact>,
     #[account(mut)]
     claim_schedule: Account<'info, post_rewards::ClaimSchedule>,
     forum_authority: Account<'info, ForumAuthority>,
@@ -279,7 +276,7 @@ pub struct AssertWrapSession<'info> {
         seeds = [ARTIFACT_SEED, &session.to_le_bytes()],
         bump = artifact_bump,
     )]
-    artifact: Loader<'info, artifact::Artifact>,
+    artifact: AccountLoader<'info, artifact::Artifact>,
     #[account(
         seeds = [A_AUX_HOUSE_SEED],
         bump = artifact_auction_house_bump
@@ -318,7 +315,7 @@ pub struct InitializeForum<'info> {
     )]
     forum_authority: Account<'info, ForumAuthority>,
     #[account(zero)]
-    leaderboard: Loader<'info, Leaderboard>,
+    leaderboard: AccountLoader<'info, Leaderboard>,
     #[account(
         init,
         seeds = [ARTIFACT_AUCTION_SEED],
@@ -363,7 +360,7 @@ pub struct MintMembership<'info> {
         zero,
         address = address_book::post(card_mint.key())
     )]
-    post: Loader<'info, Post>,
+    post: AccountLoader<'info, Post>,
     #[account(
         zero,
         address = address_book::vote(card_mint.key())
@@ -483,7 +480,7 @@ pub struct WrapSession<'info> {
     )]
     forum_authority: Account<'info, ForumAuthority>,
     #[account(mut)]
-    leaderboard: Loader<'info, Leaderboard>,
+    leaderboard: AccountLoader<'info, Leaderboard>,
     #[account(
         mut,
         address = address_book::forum_treasury()
@@ -491,9 +488,9 @@ pub struct WrapSession<'info> {
     forum_treasury: AccountInfo<'info>,
     rent: Sysvar<'info, Rent>,
     //LOCALNET MARK
-    // #[account(
-    //     constraint = verify::clock::to_wrap_session(clock.unix_timestamp, &artifact_auction.end_timestamp)
-    // )]
+    #[account(
+        constraint = verify::clock::to_wrap_session(clock.unix_timestamp, &artifact_auction.end_timestamp)
+    )]
     clock: Sysvar<'info, Clock>,
     token_program: Program<'info, token::Token>,
     //token_metadata_program: Program<'info, anchor_token_metadata::TokenMetadata>,
@@ -549,7 +546,7 @@ pub struct NewPost<'info> {
         mut,
         address = address_book::post(card_mint.key())
     )]
-    post: Loader<'info, Post>,
+    post: AccountLoader<'info, Post>,
     #[account(
         constraint = card_mint.key() == membership.card_mint,
     )]
@@ -578,7 +575,7 @@ pub struct SubmitVote<'info> {
     )]
     forum: Account<'info, Forum>,
     #[account(mut)]
-    leaderboard: Loader<'info, Leaderboard>,
+    leaderboard: AccountLoader<'info, Leaderboard>,
     #[account(
         seeds = [ARTIFACT_AUCTION_SEED],
         bump = artifact_auction.bump,
@@ -586,7 +583,7 @@ pub struct SubmitVote<'info> {
     artifact_auction: Account<'info, artifact::ArtifactAuction>,
     #[account(mut)]
     //no checks, u can submit a vote for whatever post u like
-    post: Loader<'info, Post>,
+    post: AccountLoader<'info, Post>,
     #[account(
         mut,
         address = address_book::vote(membership.card_mint)
