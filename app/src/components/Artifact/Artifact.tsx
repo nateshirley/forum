@@ -224,7 +224,7 @@ function Artifact(props: Props) {
                 return (
                     <div>
                         <div className="artifact-token">
-                            <span className="artifact-token-label">asset &nbsp;</span>
+                            <span className="artifact-token-label">token &nbsp;</span>
                             <a href={tokenLink(artifactObject.tokenMint)}
                                 className="artifact-token-mint"
                                 target="_blank"
