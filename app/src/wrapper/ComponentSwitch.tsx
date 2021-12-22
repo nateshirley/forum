@@ -5,7 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Route, Switch, useHistory } from 'react-router-dom';
 import New from '../components/New'
 import PostDetails from '../components/PostDetails';
-import { getForumProgram } from '../api/config';
+import { getForumProgram, getPublicProvider } from '../api/config';
 import { getArtifactAddress, getArtifactAuctionAddress, getCardTokenAccount, getForumAddress, getLeaderboard } from '../api/addresses';
 import { fetchMembershipAccount, fetchMembershipCardMintForWallet } from '../api/membership';
 import { fetchedPostAccountToPostObject } from '../api/posts';
@@ -128,8 +128,9 @@ const ComponentSwitch: FC = () => {
     }
     const airdrop = async () => {
         if (wallet.publicKey) {
-            await program.provider.connection.confirmTransaction(
-                await program.provider.connection.requestAirdrop(
+            const publicProvider = getPublicProvider(wallet);
+            await publicProvider.connection.confirmTransaction(
+                await publicProvider.connection.requestAirdrop(
                     wallet.publicKey,
                     1 * web3.LAMPORTS_PER_SOL
                 ),
