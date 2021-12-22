@@ -28,3 +28,15 @@ export const getConnection = () => {
   const commitment: Commitment = "processed";
   return new Connection(endpoint, commitment);
 };
+export const getPublicProvider = (withWallet: WalletContextState) => {
+  const commitment: Commitment = "processed";
+  let confirmOptions = { preflightCommitment: commitment };
+  let wallet: any = withWallet;
+  const provider = new Provider(getPublicConnection(), wallet, confirmOptions);
+  return provider;
+};
+export const getPublicConnection = () => {
+  const endpoint = "https://api.devnet.solana.com";
+  const commitment: Commitment = "processed";
+  return new Connection(endpoint, commitment);
+};
